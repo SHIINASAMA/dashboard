@@ -28,7 +28,7 @@ accountsRouter.get("/:id", (c) => {
 });
 
 accountsRouter.post("/", (c) => c.req.json().then((body) => {
-  const { screenName, authToken, fetchInterval, platform } = body;
+  const { screenName, authToken, fetchInterval, platform, instanceUrl } = body;
   if (!screenName) {
     return c.json({ error: "screenName is required" }, 400);
   }
@@ -36,7 +36,7 @@ accountsRouter.post("/", (c) => c.req.json().then((body) => {
     return c.json({ error: "authToken is required for this platform" }, 400);
   }
   try {
-    const account = createAccount(screenName, authToken, fetchInterval || 30, platform || "twitter");
+    const account = createAccount(screenName, authToken, fetchInterval || 30, platform || "twitter", instanceUrl || null);
     const { auth_token, ...pub } = account;
     return c.json(pub, 201);
   } catch (e: any) {

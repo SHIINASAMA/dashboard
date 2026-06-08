@@ -1,6 +1,7 @@
 import { getActiveAccounts } from "./db";
 import { fetchAccount } from "./fetcher";
 import { fetchGithubAccount } from "./fetchers/github";
+import { fetchGitlabAccount } from "./fetchers/gitlab";
 
 let running = false;
 let intervalId: ReturnType<typeof setInterval> | null = null;
@@ -31,6 +32,8 @@ async function runCycle() {
 
       if (account.platform === "github") {
         await fetchGithubAccount(account);
+      } else if (account.platform === "gitlab") {
+        await fetchGitlabAccount(account);
       } else {
         await fetchAccount(account);
       }

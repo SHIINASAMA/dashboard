@@ -15,6 +15,7 @@
     "overview": "概览",
     "x": "X",
     "github": "GitHub",
+    "gitlab": "GitLab",
     "settings": "设置"
   },
   "badge": {
@@ -23,6 +24,7 @@
     "stale": "过期",
     "fork": "Fork",
     "github": "GitHub",
+    "gitlab": "GitLab",
     "gh": "GH",
     "x": "X",
     "yes": "是",
@@ -30,11 +32,11 @@
   },
   "overview": {
     "heading": "概览",
-    "bothPlatforms": "2 个平台",
+    "bothPlatforms": "3 个平台",
     "platformX": "X",
     "platformGitHub": "GitHub",
     "description_accounts_other": "{{count}} 个账户 · {{platforms}}",
-    "description_addPrompt": "添加 X 或 GitHub 账户以开始追踪",
+    "description_addPrompt": "添加 X、GitHub 或 GitLab 账户以开始追踪",
     "noAccounts": "尚未配置账户 — 添加一个即可在此查看",
     "xHeading": "X (Twitter)",
     "xNoAccounts": "尚未配置 X 账户。在 X 页面中添加一个以查看分析数据。",
@@ -42,6 +44,7 @@
     "githubHeading": "GitHub",
     "githubNoAccounts": "尚未配置 GitHub 账户。在 GitHub 页面中添加一个以查看统计数据。",
     "githubAccounts_other": "{{count}} 个账户",
+    "gitlabHeading": "GitLab",
     "noGithubAccounts": "暂无 GitHub 账户",
     "stats": {
       "totalTweets": "总推文数",
@@ -69,7 +72,8 @@
       "noEngagementData": "暂无互动数据。添加 X 账户并获取推文以填充此图表。",
       "noTweets": "暂无推文。添加 X 账户并获取推文即可在此查看您的热门内容。"
     },
-    "pinnedRepos": "已置顶仓库"
+    "pinnedRepos": "已置顶仓库",
+    "pinnedProjects": "已置顶项目"
   },
   "x": {
     "heading": "X (Twitter)",
@@ -209,6 +213,83 @@
     "noPopularContent": "暂无热门内容数据。更多数据将在后续抓取后出现。",
     "noReleases": "未找到发行版。需要使用具有 repo 权限的经典 PAT。"
   },
+  "gitlab": {
+    "heading": "GitLab",
+    "accounts_one": "已配置 1 个账户",
+    "accounts_other": "已配置 {{count}} 个账户",
+    "description": "追踪项目、星标和活动",
+    "addAccount": "添加 GitLab 账户",
+    "addFirstAccount": "添加您的第一个 GitLab 账户",
+    "configuredAccounts": "已配置的账户",
+    "noAccounts": "暂无账户",
+    "emptyState": "尚无 GitLab 账户。添加账户以查看项目统计、星标、Fork 数量、语言分布和活动数据。",
+    "whatYouCanTrack": "可追踪的内容",
+    "preview": {
+      "stars": "项目星标",
+      "starsDesc": "追踪哪些项目最受欢迎",
+      "forks": "Fork 与 Issue",
+      "forksDesc": "监控 Fork 数量和未关闭的 Issue",
+      "followerGrowth": "粉丝增长",
+      "followerGrowthDesc": "追踪粉丝数量随时间的变化",
+      "languages": "编程语言",
+      "languagesDesc": "各项目的语言分布"
+    },
+    "accountCard": {
+      "interval": "抓取间隔：每 {{minutes}} 分钟",
+      "last": "上次抓取：{{date}}",
+      "fetchNow": "立即抓取",
+      "delete": "删除"
+    }
+  },
+  "gitlabDetail": {
+    "notFound": "未找到账户",
+    "backToGitLab": "返回 GitLab",
+    "loadingGitLabData": "正在加载 GitLab 数据...",
+    "fetchInterval": "抓取间隔：每 {{minutes}} 分钟",
+    "lastFetched": "上次抓取：{{date}}",
+    "fetchNow": "立即抓取",
+    "fetching": "抓取中...",
+    "disable": "禁用",
+    "enable": "启用",
+    "delete": "删除",
+    "deleteConfirm": "删除 {{name}} 及其所有数据？",
+    "projectsHeading": "项目",
+    "managePins": "管理",
+    "noPinnedProjects": "尚未置顶项目。使用「管理」按钮选择要追踪的项目。",
+    "projectsDesc": "点击任意项目查看详细洞察：星标历史和发行版",
+    "projectsDescPinned": "仅显示已置顶的项目。使用「管理」按钮添加或移除项目。",
+    "contributionCalendar": "活跃度",
+    "contributionDesc": "来自 Events API 的 Push 事件记录",
+    "contributions": "{{date}}：{{count}} 次 Push 事件",
+    "languages": "编程语言",
+    "languagesDesc": "各项目的语言分布",
+    "noContributionData": "暂无活跃度数据。添加 GitLab PAT 以获取事件记录。",
+    "noLanguageData": "暂无语言数据。",
+    "noData": "暂无数据",
+    "noDataDesc": "从详情页触发一次抓取以获取数据。",
+    "less": "少",
+    "more": "多",
+    "projects": "项目",
+    "totalStars": "总星标数",
+    "totalForks": "总 Fork 数",
+    "followers": "粉丝"
+  },
+  "projectDetail": {
+    "notFound": "未找到项目",
+    "backToAccount": "返回账户",
+    "open": "打开",
+    "stars": "星标",
+    "forks": "Fork",
+    "openIssues": "未关闭 Issue",
+    "starHistory": "星标历史",
+    "starHistoryDesc": "星标数量随时间变化（每次抓取记录）",
+    "releasesDownloads": "发行版",
+    "releasesDownloadsDesc": "发行标签",
+    "releases": "发行版",
+    "onlyOneDataPoint": "仅有一个数据点。请执行更多抓取以构建星标历史。",
+    "noStarHistory": "暂无星标历史。每次抓取时会记录数据。",
+    "noReleases": "未找到发行版。"
+  },
   "settings": {
     "heading": "设置",
     "description": "管理外观和偏好设置。",
@@ -234,12 +315,20 @@
     "cancel": "取消",
     "xTwitter": "X (Twitter)",
     "github": "GitHub",
+    "gitlab": "GitLab",
+    "instanceUrl": "实例地址（可选）",
+    "placeholderInstanceUrl": "https://gitlab.com",
+    "helpInstanceUrl": "留空使用 gitlab.com，或输入您的自部署实例地址",
     "placeholderGithubUsername": "例如 torvalds",
+    "placeholderGitlabUsername": "例如 your-username",
     "placeholderXUsername": "例如 elonmusk",
     "placeholderGithubToken": "ghp_...",
+    "placeholderGitlabToken": "glpat-...",
     "placeholderXToken": "您的 X auth_token cookie",
     "helpGithub": "GitHub Personal Access Token（经典）需具备 repo 权限。细粒度令牌不支持流量数据。",
+    "helpGitlab": "GitLab Personal Access Token 需具备 read_api、read_user 和 read_repository 权限。",
     "helpX": "来自 X.com cookies → auth_token。请妥善保管。",
-    "howToCreateToken": "创建经典令牌（已预选所需权限） →"
+    "howToCreateToken": "创建经典令牌（已预选所需权限） →",
+    "howToCreateGitlabToken": "创建令牌 →"
   }
 }

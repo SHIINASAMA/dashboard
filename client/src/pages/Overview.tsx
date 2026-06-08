@@ -57,11 +57,20 @@ export function Overview() {
   const allAccounts = accountsData?.accounts || [];
   const ghAccounts = allAccounts.filter((a: Account) => a.platform === "github");
   const xAccounts = allAccounts.filter((a: Account) => a.platform === "twitter");
+  const glAccounts = allAccounts.filter((a: Account) => a.platform === "gitlab");
 
   const ghOverviews = useQueries({
     queries: ghAccounts.map((acc) => ({
       queryKey: ["github", "overview", acc.id],
       queryFn: () => api.getGithubOverview(acc.id),
+      staleTime: 30_000,
+    })),
+  });
+
+  const glOverviews = useQueries({
+    queries: glAccounts.map((acc) => ({
+      queryKey: ["gitlab", "overview", acc.id],
+      queryFn: () => api.getGitlabOverview(acc.id),
       staleTime: 30_000,
     })),
   });
@@ -87,11 +96,11 @@ export function Overview() {
           {allAccounts.map((acc) => (
             <button
               key={acc.id}
-              onClick={() => navigate(acc.platform === "twitter" ? `/x/${acc.id}` : `/github/${acc.id}`)}
+              onClick={() => navigate(acc.platform === "twitter" ? `/x/${acc.id}` : acc.platform === "github" ? `/github/${acc.id}` : `/gitlab/${acc.id}`)}
               className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-sm"
             >
               <span className="font-semibold">{acc.platform === "twitter" ? `@${acc.screen_name}` : acc.screen_name}</span>
-              <Badge className="text-[10px] px-1.5">{acc.platform === "twitter" ? t("badge.x") : t("badge.github")}</Badge>
+              <Badge className="text-[10px] px-1.5">{acc.platform === "twitter" ? t("badge.x") : acc.platform === "github" ? t("badge.github") : t("badge.gitlab")}</Badge>
               {acc.error_message && <span className="text-red-500">!</span>}
               <ArrowUpRight size={12} className="text-[var(--muted-foreground)]" />
             </button>
@@ -253,6 +262,60 @@ export function Overview() {
 
       {allAccounts.length === 0 && (
         <p className="text-sm text-[var(--muted-foreground)] italic">{t("overview.noAccounts")}</p>
+      )}
+
+      {/* ── GitLab Data ── */}
+      {glAccounts.length > 0 && (
+        <section className="space-y-4">
+          <div>
+            <h3 className="text-base font-semibold flex items-center gap-2">
+              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M22.65 14.39L12 22.13 1.35 14.39a.84.84 0 0 1-.3-.94l1.22-3.78 2.44-7.51A.42.42 0 0 1 4.82 2a.43.43 0 0 1 .58 0 .42.42 0 0 1 .11.18l2.44 7.49h8.1l2.44-7.51A.42.42 0 0 1 18.6 2a.43.43 0 0 1 .58 0 .42.42 0 0 1 .11.18l2.44 7.51L23 13.45a.84.84 0 0 1-.35.94z" /></svg>
+              {t("overview.gitlabHeading")}
+            </h3>
+          </div>
+
+          {glOverviews.some((o) => o.data?.projects?.length) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">{t("overview.pinnedProjects")}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {glOverviews.map((result, i) => {
+                    const projects = result.data?.projects ?? [];
+                    if (projects.length === 0) return null;
+                    const acc = glAccounts[i];
+                    return (
+                      <div key={acc.id}>
+                        <p className="text-xs text-[var(--muted-foreground)] mb-1.5 font-medium">{acc.screen_name}</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {projects.map((p) => (
+                            <button key={p.id} onClick={() => navigate(`/gitlab/${acc.id}/projects/${p.project_id}`)}
+                              className="flex items-start gap-2 p-3 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-left">
+                              <div className="shrink-0 mt-0.5">
+                                {p.language && (
+                                  <span className="block w-2.5 h-2.5 rounded-full mt-0.5" style={{ backgroundColor: languageColor(p.language) }} />
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <span className="text-sm font-medium block truncate">{p.name}</span>
+                                <div className="flex items-center gap-2.5 mt-1 text-xs text-[var(--muted-foreground)]">
+                                  <span className="flex items-center gap-0.5"><Star size={11} /> {(p.stars ?? 0).toLocaleString()}</span>
+                                  <span className="flex items-center gap-0.5"><GitFork size={11} /> {(p.forks ?? 0).toLocaleString()}</span>
+                                </div>
+                              </div>
+                              <ArrowUpRight size={12} className="text-[var(--muted-foreground)] shrink-0 mt-0.5" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </section>
       )}
     </div>
   );

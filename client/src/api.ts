@@ -83,6 +83,7 @@ export interface Account {
   screen_name: string;
   platform: string;
   user_id: string | null;
+  instance_url: string | null;
   fetch_interval: number;
   is_active: number;
   last_fetched_at: string | null;
@@ -143,13 +144,56 @@ export interface GithubContribution {
   level: number;
 }
 
+// ─── GitLab types ────────────────────────────────────────────────
+
+export interface GitlabOverview {
+  stats: {
+    public_projects: number;
+    followers: number;
+    following: number;
+  } | null;
+  projects: GitlabProject[];
+  allProjects: GitlabProject[];
+  totalStars: number;
+  totalForks: number;
+  totalProjects: number;
+  languages: Record<string, number>;
+  topProjects: GitlabProject[];
+}
+
+export interface GitlabProject {
+  id: number;
+  account_id: number;
+  project_id: number;
+  name: string;
+  path_with_namespace: string;
+  description: string | null;
+  language: string | null;
+  stars: number;
+  forks: number;
+  open_issues: number;
+  topics: string;
+  homepage: string | null;
+  is_fork: number;
+  pinned: number;
+  visibility: string;
+  created_at: string;
+  updated_at: string;
+  last_activity_at: string;
+}
+
+export interface GitlabContribution {
+  date: string;
+  count: number;
+}
+
 // ─── API methods ────────────────────────────────────────────────
 
 export const api = {
   // Accounts
   getAccounts: () => fetchJSON<AccountsResponse>("/accounts"),
   getAccount: (id: number) => fetchJSON<Account & { stats: any }>(`/accounts/${id}`),
-  createAccount: (data: { screenName: string; authToken: string; fetchInterval?: number; platform?: string }) =>
+  createAccount: (data: { screenName: string; authToken: string; fetchInterval?: number; platform?: string; instanceUrl?: string }) =>
     fetchJSON<Account>("/accounts", { method: "POST", body: JSON.stringify(data) }),
   updateAccount: (id: number, data: { screenName?: string; authToken?: string; fetchInterval?: number; isActive?: boolean }) =>
     fetchJSON<Account>(`/accounts/${id}`, { method: "PUT", body: JSON.stringify(data) }),
@@ -200,4 +244,18 @@ export const api = {
     fetchJSON<any[]>(`/github/${accountId}/repos/${repoId}/releases`),
   setPinnedRepos: (accountId: number, repoIds: number[]) =>
     fetchJSON<{ ok: boolean }>(`/github/repos/pin`, { method: "PUT", body: JSON.stringify({ accountId, repoIds }) }),
+
+  // GitLab
+  getGitlabOverview: (accountId: number) => fetchJSON<GitlabOverview>(`/gitlab/overview/${accountId}`),
+  getGitlabTimeline: (accountId: number) => fetchJSON<{ date: string; public_projects: number; followers: number; following: number }[]>(`/gitlab/timeline/${accountId}`),
+  getGitlabContributions: (accountId: number, year?: number) =>
+    fetchJSON<GitlabContribution[]>(`/gitlab/contributions/${accountId}${year ? `?year=${year}` : ""}`),
+
+  // GitLab Project Insights
+  getGitlabProjectSnapshots: (accountId: number, projectId: number) =>
+    fetchJSON<{ stars: number; forks: number; open_issues: number; date: string }[]>(`/gitlab/${accountId}/projects/${projectId}/snapshots`),
+  getGitlabReleases: (accountId: number, projectId: number) =>
+    fetchJSON<any[]>(`/gitlab/${accountId}/projects/${projectId}/releases`),
+  setPinnedGitlabProjects: (accountId: number, projectIds: number[]) =>
+    fetchJSON<{ ok: boolean }>(`/gitlab/projects/pin`, { method: "PUT", body: JSON.stringify({ accountId, projectIds }) }),
 };

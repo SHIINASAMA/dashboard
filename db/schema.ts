@@ -290,6 +290,99 @@ const MIGRATIONS: { version: number; name: string; up: (db: Database) => void }[
       `);
     },
   },
+  // ── Migration 6: add instance_url to accounts ──────────────────
+  {
+    version: 6,
+    name: "add instance_url to accounts",
+    up(db) {
+      db.exec("ALTER TABLE accounts ADD COLUMN instance_url TEXT");
+    },
+  },
+
+  // ── Migration 7: gitlab tables ──────────────────────────────────
+  {
+    version: 7,
+    name: "gitlab tables",
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS gitlab_stats (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          account_id INTEGER NOT NULL,
+          public_projects INTEGER DEFAULT 0,
+          followers INTEGER NOT NULL,
+          following INTEGER NOT NULL,
+          recorded_at TEXT NOT NULL DEFAULT (datetime('now')),
+          FOREIGN KEY (account_id) REFERENCES accounts(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS gitlab_projects (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          account_id INTEGER NOT NULL,
+          project_id INTEGER NOT NULL,
+          name TEXT NOT NULL,
+          path_with_namespace TEXT NOT NULL,
+          description TEXT,
+          language TEXT,
+          stars INTEGER DEFAULT 0,
+          forks INTEGER DEFAULT 0,
+          open_issues INTEGER DEFAULT 0,
+          topics TEXT DEFAULT '[]',
+          homepage TEXT,
+          is_fork INTEGER DEFAULT 0,
+          pinned INTEGER DEFAULT 0,
+          visibility TEXT DEFAULT 'public',
+          created_at TEXT,
+          updated_at TEXT,
+          last_activity_at TEXT,
+          fetched_at TEXT NOT NULL DEFAULT (datetime('now')),
+          UNIQUE(account_id, project_id),
+          FOREIGN KEY (account_id) REFERENCES accounts(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS gitlab_project_snapshots (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          account_id INTEGER NOT NULL,
+          project_id INTEGER NOT NULL,
+          stars INTEGER NOT NULL,
+          forks INTEGER DEFAULT 0,
+          open_issues INTEGER DEFAULT 0,
+          snapshot_date TEXT NOT NULL,
+          FOREIGN KEY (account_id) REFERENCES accounts(id),
+          UNIQUE(account_id, project_id, snapshot_date)
+        );
+
+        CREATE TABLE IF NOT EXISTS gitlab_releases (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          account_id INTEGER NOT NULL,
+          project_id INTEGER NOT NULL,
+          release_tag TEXT NOT NULL,
+          name TEXT,
+          description TEXT,
+          released_at TEXT,
+          created_at TEXT,
+          fetched_at TEXT NOT NULL DEFAULT (datetime('now')),
+          FOREIGN KEY (account_id) REFERENCES accounts(id),
+          UNIQUE(account_id, project_id, release_tag)
+        );
+
+        CREATE TABLE IF NOT EXISTS gitlab_release_assets (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          release_id INTEGER NOT NULL,
+          name TEXT NOT NULL,
+          download_count INTEGER DEFAULT 0,
+          size INTEGER DEFAULT 0,
+          file_type TEXT,
+          url TEXT,
+          FOREIGN KEY (release_id) REFERENCES gitlab_releases(id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_gitlab_stats_account_id ON gitlab_stats(account_id);
+        CREATE INDEX IF NOT EXISTS idx_gitlab_projects_account_id ON gitlab_projects(account_id);
+        CREATE INDEX IF NOT EXISTS idx_gitlab_project_snapshots_repo ON gitlab_project_snapshots(account_id, project_id);
+        CREATE INDEX IF NOT EXISTS idx_gitlab_releases_project ON gitlab_releases(account_id, project_id);
+      `);
+    },
+  },
 ];
 
 export function initSchema(db: Database) {

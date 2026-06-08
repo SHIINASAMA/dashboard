@@ -30,6 +30,7 @@ export interface AccountRow {
   is_active: number;
   last_fetched_at: string | null;
   error_message: string | null;
+  instance_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -116,7 +117,7 @@ export interface DailyStatsRow {
 
 export function getAccounts(): AccountPublic[] {
   return getDb().query(
-    "SELECT id, screen_name, platform, user_id, fetch_interval, is_active, last_fetched_at, error_message, created_at, updated_at FROM accounts ORDER BY created_at DESC"
+    "SELECT id, screen_name, platform, user_id, instance_url, fetch_interval, is_active, last_fetched_at, error_message, created_at, updated_at FROM accounts ORDER BY created_at DESC"
   ).all() as AccountPublic[];
 }
 
@@ -132,13 +133,14 @@ export function createAccount(
   screenName: string,
   authToken: string,
   fetchInterval: number,
-  platform: string = "twitter"
+  platform: string = "twitter",
+  instanceUrl: string | null = null
 ): AccountRow {
   const db = getDb();
   db.query(`
-    INSERT INTO accounts (screen_name, auth_token, fetch_interval, platform)
-    VALUES (?, ?, ?, ?)
-  `).run(screenName, authToken, fetchInterval, platform);
+    INSERT INTO accounts (screen_name, auth_token, fetch_interval, platform, instance_url)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(screenName, authToken, fetchInterval, platform, instanceUrl);
   return db.query("SELECT * FROM accounts WHERE id = last_insert_rowid()").get() as AccountRow;
 }
 
@@ -159,16 +161,21 @@ export function deleteAccount(id: number) {
   const db = getDb();
   db.query("DELETE FROM tweets WHERE account_id = ?").run(id);
   db.query("DELETE FROM user_stats WHERE account_id = ?").run(id);
-  db.query("DELETE FROM github_repos WHERE account_id = ?").run(id);
-  db.query("DELETE FROM github_stats WHERE account_id = ?").run(id);
-  db.query("DELETE FROM github_contributions WHERE account_id = ?").run(id);
-  db.query("DELETE FROM github_repo_snapshots WHERE account_id = ?").run(id);
-  db.query("DELETE FROM github_traffic_clones WHERE account_id = ?").run(id);
-  db.query("DELETE FROM github_traffic_views WHERE account_id = ?").run(id);
-  db.query("DELETE FROM github_referrers WHERE account_id = ?").run(id);
-  db.query("DELETE FROM github_paths WHERE account_id = ?").run(id);
   db.query("DELETE FROM github_release_assets WHERE release_id IN (SELECT id FROM github_releases WHERE account_id = ?)").run(id);
   db.query("DELETE FROM github_releases WHERE account_id = ?").run(id);
+  db.query("DELETE FROM github_referrers WHERE account_id = ?").run(id);
+  db.query("DELETE FROM github_paths WHERE account_id = ?").run(id);
+  db.query("DELETE FROM github_traffic_clones WHERE account_id = ?").run(id);
+  db.query("DELETE FROM github_traffic_views WHERE account_id = ?").run(id);
+  db.query("DELETE FROM github_repo_snapshots WHERE account_id = ?").run(id);
+  db.query("DELETE FROM github_repos WHERE account_id = ?").run(id);
+  db.query("DELETE FROM github_contributions WHERE account_id = ?").run(id);
+  db.query("DELETE FROM github_stats WHERE account_id = ?").run(id);
+  db.query("DELETE FROM gitlab_release_assets WHERE release_id IN (SELECT id FROM gitlab_releases WHERE account_id = ?)").run(id);
+  db.query("DELETE FROM gitlab_releases WHERE account_id = ?").run(id);
+  db.query("DELETE FROM gitlab_project_snapshots WHERE account_id = ?").run(id);
+  db.query("DELETE FROM gitlab_projects WHERE account_id = ?").run(id);
+  db.query("DELETE FROM gitlab_stats WHERE account_id = ?").run(id);
   db.query("DELETE FROM accounts WHERE id = ?").run(id);
 }
 
@@ -401,4 +408,115 @@ export function getGithubReleases(accountId: number, repoId: number) {
 export function insertGithubReleaseAsset(a: { release_db_id: number; name: string; download_count: number; size: number; content_type: string | null; browser_download_url: string | null }) {
   getDb().query("DELETE FROM github_release_assets WHERE release_id = ?").run(a.release_db_id);
   getDb().query("INSERT INTO github_release_assets (release_id,name,download_count,size,content_type,browser_download_url) VALUES(?,?,?,?,?,?)").run(a.release_db_id, a.name, a.download_count, a.size, a.content_type, a.browser_download_url);
+}
+
+// ─── GitLab types ────────────────────────────────────────────────
+
+export interface GitlabStatsRow {
+  account_id: number;
+  public_projects: number;
+  followers: number;
+  following: number;
+  recorded_at: string;
+}
+
+export interface GitlabProjectRow {
+  id: number;
+  account_id: number;
+  project_id: number;
+  name: string;
+  path_with_namespace: string;
+  description: string | null;
+  language: string | null;
+  stars: number;
+  forks: number;
+  open_issues: number;
+  topics: string;
+  homepage: string | null;
+  is_fork: number;
+  pinned: number;
+  visibility: string;
+  created_at: string | null;
+  updated_at: string | null;
+  last_activity_at: string | null;
+}
+
+// ─── GitLab queries ──────────────────────────────────────────────
+
+export function getGitlabOverview(accountId: number) {
+  const db = getDb();
+  const latest = db.query("SELECT * FROM gitlab_stats WHERE account_id = ? ORDER BY recorded_at DESC LIMIT 1").get(accountId) as GitlabStatsRow | undefined;
+  const allProjects = db.query("SELECT * FROM gitlab_projects WHERE account_id = ? ORDER BY stars DESC").all(accountId) as GitlabProjectRow[];
+  const pinnedProjects = allProjects.filter(r => r.pinned);
+  const projects = pinnedProjects.length > 0 ? pinnedProjects : allProjects;
+  const totalStars = allProjects.reduce((s, r) => s + r.stars, 0);
+  const totalForks = allProjects.reduce((s, r) => s + r.forks, 0);
+  const languages = allProjects.filter(r => r.language).reduce((acc: Record<string, number>, r) => {
+    acc[r.language!] = (acc[r.language!] || 0) + 1;
+    return acc;
+  }, {});
+  const topProjects = [...allProjects].sort((a, b) => b.stars - a.stars).slice(0, 10);
+  return { stats: latest, projects, allProjects, totalStars, totalForks, totalProjects: allProjects.length, languages, topProjects };
+}
+
+export function getGitlabStatsTimeline(accountId: number) {
+  return getDb().query(
+    "SELECT recorded_at as date, public_projects, followers, following FROM gitlab_stats WHERE account_id = ? ORDER BY recorded_at ASC"
+  ).all(accountId) as { date: string; public_projects: number; followers: number; following: number }[];
+}
+
+export function getGitlabContributions(accountId: number, year?: number) {
+  const db = getDb();
+  if (year) {
+    return db.query("SELECT date, count FROM gitlab_contributions WHERE account_id = ? AND strftime('%Y', date) = ? ORDER BY date ASC").all(accountId, String(year)) as { date: string; count: number }[];
+  }
+  return db.query("SELECT date, count FROM gitlab_contributions WHERE account_id = ? ORDER BY date ASC").all(accountId) as { date: string; count: number }[];
+}
+
+export function upsertGitlabProject(project: Omit<GitlabProjectRow, "id" | "fetched_at" | "pinned">) {
+  getDb().query(`INSERT INTO gitlab_projects (account_id,project_id,name,path_with_namespace,description,language,stars,forks,open_issues,topics,homepage,is_fork,visibility,created_at,updated_at,last_activity_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(account_id,project_id) DO UPDATE SET stars=excluded.stars,forks=excluded.forks,open_issues=excluded.open_issues,topics=excluded.topics,language=excluded.language,description=excluded.description,visibility=excluded.visibility,updated_at=excluded.updated_at,last_activity_at=excluded.last_activity_at`).run(
+    project.account_id, project.project_id, project.name, project.path_with_namespace, project.description, project.language, project.stars, project.forks, project.open_issues, project.topics, project.homepage, project.is_fork, project.visibility, project.created_at, project.updated_at, project.last_activity_at);
+}
+
+export function setPinnedGitlabProjects(accountId: number, projectIds: number[]) {
+  const db = getDb();
+  const update = db.transaction(() => {
+    db.query("UPDATE gitlab_projects SET pinned = 0 WHERE account_id = ?").run(accountId);
+    if (projectIds.length > 0) {
+      const placeholders = projectIds.map(() => "?").join(",");
+      db.query(`UPDATE gitlab_projects SET pinned = 1 WHERE account_id = ? AND project_id IN (${placeholders})`).run(accountId, ...projectIds);
+    }
+  });
+  update();
+}
+
+export function insertGitlabStats(stats: Omit<GitlabStatsRow, "recorded_at">) {
+  getDb().query("INSERT INTO gitlab_stats (account_id, public_projects, followers, following) VALUES(?,?,?,?)").run(stats.account_id, stats.public_projects, stats.followers, stats.following);
+}
+
+export function upsertGitlabContribution(c: { account_id: number; date: string; count: number }) {
+  getDb().query("INSERT INTO gitlab_contributions (account_id, date, count) VALUES(?,?,?) ON CONFLICT(account_id,date) DO UPDATE SET count=excluded.count").run(c.account_id, c.date, c.count);
+}
+
+export function upsertGitlabProjectSnapshot(s: { account_id: number; project_id: number; stars: number; forks: number; open_issues: number; snapshot_date: string }) {
+  getDb().query(`INSERT INTO gitlab_project_snapshots (account_id,project_id,stars,forks,open_issues,snapshot_date) VALUES(?,?,?,?,?,?) ON CONFLICT(account_id,project_id,snapshot_date) DO UPDATE SET stars=excluded.stars,forks=excluded.forks,open_issues=excluded.open_issues`).run(
+    s.account_id, s.project_id, s.stars, s.forks, s.open_issues, s.snapshot_date);
+}
+
+export function getGitlabProjectSnapshots(accountId: number, projectId: number) {
+  return getDb().query("SELECT stars, forks, open_issues, snapshot_date as date FROM gitlab_project_snapshots WHERE account_id = ? AND project_id = ? ORDER BY snapshot_date ASC").all(accountId, projectId) as { stars: number; forks: number; open_issues: number; date: string }[];
+}
+
+export function upsertGitlabRelease(r: { account_id: number; project_id: number; release_tag: string; name: string | null; description: string | null; released_at: string | null; created_at: string | null }) {
+  getDb().query(`INSERT INTO gitlab_releases (account_id,project_id,release_tag,name,description,released_at,created_at) VALUES(?,?,?,?,?,?,?) ON CONFLICT(account_id,project_id,release_tag) DO UPDATE SET name=excluded.name,description=excluded.description,released_at=excluded.released_at,created_at=excluded.created_at`).run(
+    r.account_id, r.project_id, r.release_tag, r.name, r.description, r.released_at, r.created_at);
+}
+
+export function getGitlabReleases(accountId: number, projectId: number) {
+  return getDb().query("SELECT * FROM gitlab_releases WHERE account_id = ? AND project_id = ? ORDER BY released_at DESC").all(accountId, projectId) as any[];
+}
+
+export function insertGitlabReleaseAsset(a: { release_db_id: number; name: string; download_count: number; size: number; file_type: string | null; url: string | null }) {
+  getDb().query("DELETE FROM gitlab_release_assets WHERE release_id = ?").run(a.release_db_id);
+  getDb().query("INSERT INTO gitlab_release_assets (release_id,name,download_count,size,file_type,url) VALUES(?,?,?,?,?,?)").run(a.release_db_id, a.name, a.download_count, a.size, a.file_type, a.url);
 }

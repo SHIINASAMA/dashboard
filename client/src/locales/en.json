@@ -15,6 +15,7 @@
     "overview": "Overview",
     "x": "X",
     "github": "GitHub",
+    "gitlab": "GitLab",
     "settings": "Settings"
   },
   "badge": {
@@ -23,6 +24,7 @@
     "stale": "Stale",
     "fork": "Fork",
     "github": "GitHub",
+    "gitlab": "GitLab",
     "gh": "GH",
     "x": "X",
     "yes": "Yes",
@@ -30,11 +32,11 @@
   },
   "overview": {
     "heading": "Overview",
-    "bothPlatforms": "2 platforms",
+    "bothPlatforms": "3 platforms",
     "platformX": "X",
     "platformGitHub": "GitHub",
     "description_accounts_other": "{{count}} accounts across {{platforms}}",
-    "description_addPrompt": "Add X or GitHub accounts to start tracking",
+    "description_addPrompt": "Add X, GitHub or GitLab accounts to start tracking",
     "noAccounts": "No accounts configured — add one to see it here",
     "xHeading": "X (Twitter)",
     "xNoAccounts": "No X accounts configured. Add one in the X page to see analytics.",
@@ -42,6 +44,7 @@
     "githubHeading": "GitHub",
     "githubNoAccounts": "No GitHub accounts configured. Add one in the GitHub page to see stats.",
     "githubAccounts_other": "{{count}} accounts",
+    "gitlabHeading": "GitLab",
     "noGithubAccounts": "No GitHub accounts",
     "stats": {
       "totalTweets": "Total Tweets",
@@ -69,7 +72,8 @@
       "noEngagementData": "No engagement data yet. Add an X account and fetch tweets to populate this chart.",
       "noTweets": "No tweets yet. Add an X account and fetch tweets to see your top content here."
     },
-    "pinnedRepos": "Pinned Repositories"
+    "pinnedRepos": "Pinned Repositories",
+    "pinnedProjects": "Pinned Projects"
   },
   "x": {
     "heading": "X (Twitter)",
@@ -209,6 +213,83 @@
     "noPopularContent": "No popular content data yet. More data will appear after additional fetches.",
     "noReleases": "No releases found. Requires a classic PAT with repo scope."
   },
+  "gitlab": {
+    "heading": "GitLab",
+    "accounts_one": "1 account configured",
+    "accounts_other": "{{count}} accounts configured",
+    "description": "Track projects, stars, and activity",
+    "addAccount": "Add GitLab Account",
+    "addFirstAccount": "Add Your First GitLab Account",
+    "configuredAccounts": "Configured Accounts",
+    "noAccounts": "No accounts yet",
+    "emptyState": "No GitLab accounts yet. Add an account to see project stats, stars, fork counts, language distribution, and activity data.",
+    "whatYouCanTrack": "What you can track",
+    "preview": {
+      "stars": "Project Stars",
+      "starsDesc": "Track which projects are most popular",
+      "forks": "Forks & Issues",
+      "forksDesc": "Monitor fork counts and open issues",
+      "followerGrowth": "Follower Growth",
+      "followerGrowthDesc": "Track follower counts over time",
+      "languages": "Languages",
+      "languagesDesc": "Language distribution across projects"
+    },
+    "accountCard": {
+      "interval": "Interval: every {{minutes}}m",
+      "last": "Last: {{date}}",
+      "fetchNow": "Fetch now",
+      "delete": "Delete"
+    }
+  },
+  "gitlabDetail": {
+    "notFound": "Account not found",
+    "backToGitLab": "Back to GitLab",
+    "loadingGitLabData": "Loading GitLab data...",
+    "fetchInterval": "Fetch interval: every {{minutes}}m",
+    "lastFetched": "Last fetched: {{date}}",
+    "fetchNow": "Fetch Now",
+    "fetching": "Fetching...",
+    "disable": "Disable",
+    "enable": "Enable",
+    "delete": "Delete",
+    "deleteConfirm": "Delete {{name}} and all its data?",
+    "projectsHeading": "Projects",
+    "managePins": "Manage",
+    "noPinnedProjects": "No pinned projects yet. Use Manage to pin projects you want to track.",
+    "projectsDesc": "Click any project for detailed insights: star history and releases",
+    "projectsDescPinned": "Showing pinned projects. Use Manage to add or remove projects.",
+    "contributionCalendar": "Activity",
+    "contributionDesc": "Push events from the events API",
+    "contributions": "{{date}}: {{count}} push events",
+    "languages": "Languages",
+    "languagesDesc": "Distribution across your projects",
+    "noContributionData": "No activity data. Add a GitLab PAT to fetch events.",
+    "noLanguageData": "No language data.",
+    "noData": "No data yet",
+    "noDataDesc": "Trigger a fetch from the detail page to retrieve data.",
+    "less": "Less",
+    "more": "More",
+    "projects": "Projects",
+    "totalStars": "Total Stars",
+    "totalForks": "Total Forks",
+    "followers": "Followers"
+  },
+  "projectDetail": {
+    "notFound": "Project not found",
+    "backToAccount": "Back to account",
+    "open": "Open",
+    "stars": "Stars",
+    "forks": "Forks",
+    "openIssues": "Open Issues",
+    "starHistory": "Star History",
+    "starHistoryDesc": "Star count over time (recorded per fetch)",
+    "releasesDownloads": "Releases",
+    "releasesDownloadsDesc": "Release tags",
+    "releases": "Releases",
+    "onlyOneDataPoint": "Only one data point. Run more fetches to build a star history.",
+    "noStarHistory": "No star history yet. Data is recorded with each fetch.",
+    "noReleases": "No releases found."
+  },
   "settings": {
     "heading": "Settings",
     "description": "Manage appearance and preferences.",
@@ -234,12 +315,20 @@
     "cancel": "Cancel",
     "xTwitter": "X (Twitter)",
     "github": "GitHub",
+    "gitlab": "GitLab",
+    "instanceUrl": "Instance URL (optional)",
+    "placeholderInstanceUrl": "https://gitlab.com",
+    "helpInstanceUrl": "Leave blank for gitlab.com, or enter your self-hosted instance URL",
     "placeholderGithubUsername": "e.g. torvalds",
+    "placeholderGitlabUsername": "e.g. your-username",
     "placeholderXUsername": "e.g. elonmusk",
     "placeholderGithubToken": "ghp_...",
+    "placeholderGitlabToken": "glpat-...",
     "placeholderXToken": "Your X auth_token cookie",
     "helpGithub": "GitHub Personal Access Token (classic) with repo scope. Fine-grained tokens don't support traffic data.",
+    "helpGitlab": "GitLab Personal Access Token with read_api, read_user, and read_repository scopes.",
     "helpX": "From X.com cookies → auth_token. Keep this private.",
-    "howToCreateToken": "Create a classic token with pre-selected scopes →"
+    "howToCreateToken": "Create a classic token with pre-selected scopes →",
+    "howToCreateGitlabToken": "Create a token →"
   }
 }
