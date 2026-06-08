@@ -1,9 +1,9 @@
 import { useQuery, useQueries } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { api, type OverviewStats, type TimelineData, type Account, type GithubOverview } from "../api";
+import { api, type OverviewStats, type TimelineData, type Account } from "../api";
 import { StatCard } from "../components/StatCard";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -26,6 +26,35 @@ const LANG_COLORS: LangColors = {
 };
 function languageColor(lang: string): string {
   return LANG_COLORS[lang] ?? "#6e7681";
+}
+
+// ── tiny SVG icons reused across platforms ──────────────────────
+function XIcon() {
+  return <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>;
+}
+function GithubIcon() {
+  return <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" /></svg>;
+}
+function GitlabIcon() {
+  return <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M22.65 14.39L12 22.13 1.35 14.39a.84.84 0 0 1-.3-.94l1.22-3.78 2.44-7.51A.42.42 0 0 1 4.82 2a.43.43 0 0 1 .58 0 .42.42 0 0 1 .11.18l2.44 7.49h8.1l2.44-7.51A.42.42 0 0 1 18.6 2a.43.43 0 0 1 .58 0 .42.42 0 0 1 .11.18l2.44 7.51L23 13.45a.84.84 0 0 1-.35.94z" /></svg>;
+}
+
+// ── shared repo/project chip ────────────────────────────────────
+function RepoChip({ name, language, stars, forks, onClick }: {
+  name: string; language: string | null; stars: number; forks: number; onClick: () => void;
+}) {
+  return (
+    <button onClick={onClick}
+      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-left min-w-0"
+    >
+      {language && <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: languageColor(language) }} />}
+      <span className="text-xs font-medium truncate">{name}</span>
+      <span className="text-[10px] text-[var(--muted-foreground)] shrink-0 flex items-center gap-1 ml-auto">
+        <span className="flex items-center gap-0.5"><Star size={10} /> {stars.toLocaleString()}</span>
+        <span className="flex items-center gap-0.5"><GitFork size={10} /> {forks.toLocaleString()}</span>
+      </span>
+    </button>
+  );
 }
 
 export function Overview() {
@@ -55,8 +84,8 @@ export function Overview() {
   });
 
   const allAccounts = accountsData?.accounts || [];
-  const ghAccounts = allAccounts.filter((a: Account) => a.platform === "github");
   const xAccounts = allAccounts.filter((a: Account) => a.platform === "twitter");
+  const ghAccounts = allAccounts.filter((a: Account) => a.platform === "github");
   const glAccounts = allAccounts.filter((a: Account) => a.platform === "gitlab");
 
   const ghOverviews = useQueries({
@@ -79,243 +108,168 @@ export function Overview() {
     return <div className="text-center py-12 text-[var(--muted-foreground)]">{t("common.loading")}</div>;
   }
 
+  // ── aggregate GH stats across all accounts ──────────────────
+  const ghAllRepos = ghOverviews.flatMap((o) => o.data?.allRepos ?? []);
+  const ghPinned = ghAllRepos.filter((r) => r.pinned);
+  const ghTotalStars = ghAllRepos.reduce((s, r) => s + r.stars, 0);
+  const ghTotalForks = ghAllRepos.reduce((s, r) => s + r.forks, 0);
+
+  // ── aggregate GL stats across all accounts ──────────────────
+  const glAllProjects = glOverviews.flatMap((o) => o.data?.allProjects ?? []);
+  const glPinned = glAllProjects.filter((p) => p.pinned);
+  const glTotalStars = glAllProjects.reduce((s, p) => s + p.stars, 0);
+  const glTotalForks = glAllProjects.reduce((s, p) => s + p.forks, 0);
+
   return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-xl font-semibold mb-1">{t("overview.heading")}</h2>
-        <p className="text-sm text-[var(--muted-foreground)]">
-          {allAccounts.length > 0
-            ? t("overview.description_accounts_other", { count: allAccounts.length, platforms: t("overview.bothPlatforms") })
-            : t("overview.description_addPrompt")}
-        </p>
+    <div className="space-y-4">
+      {/* ── header ── */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">{t("overview.heading")}</h2>
+          {allAccounts.length === 0 && (
+            <p className="text-xs text-[var(--muted-foreground)]">{t("overview.description_addPrompt")}</p>
+          )}
+        </div>
+        {allAccounts.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {allAccounts.map((acc) => (
+              <Badge key={acc.id} className="text-[10px] px-1.5 py-0.5">
+                {acc.platform === "twitter" ? `@${acc.screen_name}` : acc.screen_name}
+                {acc.error_message && <span className="text-red-500 ml-0.5">!</span>}
+              </Badge>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* ── All Accounts ── */}
-      {allAccounts.length > 0 && (
-        <div className="flex flex-wrap gap-3 min-h-[40px]">
-          {allAccounts.map((acc) => (
-            <button
-              key={acc.id}
-              onClick={() => navigate(acc.platform === "twitter" ? `/x/${acc.id}` : acc.platform === "github" ? `/github/${acc.id}` : `/gitlab/${acc.id}`)}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-sm"
-            >
-              <span className="font-semibold">{acc.platform === "twitter" ? `@${acc.screen_name}` : acc.screen_name}</span>
-              <Badge className="text-[10px] px-1.5">{acc.platform === "twitter" ? t("badge.x") : acc.platform === "github" ? t("badge.github") : t("badge.gitlab")}</Badge>
-              {acc.error_message && <span className="text-red-500">!</span>}
-              <ArrowUpRight size={12} className="text-[var(--muted-foreground)]" />
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* ── X (Twitter) Data ── */}
+      {/* ── X (Twitter) ── */}
       {xAccounts.length > 0 && (
-        <section className="space-y-6">
-          <div>
-            <h3 className="text-base font-semibold flex items-center gap-2">
-              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
-              {t("overview.xHeading")}
-            </h3>
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold flex items-center gap-1.5 text-[var(--muted-foreground)]"><XIcon /> {t("overview.xHeading")}</h3>
+
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+            <StatCard title={t("overview.stats.totalTweets")} value={stats?.total_tweets ?? 0} icon={<MessageSquare size={16} />} description={stats ? t("overview.stats.today", { count: stats.todayTweets }) : undefined} />
+            <StatCard title={t("overview.stats.totalRetweets")} value={stats?.total_retweets ?? 0} icon={<Repeat2 size={16} />} description={stats ? t("overview.stats.today", { count: stats.todayRetweets }) : undefined} />
+            <StatCard title={t("overview.stats.avgEngagement")} value={stats?.avgEngagement ?? "0"} icon={<TrendingUp size={16} />} description={t("overview.stats.perTweet")} />
+            <StatCard title={t("overview.stats.totalViews")} value={stats?.total_views ?? 0} icon={<Eye size={16} />} />
+            <StatCard title={t("overview.stats.followers")} value={stats?.followersCount ?? 0} icon={<TrendingUp size={16} />} description={stats ? t("overview.stats.following", { count: stats.followingCount }) : undefined} />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard title={t("overview.stats.totalTweets")} value={stats?.total_tweets ?? 0} icon={<MessageSquare size={20} />} description={stats ? t("overview.stats.today", { count: stats.todayTweets }) : t("overview.stats.dash")} />
-            <StatCard title={t("overview.stats.totalRetweets")} value={stats?.total_retweets ?? 0} icon={<Repeat2 size={20} />} description={stats ? t("overview.stats.today", { count: stats.todayRetweets }) : t("overview.stats.dash")} />
-            <StatCard title={t("overview.stats.avgEngagement")} value={stats?.avgEngagement ?? "0"} icon={<TrendingUp size={20} />} description={t("overview.stats.perTweet")} />
-            <StatCard title={t("overview.stats.totalViews")} value={stats?.total_views ?? 0} icon={<Eye size={20} />} />
-            <StatCard title={t("overview.stats.followers")} value={stats?.followersCount ?? 0} icon={<TrendingUp size={20} />} description={stats ? t("overview.stats.following", { count: stats.followingCount }) : t("overview.stats.dash")} />
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("overview.charts.tweetActivity")}</CardTitle>
-                <CardDescription>{t("overview.charts.tweetActivityDesc")}</CardDescription>
-              </CardHeader>
-              <CardContent>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+            <Card className="border-0 shadow-none bg-transparent">
+              <CardHeader className="pb-1"><CardTitle className="text-xs font-medium text-[var(--muted-foreground)]">{t("overview.charts.tweetActivity")}</CardTitle></CardHeader>
+              <CardContent className="p-0">
                 {timeline?.dailyTweets && timeline.dailyTweets.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={300}>
+                  <ResponsiveContainer width="100%" height={160}>
                     <BarChart data={timeline.dailyTweets}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                      <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                      <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
-                      <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }} />
-                      <Bar dataKey="tweets_count" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                      <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
+                      <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={30} />
+                      <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
+                      <Bar dataKey="tweets_count" fill="var(--primary)" radius={[3, 3, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="flex items-center justify-center h-[300px] text-sm text-[var(--muted-foreground)]">
-                    {t("overview.charts.noTweetData")}
-                  </div>
+                  <div className="flex items-center justify-center h-[160px] text-xs text-[var(--muted-foreground)]">{t("overview.charts.noTweetData")}</div>
                 )}
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("overview.charts.dailyEngagement")}</CardTitle>
-                <CardDescription>{t("overview.charts.dailyEngagementDesc")}</CardDescription>
-              </CardHeader>
-              <CardContent>
+            <Card className="border-0 shadow-none bg-transparent">
+              <CardHeader className="pb-1"><CardTitle className="text-xs font-medium text-[var(--muted-foreground)]">{t("overview.charts.dailyEngagement")}</CardTitle></CardHeader>
+              <CardContent className="p-0">
                 {timeline?.dailyTweets && timeline.dailyTweets.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={300}>
+                  <ResponsiveContainer width="100%" height={160}>
                     <AreaChart data={timeline.dailyTweets}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                      <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                      <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
-                      <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }} />
+                      <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
+                      <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={30} />
+                      <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
                       <Area type="monotone" dataKey="total_likes" stroke="#ec4899" fill="#ec489920" name={t("overview.charts.likes")} />
                       <Area type="monotone" dataKey="total_retweets" stroke="#3b82f6" fill="#3b82f620" name={t("overview.charts.retweets")} />
                     </AreaChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="flex items-center justify-center h-[300px] text-sm text-[var(--muted-foreground)]">
-                    {t("overview.charts.noEngagementData")}
-                  </div>
+                  <div className="flex items-center justify-center h-[160px] text-xs text-[var(--muted-foreground)]">{t("overview.charts.noEngagementData")}</div>
                 )}
               </CardContent>
             </Card>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("overview.charts.topLiked")}</CardTitle>
-              <CardDescription>{t("overview.charts.topLikedDesc")}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {topLiked && topLiked.length > 0 ? (
-                <div className="space-y-3">
-                  {topLiked.map((tweet) => (
-                    <div key={tweet.id} className="flex items-start gap-3 p-3 rounded-lg bg-[var(--muted)]">
-                      <Heart size={16} className="text-pink-500 mt-1 shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm line-clamp-2">{tweet.full_text}</p>
-                        <p className="text-xs text-[var(--muted-foreground)] mt-1">
-                          {new Date(tweet.created_at).toLocaleDateString()} · {tweet.favorite_count.toLocaleString()} {t("overview.charts.likes")} · {tweet.retweet_count.toLocaleString()} {t("overview.charts.retweets")}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+          {topLiked && topLiked.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[11px] font-medium text-[var(--muted-foreground)]">{t("overview.charts.topLiked")}</p>
+              {topLiked.slice(0, 3).map((tweet) => (
+                <div key={tweet.id} className="flex items-start gap-2 px-2.5 py-1.5 rounded-md bg-[var(--muted)] text-xs">
+                  <Heart size={12} className="text-pink-500 mt-0.5 shrink-0" />
+                  <span className="line-clamp-1 flex-1">{tweet.full_text}</span>
+                  <span className="text-[var(--muted-foreground)] shrink-0">{tweet.favorite_count.toLocaleString()}</span>
                 </div>
-              ) : (
-                <div className="flex items-center justify-center h-[120px] text-sm text-[var(--muted-foreground)]">
-                  {t("overview.charts.noTweets")}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              ))}
+            </div>
+          )}
         </section>
       )}
 
-      {/* ── GitHub Data ── */}
+      {/* ── GitHub ── */}
       {ghAccounts.length > 0 && (
-        <section className="space-y-4">
-          <div>
-            <h3 className="text-base font-semibold flex items-center gap-2">
-              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" /></svg>
-              {t("overview.githubHeading")}
-            </h3>
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold flex items-center gap-1.5 text-[var(--muted-foreground)]"><GithubIcon /> {t("overview.githubHeading")}</h3>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <StatCard title={t("overview.stats.repos")} value={ghAllRepos.length} icon={<GithubIcon />} />
+            <StatCard title={t("overview.stats.totalStars")} value={ghTotalStars} icon={<Star size={16} />} />
+            <StatCard title={t("overview.stats.totalForks")} value={ghTotalForks} icon={<GitFork size={16} />} />
+            <StatCard title={t("overview.stats.followers")} value={ghOverviews.reduce((s, o) => s + (o.data?.stats?.followers ?? 0), 0)} icon={<TrendingUp size={16} />} />
           </div>
 
-          {ghOverviews.some((o) => o.data?.repos?.length) && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">{t("overview.pinnedRepos")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {ghOverviews.map((result, i) => {
-                    const repos = result.data?.repos ?? [];
-                    if (repos.length === 0) return null;
-                    const acc = ghAccounts[i];
-                    return (
-                      <div key={acc.id}>
-                        <p className="text-xs text-[var(--muted-foreground)] mb-1.5 font-medium">{acc.screen_name}</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {repos.map((repo) => (
-                            <button key={repo.id} onClick={() => navigate(`/github/${acc.id}/repos/${repo.repo_id}`)}
-                              className="flex items-start gap-2 p-3 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-left">
-                              <div className="shrink-0 mt-0.5">
-                                {repo.language && (
-                                  <span className="block w-2.5 h-2.5 rounded-full mt-0.5" style={{ backgroundColor: languageColor(repo.language) }} />
-                                )}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <span className="text-sm font-medium block truncate">{repo.name}</span>
-                                <div className="flex items-center gap-2.5 mt-1 text-xs text-[var(--muted-foreground)]">
-                                  <span className="flex items-center gap-0.5"><Star size={11} /> {(repo.stars ?? 0).toLocaleString()}</span>
-                                  <span className="flex items-center gap-0.5"><GitFork size={11} /> {(repo.forks ?? 0).toLocaleString()}</span>
-                                </div>
-                              </div>
-                              <ArrowUpRight size={12} className="text-[var(--muted-foreground)] shrink-0 mt-0.5" />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
+          {ghPinned.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[11px] font-medium text-[var(--muted-foreground)]">{t("overview.pinnedRepos")}</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
+                {ghPinned.map((repo) => {
+                  const acc = ghAccounts.find((a) => a.id === repo.account_id);
+                  return (
+                    <RepoChip key={repo.id} name={repo.name} language={repo.language} stars={repo.stars} forks={repo.forks}
+                      onClick={() => navigate(`/github/${acc?.id ?? repo.account_id}/repos/${repo.repo_id}`)} />
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* ── GitLab ── */}
+      {glAccounts.length > 0 && (
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold flex items-center gap-1.5 text-[var(--muted-foreground)]"><GitlabIcon /> {t("overview.gitlabHeading")}</h3>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <StatCard title={t("overview.stats.projects")} value={glAllProjects.length} icon={<GitlabIcon />} />
+            <StatCard title={t("overview.stats.totalStars")} value={glTotalStars} icon={<Star size={16} />} />
+            <StatCard title={t("overview.stats.totalForks")} value={glTotalForks} icon={<GitFork size={16} />} />
+            <StatCard title={t("overview.stats.followers")} value={glOverviews.reduce((s, o) => s + (o.data?.stats?.followers ?? 0), 0)} icon={<TrendingUp size={16} />} />
+          </div>
+
+          {glPinned.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[11px] font-medium text-[var(--muted-foreground)]">{t("overview.pinnedProjects")}</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
+                {glPinned.map((p) => {
+                  const acc = glAccounts.find((a) => a.id === p.account_id);
+                  return (
+                    <RepoChip key={p.id} name={p.name} language={p.language} stars={p.stars} forks={p.forks}
+                      onClick={() => navigate(`/gitlab/${acc?.id ?? p.account_id}/projects/${p.project_id}`)} />
+                  );
+                })}
+              </div>
+            </div>
           )}
         </section>
       )}
 
       {allAccounts.length === 0 && (
-        <p className="text-sm text-[var(--muted-foreground)] italic">{t("overview.noAccounts")}</p>
-      )}
-
-      {/* ── GitLab Data ── */}
-      {glAccounts.length > 0 && (
-        <section className="space-y-4">
-          <div>
-            <h3 className="text-base font-semibold flex items-center gap-2">
-              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M22.65 14.39L12 22.13 1.35 14.39a.84.84 0 0 1-.3-.94l1.22-3.78 2.44-7.51A.42.42 0 0 1 4.82 2a.43.43 0 0 1 .58 0 .42.42 0 0 1 .11.18l2.44 7.49h8.1l2.44-7.51A.42.42 0 0 1 18.6 2a.43.43 0 0 1 .58 0 .42.42 0 0 1 .11.18l2.44 7.51L23 13.45a.84.84 0 0 1-.35.94z" /></svg>
-              {t("overview.gitlabHeading")}
-            </h3>
-          </div>
-
-          {glOverviews.some((o) => o.data?.projects?.length) && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">{t("overview.pinnedProjects")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {glOverviews.map((result, i) => {
-                    const projects = result.data?.projects ?? [];
-                    if (projects.length === 0) return null;
-                    const acc = glAccounts[i];
-                    return (
-                      <div key={acc.id}>
-                        <p className="text-xs text-[var(--muted-foreground)] mb-1.5 font-medium">{acc.screen_name}</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {projects.map((p) => (
-                            <button key={p.id} onClick={() => navigate(`/gitlab/${acc.id}/projects/${p.project_id}`)}
-                              className="flex items-start gap-2 p-3 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-left">
-                              <div className="shrink-0 mt-0.5">
-                                {p.language && (
-                                  <span className="block w-2.5 h-2.5 rounded-full mt-0.5" style={{ backgroundColor: languageColor(p.language) }} />
-                                )}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <span className="text-sm font-medium block truncate">{p.name}</span>
-                                <div className="flex items-center gap-2.5 mt-1 text-xs text-[var(--muted-foreground)]">
-                                  <span className="flex items-center gap-0.5"><Star size={11} /> {(p.stars ?? 0).toLocaleString()}</span>
-                                  <span className="flex items-center gap-0.5"><GitFork size={11} /> {(p.forks ?? 0).toLocaleString()}</span>
-                                </div>
-                              </div>
-                              <ArrowUpRight size={12} className="text-[var(--muted-foreground)] shrink-0 mt-0.5" />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </section>
+        <p className="text-xs text-[var(--muted-foreground)] italic">{t("overview.noAccounts")}</p>
       )}
     </div>
   );
