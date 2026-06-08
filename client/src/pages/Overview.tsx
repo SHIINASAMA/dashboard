@@ -133,8 +133,8 @@ export function Overview() {
         {allAccounts.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {allAccounts.map((acc) => (
-              <Badge key={acc.id} className="text-[10px] px-1.5 py-0.5">
-                {acc.platform === "twitter" ? `@${acc.screen_name}` : acc.screen_name}
+              <Badge key={acc.id} className="text-[10px] px-1.5 py-0.5" variant="outline">
+                {acc.platform === "twitter" ? `X · @${acc.screen_name}` : acc.platform === "github" ? `GH · ${acc.screen_name}` : `GL · ${acc.screen_name}`}
                 {acc.error_message && <span className="text-red-500 ml-0.5">!</span>}
               </Badge>
             ))}
