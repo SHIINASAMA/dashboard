@@ -13,7 +13,8 @@ const accountsRouter = new Hono();
 
 accountsRouter.get("/", (c) => {
   const accounts = getAccounts();
-  const overview = getOverviewStats(accounts.map((a) => a.id));
+  const twitterIds = accounts.filter((a) => a.platform === "twitter").map((a) => a.id);
+  const overview = getOverviewStats(twitterIds.length > 0 ? twitterIds : []);
   return c.json({ accounts, overview });
 });
 

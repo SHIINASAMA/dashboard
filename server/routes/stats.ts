@@ -4,6 +4,7 @@ import {
   getTimelineStats,
   getTopTweets,
   getCalendarData,
+  getDb,
 } from "../db";
 
 function parseAccountIds(c: any): number[] | undefined {
@@ -12,11 +13,17 @@ function parseAccountIds(c: any): number[] | undefined {
   return raw.split(",").map(Number).filter(Boolean);
 }
 
+function getTwitterAccountIds(): number[] {
+  const rows = getDb().query("SELECT id FROM accounts WHERE platform = 'twitter'").all() as { id: number }[];
+  return rows.map(r => r.id);
+}
+
 const statsRouter = new Hono();
 
 statsRouter.get("/overview", (c) => {
   const accountIds = parseAccountIds(c);
-  const stats = getOverviewStats(accountIds);
+  const ids = accountIds?.length ? accountIds : getTwitterAccountIds();
+  const stats = getOverviewStats(ids);
   return c.json(stats);
 });
 
