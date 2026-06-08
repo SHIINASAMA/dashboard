@@ -112,7 +112,7 @@ export default function AddAccountForm({ onClose, defaultPlatform = "twitter" }:
             )}
             {platform === "gitlab" && (
               <p className="text-xs mt-1.5">
-                <a href={`${instanceUrl || "https://gitlab.com"}/-/user_settings/personal_access_tokens`} target="_blank" rel="noopener noreferrer"
+                <a href={`${instanceUrl || "https://gitlab.com"}/-/user_settings/personal_access_tokens?name=Dashboard&scopes=read_api,read_user,read_repository`} target="_blank" rel="noopener noreferrer"
                   className="text-[var(--primary)] hover:underline">
                   {t("addAccountForm.howToCreateGitlabToken")}
                 </a>
