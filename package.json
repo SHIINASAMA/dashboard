@@ -1,7 +1,11 @@
 {
   "name": "x-kit",
-  "module": "index.ts",
   "type": "module",
+  "scripts": {
+    "server": "bun run server/index.ts",
+    "client": "bun run --cwd client dev",
+    "dev": "bun run server & bun run client"
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/fs-extra": "^11.0.4"
@@ -14,8 +18,10 @@
     "axios": "^1.7.9",
     "dayjs": "^1.11.13",
     "fs-extra": "^11.2.0",
+    "hono": "^4.7.6",
     "lodash": "^4.17.21",
     "twitter-api-v2": "^1.18.2",
-    "twitter-openapi-typescript": "^0.0.45"
+    "twitter-openapi-typescript": "^0.0.45",
+    "zod": "^3.24.4"
   }
 }

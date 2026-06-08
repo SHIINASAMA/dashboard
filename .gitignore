@@ -39,3 +39,8 @@ Untitled*.ipynb
 node_modules
 .env
 node_modules/*
+
+# Dashboard
+/data/
+client/node_modules/
+client/dist/
