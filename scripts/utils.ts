@@ -1,16 +1,21 @@
 import { TwitterOpenApi } from "twitter-openapi-typescript";
-import axios from "axios";
 import { TwitterApi } from 'twitter-api-v2';
+
+function getProxyUrl(): string | undefined {
+  return process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.https_proxy || process.env.http_proxy;
+}
 
 export const _xClient = async (TOKEN: string) => {
   console.log("🚀 ~ const_xClient= ~ TOKEN:", TOKEN)
-  const resp = await axios.get("https://x.com/manifest.json", {
-    headers: {
-      cookie: `auth_token=${TOKEN}`,
-    },
+  const proxy = getProxyUrl();
+  const resp = await fetch("https://x.com/manifest.json", {
+    headers: { cookie: `auth_token=${TOKEN}`, "User-Agent": "x-kit-dashboard" },
+    tls: { rejectUnauthorized: false },
+    proxy: proxy,
   });
-  
-  const resCookie = resp.headers["set-cookie"] as string[];
+  if (!resp.ok) throw new Error(`x.com manifest: ${resp.status}`);
+
+  const resCookie = resp.headers.getSetCookie?.() ?? [];
   const cookieObj = resCookie.reduce((acc: Record<string, string>, cookie: string) => {
     const [name, value] = cookie.split(";")[0].split("=");
     acc[name] = value;
@@ -29,13 +34,15 @@ export const XAuthClient = () => _xClient(process.env.AUTH_TOKEN!);
 
 
 export const login = async (AUTH_TOKEN: string) => {
-  const resp = await axios.get("https://x.com/manifest.json", {
-    headers: {
-      cookie: `auth_token=${AUTH_TOKEN}`,
-    },
+  const proxy = getProxyUrl();
+  const resp = await fetch("https://x.com/manifest.json", {
+    headers: { cookie: `auth_token=${AUTH_TOKEN}`, "User-Agent": "x-kit-dashboard" },
+    tls: { rejectUnauthorized: false },
+    proxy: proxy,
   });
-  
-  const resCookie = resp.headers["set-cookie"] as string[];
+  if (!resp.ok) throw new Error(`x.com manifest: ${resp.status}`);
+
+  const resCookie = resp.headers.getSetCookie?.() ?? [];
   const cookie = resCookie.reduce((acc: Record<string, string>, cookie: string) => {
     const [name, value] = cookie.split(";")[0].split("=");
     acc[name] = value;

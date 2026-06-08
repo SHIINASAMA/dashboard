@@ -22,7 +22,7 @@
     "hono": "^4.7.6",
     "lodash": "^4.17.21",
     "twitter-api-v2": "^1.18.2",
-    "twitter-openapi-typescript": "^0.0.45",
+    "twitter-openapi-typescript": "^0.0.56",
     "zod": "^3.24.4"
   }
 }
