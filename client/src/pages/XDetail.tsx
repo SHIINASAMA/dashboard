@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { api, type TimelineData } from "../api";
+import { formatDateTime } from "../lib/i18n";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import {
@@ -13,6 +15,7 @@ import {
 } from "recharts";
 
 export function XDetail() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -46,14 +49,14 @@ export function XDetail() {
   });
 
   if (isLoading) {
-    return <div className="text-center py-12 text-[var(--muted-foreground)]">Loading...</div>;
+    return <div className="text-center py-12 text-[var(--muted-foreground)]">{t("common.loading")}</div>;
   }
 
   if (!account) {
     return (
       <div className="text-center py-12">
-        <p className="text-[var(--muted-foreground)]">Account not found</p>
-        <button onClick={() => navigate("/x")} className="mt-4 text-sm text-[var(--primary)] hover:underline">Back to X</button>
+        <p className="text-[var(--muted-foreground)]">{t("xDetail.notFound")}</p>
+        <button onClick={() => navigate("/x")} className="mt-4 text-sm text-[var(--primary)] hover:underline">{t("xDetail.backToX")}</button>
       </div>
     );
   }
@@ -67,11 +70,11 @@ export function XDetail() {
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-semibold">@{account.screen_name}</h2>
-            {!account.is_active && <Badge>Inactive</Badge>}
+            {!account.is_active && <Badge>{t("badge.inactive")}</Badge>}
           </div>
           <p className="text-sm text-[var(--muted-foreground)]">
-            Fetch interval: every {account.fetch_interval}m
-            {account.last_fetched_at && ` • Last fetched: ${new Date(account.last_fetched_at).toLocaleString()}`}
+            {t("xDetail.fetchInterval", { minutes: account.fetch_interval })}
+            {account.last_fetched_at && ` • ${t("xDetail.lastFetched", { date: formatDateTime(account.last_fetched_at) })}`}
           </p>
         </div>
         <div className="ml-auto flex items-center gap-2">
@@ -80,7 +83,7 @@ export function XDetail() {
             disabled={triggerMutation.isPending}
             className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-sm disabled:opacity-40"
           >
-            <Play size={14} /> {triggerMutation.isPending ? "Fetching..." : "Fetch Now"}
+            <Play size={14} /> {triggerMutation.isPending ? t("xDetail.fetching") : t("xDetail.fetchNow")}
           </button>
           <button
             onClick={() => {
@@ -89,14 +92,14 @@ export function XDetail() {
               );
             }}
             className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors"
-            title={account.is_active ? "Disable" : "Enable"}
+            title={account.is_active ? t("xDetail.disable") : t("xDetail.enable")}
           >
             <RefreshCw size={16} />
           </button>
           <button
-            onClick={() => { if (confirm(`Delete @${account.screen_name} and all its data?`)) deleteMutation.mutate(); }}
+            onClick={() => { if (confirm(t("xDetail.deleteConfirm", { name: account.screen_name }))) deleteMutation.mutate(); }}
             className="p-2 rounded-lg bg-[var(--muted)] hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors text-red-500"
-            title="Delete"
+            title={t("xDetail.delete")}
           >
             <Trash2 size={16} />
           </button>
@@ -111,16 +114,16 @@ export function XDetail() {
 
       {account.stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold">{account.stats.followers_count?.toLocaleString() || "0"}</p><p className="text-xs text-[var(--muted-foreground)]">Followers</p></CardContent></Card>
-          <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold">{account.stats.following_count?.toLocaleString() || "0"}</p><p className="text-xs text-[var(--muted-foreground)]">Following</p></CardContent></Card>
-          <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold">{account.stats.tweet_count?.toLocaleString() || "0"}</p><p className="text-xs text-[var(--muted-foreground)]">Tweets</p></CardContent></Card>
+          <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold">{account.stats.followers_count?.toLocaleString() || "0"}</p><p className="text-xs text-[var(--muted-foreground)]">{t("xDetail.followers")}</p></CardContent></Card>
+          <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold">{account.stats.following_count?.toLocaleString() || "0"}</p><p className="text-xs text-[var(--muted-foreground)]">{t("xDetail.following")}</p></CardContent></Card>
+          <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold">{account.stats.tweet_count?.toLocaleString() || "0"}</p><p className="text-xs text-[var(--muted-foreground)]">{t("xDetail.tweets")}</p></CardContent></Card>
         </div>
       )}
 
       {timeline && timeline.dailyTweets.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
-            <CardHeader><CardTitle>Tweet Activity</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t("xDetail.tweetActivity")}</CardTitle></CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={timeline.dailyTweets}>
@@ -134,7 +137,7 @@ export function XDetail() {
             </CardContent>
           </Card>
           <Card>
-            <CardHeader><CardTitle>Engagement</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t("xDetail.engagement")}</CardTitle></CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={250}>
                 <AreaChart data={timeline.dailyTweets}>
@@ -142,8 +145,8 @@ export function XDetail() {
                   <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                   <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
                   <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }} />
-                  <Area type="monotone" dataKey="total_likes" stroke="#ec4899" fill="#ec489920" name="Likes" />
-                  <Area type="monotone" dataKey="total_retweets" stroke="#3b82f6" fill="#3b82f620" name="Retweets" />
+                  <Area type="monotone" dataKey="total_likes" stroke="#ec4899" fill="#ec489920" name={t("xDetail.likes")} />
+                  <Area type="monotone" dataKey="total_retweets" stroke="#3b82f6" fill="#3b82f620" name={t("xDetail.retweets")} />
                 </AreaChart>
               </ResponsiveContainer>
             </CardContent>
@@ -153,7 +156,7 @@ export function XDetail() {
 
       {tweets && tweets.data.length > 0 && (
         <Card>
-          <CardHeader><CardTitle>Recent Tweets</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{t("xDetail.recentTweets")}</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             {tweets.data.slice(0, 20).map((tweet) => (
               <div key={tweet.id} className="p-3 rounded-lg bg-[var(--muted)] space-y-2">

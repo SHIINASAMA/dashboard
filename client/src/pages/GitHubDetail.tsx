@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { api, type GithubOverview, type GithubContribution, type GithubRepo } from "../api";
+import { formatDateTime } from "../lib/i18n";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { StatCard } from "../components/StatCard";
@@ -16,6 +18,7 @@ function GithubInline() {
 }
 
 function GithubHeatmap({ data }: { data: GithubContribution[] }) {
+  const { t } = useTranslation();
   const dayMap = new Map(data.map((d) => [d.date, d.count]));
   const year = new Date().getFullYear();
   const startDate = new Date(year, 0, 1);
@@ -49,19 +52,19 @@ function GithubHeatmap({ data }: { data: GithubContribution[] }) {
           <div key={wi} className="flex flex-col gap-0.5">
             {week.map((day) => (
               <div key={day.date} className={`w-3 h-3 rounded-sm ${getColor(day.count)}`}
-                title={`${day.date}: ${day.count} contributions`} />
+                title={t("githubDetail.contributions", { date: day.date, count: day.count })} />
             ))}
           </div>
         ))}
       </div>
       <div className="flex items-center gap-1 mt-2 justify-end text-xs text-[var(--muted-foreground)]">
-        <span>Less</span>
+        <span>{t("githubDetail.less")}</span>
         <div className="w-3 h-3 rounded-sm bg-[var(--muted)]" />
         <div className="w-3 h-3 rounded-sm bg-green-200 dark:bg-green-900" />
         <div className="w-3 h-3 rounded-sm bg-green-400 dark:bg-green-700" />
         <div className="w-3 h-3 rounded-sm bg-green-500 dark:bg-green-500" />
         <div className="w-3 h-3 rounded-sm bg-green-700 dark:bg-green-400" />
-        <span>More</span>
+        <span>{t("githubDetail.more")}</span>
       </div>
     </div>
   );
@@ -70,6 +73,7 @@ function GithubHeatmap({ data }: { data: GithubContribution[] }) {
 const COLORS = ["#3b82f6", "#ec4899", "#f59e0b", "#10b981", "#8b5cf6", "#14b8a6", "#f97316", "#6366f1"];
 
 export function GitHubDetail() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -104,14 +108,14 @@ export function GitHubDetail() {
   });
 
   if (accountLoading) {
-    return <div className="text-center py-12 text-[var(--muted-foreground)]">Loading...</div>;
+    return <div className="text-center py-12 text-[var(--muted-foreground)]">{t("common.loading")}</div>;
   }
 
   if (!account) {
     return (
       <div className="text-center py-12">
-        <p className="text-[var(--muted-foreground)]">Account not found</p>
-        <button onClick={() => navigate("/github")} className="mt-4 text-sm text-[var(--primary)] hover:underline">Back to GitHub</button>
+        <p className="text-[var(--muted-foreground)]">{t("githubDetail.notFound")}</p>
+        <button onClick={() => navigate("/github")} className="mt-4 text-sm text-[var(--primary)] hover:underline">{t("githubDetail.backToGitHub")}</button>
       </div>
     );
   }
@@ -127,25 +131,25 @@ export function GitHubDetail() {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-semibold">{account.screen_name}</h2>
-              {!account.is_active && <Badge>Inactive</Badge>}
+              {!account.is_active && <Badge>{t("badge.inactive")}</Badge>}
             </div>
             <p className="text-sm text-[var(--muted-foreground)]">
-              Fetch interval: every {account.fetch_interval}m
-              {account.last_fetched_at && ` • Last fetched: ${new Date(account.last_fetched_at).toLocaleString()}`}
+              {t("githubDetail.fetchInterval", { minutes: account.fetch_interval })}
+              {account.last_fetched_at && ` • ${t("githubDetail.lastFetched", { date: formatDateTime(account.last_fetched_at) })}`}
             </p>
           </div>
         </div>
         <div className="ml-auto flex items-center gap-2">
           <button onClick={() => triggerMutation.mutate()} disabled={triggerMutation.isPending}
             className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-sm disabled:opacity-40">
-            <Play size={14} /> {triggerMutation.isPending ? "Fetching..." : "Fetch Now"}
+            <Play size={14} /> {triggerMutation.isPending ? t("githubDetail.fetching") : t("githubDetail.fetchNow")}
           </button>
           <button onClick={() => { api.updateAccount(accountId, { isActive: !account.is_active }).then(() => queryClient.invalidateQueries({ queryKey: ["account", accountId] })); }}
-            className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors" title={account.is_active ? "Disable" : "Enable"}>
+            className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors" title={account.is_active ? t("githubDetail.disable") : t("githubDetail.enable")}>
             <RefreshCw size={16} />
           </button>
-          <button onClick={() => { if (confirm(`Delete ${account.screen_name} and all its data?`)) deleteMutation.mutate(); }}
-            className="p-2 rounded-lg bg-[var(--muted)] hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors text-red-500" title="Delete">
+          <button onClick={() => { if (confirm(t("githubDetail.deleteConfirm", { name: account.screen_name }))) deleteMutation.mutate(); }}
+            className="p-2 rounded-lg bg-[var(--muted)] hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors text-red-500" title={t("githubDetail.delete")}>
             <Trash2 size={16} />
           </button>
         </div>
@@ -158,21 +162,20 @@ export function GitHubDetail() {
       )}
 
       {overviewLoading ? (
-        <div className="text-center py-12 text-[var(--muted-foreground)]">Loading GitHub data...</div>
+        <div className="text-center py-12 text-[var(--muted-foreground)]">{t("githubDetail.loadingGitHubData")}</div>
       ) : overview && overview.stats ? (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard title="Repositories" value={overview.totalRepos} icon={<BookOpen size={20} />} />
-            <StatCard title="Total Stars" value={overview.totalStars} icon={<Star size={20} />} />
-            <StatCard title="Total Forks" value={overview.totalForks} icon={<GitFork size={20} />} />
-            <StatCard title="Followers" value={overview.stats.followers} icon={<Users size={20} />} />
+            <StatCard title={t("githubDetail.repositories")} value={overview.totalRepos} icon={<BookOpen size={20} />} />
+            <StatCard title={t("githubDetail.totalStars")} value={overview.totalStars} icon={<Star size={20} />} />
+            <StatCard title={t("githubDetail.totalForks")} value={overview.totalForks} icon={<GitFork size={20} />} />
+            <StatCard title={t("githubDetail.followers")} value={overview.stats.followers} icon={<Users size={20} />} />
           </div>
 
-          {/* Repos list — moved up for easy access */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><BookOpen size={18} /> Repositories</CardTitle>
-              <CardDescription>Click any repo for detailed insights: star history, traffic, referrers, releases</CardDescription>
+              <CardTitle className="flex items-center gap-2"><BookOpen size={18} /> {t("githubDetail.reposHeading")}</CardTitle>
+              <CardDescription>{t("githubDetail.reposDesc")}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
@@ -199,23 +202,22 @@ export function GitHubDetail() {
             </CardContent>
           </Card>
 
-          {/* github-readme-stats card */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><GithubInline /> GitHub Readme Stats</CardTitle>
-              <CardDescription>Auto-generated stats card from github-readme-stats-fast</CardDescription>
+              <CardTitle className="flex items-center gap-2"><GithubInline /> {t("githubDetail.readmeStats")}</CardTitle>
+              <CardDescription>{t("githubDetail.readmeStatsDesc")}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap justify-center gap-6">
                 <img
                   src={`https://github-readme-stats-fast.vercel.app/api?username=${account.screen_name}&show_icons=true&hide_border=true&bg_color=00000000&text_color=666&title_color=3b82f6&icon_color=3b82f6`}
-                  alt="GitHub Stats"
+                  alt={t("githubDetail.statsImgAlt")}
                   className="max-w-full h-auto"
                   loading="lazy"
                 />
                 <img
                   src={`https://github-readme-stats-fast.vercel.app/api/top-langs?username=${account.screen_name}&layout=compact&hide_border=true&bg_color=00000000&text_color=666&title_color=3b82f6`}
-                  alt="Top Languages"
+                  alt={t("githubDetail.languagesImgAlt")}
                   className="max-w-full h-auto"
                   loading="lazy"
                 />
@@ -225,19 +227,19 @@ export function GitHubDetail() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><GithubInline /> Contribution Calendar</CardTitle>
-              <CardDescription>Your GitHub contribution activity this year</CardDescription>
+              <CardTitle className="flex items-center gap-2"><GithubInline /> {t("githubDetail.contributionCalendar")}</CardTitle>
+              <CardDescription>{t("githubDetail.contributionDesc")}</CardDescription>
             </CardHeader>
             <CardContent>
               {contributions && contributions.length > 0 ? <GithubHeatmap data={contributions} />
-                : <p className="text-sm text-[var(--muted-foreground)] text-center py-8">No contribution data. Add a GitHub PAT to fetch contributions.</p>}
+                : <p className="text-sm text-[var(--muted-foreground)] text-center py-8">{t("githubDetail.noContributionData")}</p>}
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Code size={18} /> Languages</CardTitle>
-              <CardDescription>Distribution across your repos</CardDescription>
+              <CardTitle className="flex items-center gap-2"><Code size={18} /> {t("githubDetail.languages")}</CardTitle>
+              <CardDescription>{t("githubDetail.languagesDesc")}</CardDescription>
             </CardHeader>
             <CardContent>
               {Object.keys(overview.languages).length > 0 ? (
@@ -250,16 +252,16 @@ export function GitHubDetail() {
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <p className="text-sm text-[var(--muted-foreground)] text-center py-12">No language data.</p>
+                <p className="text-sm text-[var(--muted-foreground)] text-center py-12">{t("githubDetail.noLanguageData")}</p>
               )}
             </CardContent>
           </Card>
         </>
       ) : (
         <Card>
-          <CardHeader><CardTitle>No data yet</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{t("githubDetail.noData")}</CardTitle></CardHeader>
           <CardContent>
-            <p className="text-sm text-[var(--muted-foreground)]">Trigger a fetch from the detail page to retrieve data.</p>
+            <p className="text-sm text-[var(--muted-foreground)]">{t("githubDetail.noDataDesc")}</p>
           </CardContent>
         </Card>
       )}

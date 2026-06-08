@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { api, type Account } from "../api";
 import { Card, CardContent } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import AddAccountForm from "../components/AddAccountForm";
+import { formatDateTime } from "../lib/i18n";
 import { Plus, Play, Trash2, AlertCircle, ArrowUpRight, Star, GitFork, Users, BookOpen } from "lucide-react";
 
 function GithubIcon({ size }: { size?: number }) {
@@ -16,6 +18,7 @@ function GithubIcon({ size }: { size?: number }) {
 }
 
 export function GitHub() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showAddForm, setShowAddForm] = useState(false);
@@ -38,7 +41,7 @@ export function GitHub() {
   });
 
   if (isLoading) {
-    return <div className="text-center py-12 text-[var(--muted-foreground)]">Loading...</div>;
+    return <div className="text-center py-12 text-[var(--muted-foreground)]">{t("common.loading")}</div>;
   }
 
   return (
@@ -47,11 +50,11 @@ export function GitHub() {
         <div className="flex items-center gap-3">
           <GithubIcon size={24} />
           <div>
-            <h2 className="text-xl font-semibold">GitHub</h2>
+            <h2 className="text-xl font-semibold">{t("github.heading")}</h2>
             <p className="text-sm text-[var(--muted-foreground)]">
               {ghAccounts.length > 0
-                ? `${ghAccounts.length} account${ghAccounts.length > 1 ? "s" : ""} configured`
-                : "Track repositories, stars, and contributions"}
+                ? t("github.accounts_other", { count: ghAccounts.length })
+                : t("github.description")}
             </p>
           </div>
         </div>
@@ -59,41 +62,39 @@ export function GitHub() {
           onClick={() => setShowAddForm(true)}
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--primary)] text-white font-medium hover:opacity-90 transition-opacity"
         >
-          <Plus size={16} /> Add GitHub Account
+          <Plus size={16} /> {t("github.addAccount")}
         </button>
       </div>
 
-      {/* Preview cards — always show */}
       <div>
-        <h3 className="text-sm font-semibold mb-3">What you can track</h3>
+        <h3 className="text-sm font-semibold mb-3">{t("github.whatYouCanTrack")}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--card)]">
             <Star size={20} className="text-[var(--muted-foreground)] mb-2" />
-            <p className="text-sm font-medium">Repository Stars</p>
-            <p className="text-xs text-[var(--muted-foreground)]">Track which repos are most popular</p>
+            <p className="text-sm font-medium">{t("github.preview.stars")}</p>
+            <p className="text-xs text-[var(--muted-foreground)]">{t("github.preview.starsDesc")}</p>
           </div>
           <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--card)]">
             <GitFork size={20} className="text-[var(--muted-foreground)] mb-2" />
-            <p className="text-sm font-medium">Forks & Issues</p>
-            <p className="text-xs text-[var(--muted-foreground)]">Monitor fork counts and open issues</p>
+            <p className="text-sm font-medium">{t("github.preview.forks")}</p>
+            <p className="text-xs text-[var(--muted-foreground)]">{t("github.preview.forksDesc")}</p>
           </div>
           <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--card)]">
             <Users size={20} className="text-[var(--muted-foreground)] mb-2" />
-            <p className="text-sm font-medium">Follower Growth</p>
-            <p className="text-xs text-[var(--muted-foreground)]">Track follower counts over time</p>
+            <p className="text-sm font-medium">{t("github.preview.followerGrowth")}</p>
+            <p className="text-xs text-[var(--muted-foreground)]">{t("github.preview.followerGrowthDesc")}</p>
           </div>
           <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--card)]">
             <BookOpen size={20} className="text-[var(--muted-foreground)] mb-2" />
-            <p className="text-sm font-medium">Languages</p>
-            <p className="text-xs text-[var(--muted-foreground)]">Language distribution across repos</p>
+            <p className="text-sm font-medium">{t("github.preview.languages")}</p>
+            <p className="text-xs text-[var(--muted-foreground)]">{t("github.preview.languagesDesc")}</p>
           </div>
         </div>
       </div>
 
-      {/* Accounts */}
       <div>
         <h3 className="text-sm font-semibold mb-3">
-          {ghAccounts.length > 0 ? "Configured Accounts" : "No accounts yet"}
+          {ghAccounts.length > 0 ? t("github.configuredAccounts") : t("github.noAccounts")}
         </h3>
         {ghAccounts.length > 0 ? (
           <div className="space-y-3">
@@ -109,14 +110,14 @@ export function GitHub() {
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-semibold text-base">{account.screen_name}</span>
                           <ArrowUpRight size={14} className="text-[var(--muted-foreground)] opacity-0 group-hover:opacity-100 transition-opacity" />
-                          <Badge className="bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-800">GitHub</Badge>
-                          {!account.is_active && <Badge>Inactive</Badge>}
-                          {account.error_message && <Badge className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">Error</Badge>}
-                          {isStale && account.is_active ? <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">Stale</Badge> : null}
+                          <Badge className="bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-800">{t("badge.github")}</Badge>
+                          {!account.is_active && <Badge>{t("badge.inactive")}</Badge>}
+                          {account.error_message && <Badge className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">{t("badge.error")}</Badge>}
+                          {isStale && account.is_active ? <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">{t("badge.stale")}</Badge> : null}
                         </div>
                         <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-[var(--muted-foreground)]">
-                          <span>Interval: every {account.fetch_interval}m</span>
-                          {lastFetched && <span>Last: {lastFetched.toLocaleString()}</span>}
+                          <span>{t("github.accountCard.interval", { minutes: account.fetch_interval })}</span>
+                          {lastFetched && <span>{t("github.accountCard.last", { date: formatDateTime(lastFetched) })}</span>}
                         </div>
                         {account.error_message && (
                           <div className="flex items-center gap-1.5 mt-2 text-xs text-red-500">
@@ -129,14 +130,14 @@ export function GitHub() {
                           onClick={(e) => { e.stopPropagation(); triggerMutation.mutate(account.id); }}
                           disabled={triggerMutation.isPending}
                           className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors disabled:opacity-40"
-                          title="Fetch now"
+                          title={t("github.accountCard.fetchNow")}
                         >
                           <Play size={16} />
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(account.id); }}
                           className="p-2 rounded-lg bg-[var(--muted)] hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors text-red-500"
-                          title="Delete"
+                          title={t("github.accountCard.delete")}
                         >
                           <Trash2 size={16} />
                         </button>
@@ -153,13 +154,13 @@ export function GitHub() {
               <div className="flex flex-col items-center gap-3">
                 <GithubIcon size={32} />
                 <p className="text-sm text-[var(--muted-foreground)]">
-                  No GitHub accounts yet. Add an account to see repository stats, stars, fork counts, language distribution, and contribution heatmaps.
+                  {t("github.emptyState")}
                 </p>
                 <button
                   onClick={() => setShowAddForm(true)}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--primary)] text-white text-sm font-medium hover:opacity-90 transition-opacity"
                 >
-                  <Plus size={14} /> Add Your First GitHub Account
+                  <Plus size={14} /> {t("github.addFirstAccount")}
                 </button>
               </div>
             </CardContent>

@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { Allotment } from "allotment";
 import "allotment/dist/style.css";
+import { useTranslation } from "react-i18next";
 import { LayoutDashboard, PanelLeft, Settings } from "lucide-react";
 
 const SIDEBAR_KEY = "sidebar-state";
@@ -30,13 +31,8 @@ function GithubIcon({ size }: { size?: number }) {
   );
 }
 
-const NAV_ITEMS = [
-  { to: "/", label: "Overview", icon: LayoutDashboard },
-  { to: "/x", label: "X", icon: XIcon },
-  { to: "/github", label: "GitHub", icon: GithubIcon },
-] as const;
-
 export default function Layout() {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(loadVisible);
 
   const handleVisibleChange = useCallback((_index: number, v: boolean) => {
@@ -50,6 +46,12 @@ export default function Layout() {
       return !prev;
     });
   };
+
+  const NAV_ITEMS = [
+    { to: "/", label: t("nav.overview"), icon: LayoutDashboard },
+    { to: "/x", label: t("nav.x"), icon: XIcon },
+    { to: "/github", label: t("nav.github"), icon: GithubIcon },
+  ] as const;
 
   return (
     <div className="h-screen flex overflow-hidden bg-[var(--background)]">
@@ -73,11 +75,11 @@ export default function Layout() {
           <aside className="h-full border-r border-[var(--border)] bg-[var(--card)] flex flex-col overflow-y-auto">
             <div className="flex items-center gap-3 px-5 py-4 border-b border-[var(--border)] shrink-0">
               <LayoutDashboard size={20} className="shrink-0" />
-              <h1 className="text-lg font-semibold truncate">Dashboard</h1>
+              <h1 className="text-lg font-semibold truncate">{t("common.dashboard")}</h1>
               <button
                 onClick={toggle}
                 className="ml-auto p-1 rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] shrink-0"
-                title="Collapse sidebar"
+                title={t("common.collapseSidebar")}
               >
                 <PanelLeft size={16} />
               </button>
@@ -113,9 +115,9 @@ export default function Layout() {
                 }
               >
                 <Settings size={18} />
-                Settings
+                {t("nav.settings")}
               </NavLink>
-              <p className="text-xs text-[var(--muted-foreground)] px-3">&copy; 2026 Dashboard</p>
+              <p className="text-xs text-[var(--muted-foreground)] px-3">{t("common.copyright")}</p>
             </div>
           </aside>
         </Allotment.Pane>
@@ -126,7 +128,7 @@ export default function Layout() {
                 <button
                   onClick={toggle}
                   className="fixed left-3 top-1/2 -translate-y-1/2 z-10 p-1.5 rounded-r-md bg-[var(--card)] border border-[var(--border)] border-l-0 text-[var(--muted-foreground)] hover:text-[var(--foreground)] shadow-sm"
-                  title="Expand sidebar"
+                  title={t("common.expandSidebar")}
                 >
                   <PanelLeft size={18} />
                 </button>
