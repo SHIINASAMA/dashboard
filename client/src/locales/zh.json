@@ -155,6 +155,7 @@
     "followers": "粉丝",
     "reposHeading": "仓库",
     "reposDesc": "点击任意仓库查看详细洞察：星标历史、流量、引荐来源、发行版",
+    "reposDescPinned": "仅显示已置顶的仓库。置顶仓库以将其固定在此处。",
     "readmeStats": "GitHub Readme Stats",
     "readmeStatsDesc": "来自 github-readme-stats-fast 的自动生成统计卡片",
     "statsImgAlt": "GitHub 统计",

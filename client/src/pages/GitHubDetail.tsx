@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../co
 import { Badge } from "../components/ui/badge";
 import { StatCard } from "../components/StatCard";
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { ArrowLeft, ArrowUpRight, Play, RefreshCw, Trash2, AlertCircle, Star, GitFork, Code, Users, BookOpen } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Play, RefreshCw, Trash2, AlertCircle, Star, GitFork, Code, Users, BookOpen, Pin, PinOff } from "lucide-react";
 
 function GithubInline() {
   return (
@@ -78,6 +78,11 @@ export function GitHubDetail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const accountId = Number(id);
+
+  const handlePin = async (repo: GithubRepo) => {
+    await api.toggleRepoPin(repo.repo_id, accountId, !repo.pinned);
+    queryClient.invalidateQueries({ queryKey: ["github", "overview", accountId] });
+  };
 
   const { data: account, isLoading: accountLoading } = useQuery({
     queryKey: ["account", accountId],
@@ -175,19 +180,24 @@ export function GitHubDetail() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><BookOpen size={18} /> {t("githubDetail.reposHeading")}</CardTitle>
-              <CardDescription>{t("githubDetail.reposDesc")}</CardDescription>
+              <CardDescription>
+                {overview.allRepos && overview.allRepos.some(r => r.pinned)
+                  ? t("githubDetail.reposDescPinned")
+                  : t("githubDetail.reposDesc")}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
                 {overview.repos.map((repo: GithubRepo) => (
-                  <div key={repo.id} onClick={() => navigate(`/github/${accountId}/repos/${repo.repo_id}`)}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] cursor-pointer transition-colors"
+                  <div key={repo.id}
+                    className={`flex items-center gap-3 p-3 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] cursor-pointer transition-colors ${repo.pinned ? "ring-1 ring-[var(--primary)]/30" : ""}`}
                   >
                     <BookOpen size={16} className="text-[var(--muted-foreground)] shrink-0" />
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-0 flex-1" onClick={() => navigate(`/github/${accountId}/repos/${repo.repo_id}`)}>
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-medium">{repo.full_name}</span>
                         {repo.language && <Badge className="shrink-0">{repo.language}</Badge>}
+                        {repo.pinned ? <Pin size={12} className="text-[var(--primary)] shrink-0" /> : null}
                       </div>
                       {repo.description && <p className="text-xs text-[var(--muted-foreground)] mt-0.5 line-clamp-1">{repo.description}</p>}
                       <div className="flex items-center gap-3 text-xs text-[var(--muted-foreground)] mt-1">
@@ -195,7 +205,15 @@ export function GitHubDetail() {
                         <span className="flex items-center gap-1"><GitFork size={12} /> {repo.forks}</span>
                       </div>
                     </div>
-                    <ArrowUpRight size={14} className="text-[var(--muted-foreground)]" />
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handlePin(repo); }}
+                      className="p-1.5 rounded-md hover:bg-[var(--border)] transition-colors shrink-0"
+                      title={repo.pinned ? "Unpin" : "Pin"}
+                    >
+                      {repo.pinned
+                        ? <PinOff size={14} className="text-[var(--primary)]" />
+                        : <Pin size={14} className="text-[var(--muted-foreground)]" />}
+                    </button>
                   </div>
                 ))}
               </div>

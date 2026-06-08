@@ -3,6 +3,7 @@ import {
   getGithubOverview, getGithubStatsTimeline, getGithubContributions,
   getGithubRepoSnapshots, getGithubTrafficClones, getGithubTrafficViews,
   getGithubReferrers, getGithubPaths, getGithubReleases,
+  toggleRepoPin,
 } from "../db";
 
 const githubRouter = new Hono();
@@ -27,6 +28,15 @@ githubRouter.get("/contributions/:accountId", (c) => {
   const year = c.req.query("year") ? Number(c.req.query("year")) : undefined;
   const data = getGithubContributions(accountId, year);
   return c.json(data);
+});
+
+// ─── Repo pinning ──────────────────────────────────────────────
+
+githubRouter.put("/repos/:repoId/pin", async (c) => {
+  const repoId = Number(c.req.param("repoId"));
+  const { accountId, pinned } = await c.req.json() as { accountId: number; pinned: boolean };
+  toggleRepoPin(accountId, repoId, pinned ? 1 : 0);
+  return c.json({ ok: true });
 });
 
 // ─── Repo Insights ──────────────────────────────────────────────

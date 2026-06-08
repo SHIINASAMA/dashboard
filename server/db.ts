@@ -90,6 +90,7 @@ export interface GithubRepoRow {
   topics: string;
   homepage: string | null;
   is_fork: number;
+  pinned: number;
   created_at: string | null;
   updated_at: string | null;
   pushed_at: string | null;
@@ -285,15 +286,17 @@ export function getLatestUserStats(accountId: number) {
 export function getGithubOverview(accountId: number) {
   const db = getDb();
   const latest = db.query("SELECT * FROM github_stats WHERE account_id = ? ORDER BY recorded_at DESC LIMIT 1").get(accountId) as GithubStatsRow | undefined;
-  const repos = db.query("SELECT * FROM github_repos WHERE account_id = ? ORDER BY stars DESC").all(accountId) as GithubRepoRow[];
-  const totalStars = repos.reduce((s, r) => s + r.stars, 0);
-  const totalForks = repos.reduce((s, r) => s + r.forks, 0);
-  const languages = repos.filter(r => r.language).reduce((acc: Record<string, number>, r) => {
+  const allRepos = db.query("SELECT * FROM github_repos WHERE account_id = ? ORDER BY stars DESC").all(accountId) as GithubRepoRow[];
+  const pinnedRepos = allRepos.filter(r => r.pinned);
+  const repos = pinnedRepos.length > 0 ? pinnedRepos : allRepos;
+  const totalStars = allRepos.reduce((s, r) => s + r.stars, 0);
+  const totalForks = allRepos.reduce((s, r) => s + r.forks, 0);
+  const languages = allRepos.filter(r => r.language).reduce((acc: Record<string, number>, r) => {
     acc[r.language!] = (acc[r.language!] || 0) + 1;
     return acc;
   }, {});
-  const topRepos = repos.sort((a, b) => b.stars - a.stars).slice(0, 10);
-  return { stats: latest, repos, totalStars, totalForks, totalRepos: repos.length, languages, topRepos };
+  const topRepos = [...allRepos].sort((a, b) => b.stars - a.stars).slice(0, 10);
+  return { stats: latest, repos, allRepos, totalStars, totalForks, totalRepos: allRepos.length, languages, topRepos };
 }
 
 export function getGithubStatsTimeline(accountId: number) {
@@ -310,9 +313,13 @@ export function getGithubContributions(accountId: number, year?: number) {
   return db.query("SELECT date, count, level FROM github_contributions WHERE account_id = ? ORDER BY date ASC").all(accountId) as GithubContributionRow[];
 }
 
-export function upsertGithubRepo(repo: Omit<GithubRepoRow, "id" | "fetched_at">) {
+export function upsertGithubRepo(repo: Omit<GithubRepoRow, "id" | "fetched_at" | "pinned">) {
   getDb().query(`INSERT INTO github_repos (account_id,repo_id,name,full_name,description,language,stars,forks,open_issues,topics,homepage,is_fork,created_at,updated_at,pushed_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(account_id,repo_id) DO UPDATE SET stars=excluded.stars,forks=excluded.forks,open_issues=excluded.open_issues,topics=excluded.topics,language=excluded.language,description=excluded.description,pushed_at=excluded.pushed_at,updated_at=excluded.updated_at`).run(
     repo.account_id, repo.repo_id, repo.name, repo.full_name, repo.description, repo.language, repo.stars, repo.forks, repo.open_issues, repo.topics, repo.homepage, repo.is_fork, repo.created_at, repo.updated_at, repo.pushed_at);
+}
+
+export function toggleRepoPin(accountId: number, repoId: number, pinned: number) {
+  getDb().query("UPDATE github_repos SET pinned = ? WHERE account_id = ? AND repo_id = ?").run(pinned, accountId, repoId);
 }
 
 export function insertGithubStats(stats: Omit<GithubStatsRow, "recorded_at">) {

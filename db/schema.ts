@@ -236,6 +236,15 @@ const MIGRATIONS: { version: number; name: string; up: (db: Database) => void }[
       }
     },
   },
+
+  // ── Migration 4: add pinned column to github_repos ──────────────
+  {
+    version: 4,
+    name: "add pinned column to github_repos",
+    up(db) {
+      db.exec("ALTER TABLE github_repos ADD COLUMN pinned INTEGER DEFAULT 0");
+    },
+  },
 ];
 
 export function initSchema(db: Database) {

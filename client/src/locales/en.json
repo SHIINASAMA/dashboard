@@ -155,6 +155,7 @@
     "followers": "Followers",
     "reposHeading": "Repositories",
     "reposDesc": "Click any repo for detailed insights: star history, traffic, referrers, releases",
+    "reposDescPinned": "Showing pinned repos. Pin repos to keep them visible here.",
     "readmeStats": "GitHub Readme Stats",
     "readmeStatsDesc": "Auto-generated stats card from github-readme-stats-fast",
     "statsImgAlt": "GitHub Stats",
