@@ -64,13 +64,11 @@ export function Overview() {
       </div>
 
       <div className="flex flex-wrap gap-3 min-h-[40px]">
-        {accountsData?.accounts.map((acc) => (
-          <button key={acc.id} onClick={() => navigate(`/${acc.platform === "github" ? "github" : "x"}/${acc.id}`)}
+        {xAccounts.map((acc) => (
+          <button key={acc.id} onClick={() => navigate(`/x/${acc.id}`)}
             className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-sm">
-            <span className={acc.platform === "github" ? "" : "font-semibold"}>{acc.platform === "github" ? "" : "@"}{acc.screen_name}</span>
-            <Badge className={acc.platform === "github" ? "bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-800 text-[10px] px-1.5" : "text-[10px] px-1.5"}>
-              {acc.platform === "github" ? t("badge.gh") : t("badge.x")}
-            </Badge>
+            <span className="font-semibold">@{acc.screen_name}</span>
+            <Badge className="text-[10px] px-1.5">{t("badge.x")}</Badge>
             {acc.error_message && <span className="text-red-500">!</span>}
             <ArrowUpRight size={12} className="text-[var(--muted-foreground)]" />
           </button>
