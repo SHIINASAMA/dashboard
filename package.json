@@ -2,27 +2,21 @@
   "name": "x-kit",
   "type": "module",
   "scripts": {
-    "postinstall": "bash patches/postinstall.sh",
     "server": "bun run server/index.ts",
     "client": "bun run --cwd client dev",
     "dev": "bun run server & bun run client"
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/fs-extra": "^11.0.4"
+    "@types/lodash": "^4.17.0"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "@resvg/resvg-js": "^2.6.2",
-    "axios": "^1.7.9",
-    "dayjs": "^1.11.13",
-    "fs-extra": "^11.2.0",
     "hono": "^4.7.6",
     "lodash": "^4.17.21",
     "twitter-api-v2": "^1.18.2",
-    "twitter-openapi-typescript": "^0.0.56",
-    "zod": "^3.24.4"
+    "twitter-openapi-typescript": "^0.0.56"
   }
 }
