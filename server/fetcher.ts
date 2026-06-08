@@ -132,9 +132,14 @@ export async function fetchAccount(account: AccountRow) {
       }
 
       totalFetched += tweets.length;
-      const cursorObj = (resp.data as any).cursor;
-      cursor = cursorObj?.bottom?.value;
-      if (!cursor) break;
+      const rawData = resp.data as any;
+      // Handle both cursor shapes: bottom (user tweets) and top (user tweets + replies)
+      const cursorObj = rawData.cursor;
+      cursor = cursorObj?.bottom?.value || cursorObj?.top?.value;
+      if (!cursor) {
+        console.log(`[Fetcher] @${account.screen_name}: no cursor after ${totalFetched} tweets`);
+        break;
+      }
 
       console.log(`[Fetcher] @${account.screen_name}: ${totalFetched} tweets...`);
       await sleep(2000);
