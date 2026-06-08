@@ -318,8 +318,16 @@ export function upsertGithubRepo(repo: Omit<GithubRepoRow, "id" | "fetched_at" |
     repo.account_id, repo.repo_id, repo.name, repo.full_name, repo.description, repo.language, repo.stars, repo.forks, repo.open_issues, repo.topics, repo.homepage, repo.is_fork, repo.created_at, repo.updated_at, repo.pushed_at);
 }
 
-export function toggleRepoPin(accountId: number, repoId: number, pinned: number) {
-  getDb().query("UPDATE github_repos SET pinned = ? WHERE account_id = ? AND repo_id = ?").run(pinned, accountId, repoId);
+export function setPinnedRepos(accountId: number, repoIds: number[]) {
+  const db = getDb();
+  const update = db.transaction(() => {
+    db.query("UPDATE github_repos SET pinned = 0 WHERE account_id = ?").run(accountId);
+    if (repoIds.length > 0) {
+      const placeholders = repoIds.map(() => "?").join(",");
+      db.query(`UPDATE github_repos SET pinned = 1 WHERE account_id = ? AND repo_id IN (${placeholders})`).run(accountId, ...repoIds);
+    }
+  });
+  update();
 }
 
 export function insertGithubStats(stats: Omit<GithubStatsRow, "recorded_at">) {

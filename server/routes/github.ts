@@ -3,7 +3,7 @@ import {
   getGithubOverview, getGithubStatsTimeline, getGithubContributions,
   getGithubRepoSnapshots, getGithubTrafficClones, getGithubTrafficViews,
   getGithubReferrers, getGithubPaths, getGithubReleases,
-  toggleRepoPin,
+  setPinnedRepos,
 } from "../db";
 
 const githubRouter = new Hono();
@@ -32,10 +32,9 @@ githubRouter.get("/contributions/:accountId", (c) => {
 
 // ─── Repo pinning ──────────────────────────────────────────────
 
-githubRouter.put("/repos/:repoId/pin", async (c) => {
-  const repoId = Number(c.req.param("repoId"));
-  const { accountId, pinned } = await c.req.json() as { accountId: number; pinned: boolean };
-  toggleRepoPin(accountId, repoId, pinned ? 1 : 0);
+githubRouter.put("/repos/pin", async (c) => {
+  const { accountId, repoIds } = await c.req.json() as { accountId: number; repoIds: number[] };
+  setPinnedRepos(accountId, repoIds);
   return c.json({ ok: true });
 });
 

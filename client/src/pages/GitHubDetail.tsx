@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -7,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../co
 import { Badge } from "../components/ui/badge";
 import { StatCard } from "../components/StatCard";
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { ArrowLeft, ArrowUpRight, Play, RefreshCw, Trash2, AlertCircle, Star, GitFork, Code, Users, BookOpen, Pin, PinOff } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Play, RefreshCw, Trash2, AlertCircle, Star, GitFork, Code, Users, BookOpen, Settings2 } from "lucide-react";
 
 function GithubInline() {
   return (
@@ -78,10 +79,20 @@ export function GitHubDetail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const accountId = Number(id);
+  const [showPinDialog, setShowPinDialog] = useState(false);
+  const [pinnedIds, setPinnedIds] = useState<Set<number>>(new Set());
 
-  const handlePin = async (repo: GithubRepo) => {
-    await api.toggleRepoPin(repo.repo_id, accountId, !repo.pinned);
+  const openPinDialog = () => {
+    if (overview?.allRepos) {
+      setPinnedIds(new Set(overview.allRepos.filter(r => r.pinned).map(r => r.repo_id)));
+    }
+    setShowPinDialog(true);
+  };
+
+  const handlePinSave = async () => {
+    await api.setPinnedRepos(accountId, [...pinnedIds]);
     queryClient.invalidateQueries({ queryKey: ["github", "overview", accountId] });
+    setShowPinDialog(false);
   };
 
   const { data: account, isLoading: accountLoading } = useQuery({
@@ -179,7 +190,15 @@ export function GitHubDetail() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><BookOpen size={18} /> {t("githubDetail.reposHeading")}</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2"><BookOpen size={18} /> {t("githubDetail.reposHeading")}</CardTitle>
+                <button
+                  onClick={openPinDialog}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-xs font-medium"
+                >
+                  <Settings2 size={14} /> {t("githubDetail.managePins")}
+                </button>
+              </div>
               <CardDescription>
                 {overview.allRepos && overview.allRepos.some(r => r.pinned)
                   ? t("githubDetail.reposDescPinned")
@@ -187,38 +206,80 @@ export function GitHubDetail() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                {overview.repos.map((repo: GithubRepo) => (
-                  <div key={repo.id}
-                    className={`flex items-center gap-3 p-3 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] cursor-pointer transition-colors ${repo.pinned ? "ring-1 ring-[var(--primary)]/30" : ""}`}
-                  >
-                    <BookOpen size={16} className="text-[var(--muted-foreground)] shrink-0" />
-                    <div className="min-w-0 flex-1" onClick={() => navigate(`/github/${accountId}/repos/${repo.repo_id}`)}>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-medium">{repo.full_name}</span>
-                        {repo.language && <Badge className="shrink-0">{repo.language}</Badge>}
-                        {repo.pinned ? <Pin size={12} className="text-[var(--primary)] shrink-0" /> : null}
-                      </div>
-                      {repo.description && <p className="text-xs text-[var(--muted-foreground)] mt-0.5 line-clamp-1">{repo.description}</p>}
-                      <div className="flex items-center gap-3 text-xs text-[var(--muted-foreground)] mt-1">
-                        <span className="flex items-center gap-1"><Star size={12} /> {repo.stars}</span>
-                        <span className="flex items-center gap-1"><GitFork size={12} /> {repo.forks}</span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handlePin(repo); }}
-                      className="p-1.5 rounded-md hover:bg-[var(--border)] transition-colors shrink-0"
-                      title={repo.pinned ? "Unpin" : "Pin"}
+              {overview.repos.length > 0 ? (
+                <div className="space-y-2">
+                  {overview.repos.map((repo: GithubRepo) => (
+                    <div key={repo.id}
+                      onClick={() => navigate(`/github/${accountId}/repos/${repo.repo_id}`)}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] cursor-pointer transition-colors"
                     >
-                      {repo.pinned
-                        ? <PinOff size={14} className="text-[var(--primary)]" />
-                        : <Pin size={14} className="text-[var(--muted-foreground)]" />}
-                    </button>
-                  </div>
-                ))}
-              </div>
+                      <BookOpen size={16} className="text-[var(--muted-foreground)] shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium">{repo.full_name}</span>
+                          {repo.language && <Badge className="shrink-0">{repo.language}</Badge>}
+                        </div>
+                        {repo.description && <p className="text-xs text-[var(--muted-foreground)] mt-0.5 line-clamp-1">{repo.description}</p>}
+                        <div className="flex items-center gap-3 text-xs text-[var(--muted-foreground)] mt-1">
+                          <span className="flex items-center gap-1"><Star size={12} /> {repo.stars}</span>
+                          <span className="flex items-center gap-1"><GitFork size={12} /> {repo.forks}</span>
+                        </div>
+                      </div>
+                      <ArrowUpRight size={14} className="text-[var(--muted-foreground)]" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-3 py-8 text-sm text-[var(--muted-foreground)]">
+                  <BookOpen size={32} className="opacity-30" />
+                  <p>{t("githubDetail.noPinnedRepos")}</p>
+                </div>
+              )}
             </CardContent>
           </Card>
+
+          {showPinDialog && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowPinDialog(false)}>
+              <div className="bg-[var(--card)] rounded-xl p-6 w-full max-w-lg mx-4 shadow-lg border border-[var(--border)] max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold">{t("githubDetail.managePins")}</h2>
+                  <button onClick={() => setShowPinDialog(false)} className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]">{t("common.cancel")}</button>
+                </div>
+                <div className="space-y-1 overflow-y-auto flex-1">
+                  {overview.allRepos?.map((repo: GithubRepo) => (
+                    <label key={repo.id} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-[var(--muted)] cursor-pointer transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={pinnedIds.has(repo.repo_id)}
+                        onChange={(e) => {
+                          setPinnedIds(prev => {
+                            const next = new Set(prev);
+                            if (e.target.checked) next.add(repo.repo_id);
+                            else next.delete(repo.repo_id);
+                            return next;
+                          });
+                        }}
+                        className="w-4 h-4 rounded accent-[var(--primary)] shrink-0"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <span className="text-sm">{repo.full_name}</span>
+                        {repo.language && <span className="text-xs text-[var(--muted-foreground)] ml-2">{repo.language}</span>}
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-[var(--muted-foreground)]">
+                        <span className="flex items-center gap-1"><Star size={12} /> {repo.stars}</span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+                <button
+                  onClick={handlePinSave}
+                  className="mt-4 w-full px-4 py-2 rounded-lg bg-[var(--primary)] text-white font-medium hover:opacity-90 transition-opacity"
+                >
+                  {t("common.save")}
+                </button>
+              </div>
+            </div>
+          )}
 
           <Card>
             <CardHeader>

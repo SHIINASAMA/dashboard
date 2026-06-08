@@ -194,6 +194,6 @@ export const api = {
     fetchJSON<{ path: string; title: string | null; count: number; uniques: number }[]>(`/github/${accountId}/repos/${repoId}/paths`),
   getGithubReleases: (accountId: number, repoId: number) =>
     fetchJSON<any[]>(`/github/${accountId}/repos/${repoId}/releases`),
-  toggleRepoPin: (repoId: number, accountId: number, pinned: boolean) =>
-    fetchJSON<{ ok: boolean }>(`/github/repos/${repoId}/pin`, { method: "PUT", body: JSON.stringify({ accountId, pinned }) }),
+  setPinnedRepos: (accountId: number, repoIds: number[]) =>
+    fetchJSON<{ ok: boolean }>(`/github/repos/pin`, { method: "PUT", body: JSON.stringify({ accountId, repoIds }) }),
 };

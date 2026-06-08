@@ -8,6 +8,7 @@
     "disable": "Disable",
     "collapseSidebar": "Collapse sidebar",
     "expandSidebar": "Expand sidebar",
+    "save": "Save",
     "copyright": "© 2026 Dashboard"
   },
   "nav": {
@@ -154,8 +155,10 @@
     "totalForks": "Total Forks",
     "followers": "Followers",
     "reposHeading": "Repositories",
+    "managePins": "Manage",
+    "noPinnedRepos": "No pinned repos yet. Use Manage to pin repos you want to track.",
     "reposDesc": "Click any repo for detailed insights: star history, traffic, referrers, releases",
-    "reposDescPinned": "Showing pinned repos. Pin repos to keep them visible here.",
+    "reposDescPinned": "Showing pinned repos. Use Manage to add or remove repos.",
     "readmeStats": "GitHub Readme Stats",
     "readmeStatsDesc": "Auto-generated stats card from github-readme-stats-fast",
     "statsImgAlt": "GitHub Stats",

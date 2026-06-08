@@ -8,6 +8,7 @@
     "disable": "禁用",
     "collapseSidebar": "折叠侧边栏",
     "expandSidebar": "展开侧边栏",
+    "save": "保存",
     "copyright": "© 2026 Dashboard"
   },
   "nav": {
@@ -154,8 +155,10 @@
     "totalForks": "总 Fork 数",
     "followers": "粉丝",
     "reposHeading": "仓库",
+    "managePins": "管理",
+    "noPinnedRepos": "尚未置顶仓库。使用「管理」按钮选择要追踪的仓库。",
     "reposDesc": "点击任意仓库查看详细洞察：星标历史、流量、引荐来源、发行版",
-    "reposDescPinned": "仅显示已置顶的仓库。置顶仓库以将其固定在此处。",
+    "reposDescPinned": "仅显示已置顶的仓库。使用「管理」按钮添加或移除仓库。",
     "readmeStats": "GitHub Readme Stats",
     "readmeStatsDesc": "来自 github-readme-stats-fast 的自动生成统计卡片",
     "statsImgAlt": "GitHub 统计",
