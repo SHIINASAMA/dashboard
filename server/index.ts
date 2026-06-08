@@ -194,9 +194,16 @@ app.post(`${BASE}/api/fetch/:id`, async (c) => {
 // ── Serve client SPA (production) ─────────────────────────────────
 
 if (isProd) {
-  // Serve static assets (JS, CSS, images etc.)
-  app.use(`${BASE}/assets/*`, serveStatic({ root: join(CLIENT_DIST, "assets") }));
-  app.use(`${BASE}/*`, serveStatic({ root: CLIENT_DIST }));
+  const rewrite = (path: string) => path.replace(BASE, "") || "/";
+
+  app.use(`${BASE}/assets/*`, serveStatic({
+    root: join(CLIENT_DIST, "assets"),
+    rewriteRequestPath: rewrite,
+  }));
+  app.use(`${BASE}/*`, serveStatic({
+    root: CLIENT_DIST,
+    rewriteRequestPath: rewrite,
+  }));
 
   // SPA fallback: serve index.html for all non-API GET routes
   app.get(`${BASE}/*`, async (c) => {
