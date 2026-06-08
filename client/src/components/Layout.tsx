@@ -39,6 +39,14 @@ function GitlabIcon({ size }: { size?: number }) {
   );
 }
 
+function RedditIcon({ size }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size || 18} height={size || 18} fill="currentColor">
+      <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547.8-3.747c.104-.487.548-.83 1.051-.83.585 0 1.06.475 1.06 1.06a1.032 1.032 0 0 1-.86 1.022l-.206.034.244 2.538c.09-.004.183-.01.277-.01.264 0 .518.048.753.134zm-11.799.434c1.518 0 2.66.625 3.722 1.484 2.237-1.545 5.383-1.892 7.07-1.76l-1.1 5.08c.004.042.006.085.006.128 0 2.78-3.147 5.044-7.016 5.044-3.87 0-7.017-2.263-7.017-5.044 0-.043.002-.086.006-.128l-1.1-5.08c1.687-.132 4.833.215 7.07 1.76 1.062-.86 2.204-1.484 3.722-1.484h.637z" />
+    </svg>
+  );
+}
+
 export default function Layout() {
   const { t } = useTranslation();
   const [visible, setVisible] = useState(loadVisible);
@@ -60,6 +68,7 @@ export default function Layout() {
     { to: "/x", label: t("nav.x"), icon: XIcon },
     { to: "/github", label: t("nav.github"), icon: GithubIcon },
     { to: "/gitlab", label: t("nav.gitlab"), icon: GitlabIcon },
+    { to: "/reddit", label: t("nav.reddit"), icon: RedditIcon },
   ] as const;
 
   return (

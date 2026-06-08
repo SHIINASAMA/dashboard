@@ -6,11 +6,13 @@ import statsRouter from "./routes/stats";
 import accountsRouter from "./routes/accounts";
 import githubRouter from "./routes/github";
 import gitlabRouter from "./routes/gitlab";
+import redditRouter from "./routes/reddit";
 import { startScheduler } from "./scheduler";
 import { getAccountById } from "./db";
 import { fetchAccount } from "./fetcher";
 import { fetchGithubAccount } from "./fetchers/github";
 import { fetchGitlabAccount } from "./fetchers/gitlab";
+import { fetchRedditAccount } from "./fetchers/reddit";
 
 const app = new Hono();
 
@@ -21,6 +23,7 @@ app.route("/api/stats", statsRouter);
 app.route("/api/accounts", accountsRouter);
 app.route("/api/github", githubRouter);
 app.route("/api/gitlab", gitlabRouter);
+app.route("/api/reddit", redditRouter);
 
 app.get("/api/health", (c) => c.json({ status: "ok" }));
 
@@ -32,6 +35,7 @@ app.post("/api/fetch/:id", async (c) => {
 
   const fn = account.platform === "github" ? fetchGithubAccount
     : account.platform === "gitlab" ? fetchGitlabAccount
+    : account.platform === "reddit" ? fetchRedditAccount
     : fetchAccount;
   fn(account).then((count) => {
     console.log(`[Manual] Fetch complete for @${account.screen_name} (${account.platform})`);

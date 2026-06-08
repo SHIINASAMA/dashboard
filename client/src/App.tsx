@@ -10,6 +10,8 @@ import { RepoDetail } from "./pages/RepoDetail";
 import { GitLab } from "./pages/GitLab";
 import { GitLabDetail } from "./pages/GitLabDetail";
 import { ProjectDetail } from "./pages/ProjectDetail";
+import { Reddit } from "./pages/Reddit";
+import { RedditDetail } from "./pages/RedditDetail";
 import { Settings } from "./pages/Settings";
 
 const queryClient = new QueryClient();
@@ -28,6 +30,8 @@ export default function App() {
           <Route path="gitlab" element={<GitLab />} />
           <Route path="gitlab/:id" element={<GitLabDetail />} />
           <Route path="gitlab/:accountId/projects/:projectId" element={<ProjectDetail />} />
+          <Route path="reddit" element={<Reddit />} />
+          <Route path="reddit/:id" element={<RedditDetail />} />
           <Route path="settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

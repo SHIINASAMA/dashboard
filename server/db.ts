@@ -176,6 +176,9 @@ export function deleteAccount(id: number) {
   db.query("DELETE FROM gitlab_project_snapshots WHERE account_id = ?").run(id);
   db.query("DELETE FROM gitlab_projects WHERE account_id = ?").run(id);
   db.query("DELETE FROM gitlab_stats WHERE account_id = ?").run(id);
+  db.query("DELETE FROM reddit_comments WHERE account_id = ?").run(id);
+  db.query("DELETE FROM reddit_posts WHERE account_id = ?").run(id);
+  db.query("DELETE FROM reddit_stats WHERE account_id = ?").run(id);
   db.query("DELETE FROM accounts WHERE id = ?").run(id);
 }
 
@@ -519,4 +522,90 @@ export function getGitlabReleases(accountId: number, projectId: number) {
 export function insertGitlabReleaseAsset(a: { release_db_id: number; name: string; download_count: number; size: number; file_type: string | null; url: string | null }) {
   getDb().query("DELETE FROM gitlab_release_assets WHERE release_id = ?").run(a.release_db_id);
   getDb().query("INSERT INTO gitlab_release_assets (release_id,name,download_count,size,file_type,url) VALUES(?,?,?,?,?,?)").run(a.release_db_id, a.name, a.download_count, a.size, a.file_type, a.url);
+}
+
+// ─── Reddit types ───────────────────────────────────────────────
+
+export interface RedditStatsRow {
+  account_id: number;
+  post_karma: number;
+  comment_karma: number;
+  recorded_at: string;
+}
+
+export interface RedditPostRow {
+  id: string;
+  account_id: number;
+  title: string;
+  selftext: string;
+  subreddit: string;
+  score: number;
+  upvote_ratio: number;
+  num_comments: number;
+  permalink: string;
+  url: string;
+  is_self: number;
+  created_utc: number;
+}
+
+export interface RedditCommentRow {
+  id: string;
+  account_id: number;
+  body: string;
+  subreddit: string;
+  score: number;
+  link_id: string;
+  parent_id: string | null;
+  depth: number;
+  permalink: string;
+  created_utc: number;
+  is_submitter: number;
+}
+
+// ─── Reddit queries ─────────────────────────────────────────────
+
+export function insertRedditStats(stats: Omit<RedditStatsRow, "recorded_at">) {
+  getDb().query("INSERT INTO reddit_stats (account_id, post_karma, comment_karma) VALUES(?,?,?)").run(stats.account_id, stats.post_karma, stats.comment_karma);
+}
+
+export function getRedditStatsTimeline(accountId: number) {
+  return getDb().query("SELECT recorded_at as date, post_karma, comment_karma FROM reddit_stats WHERE account_id = ? ORDER BY recorded_at ASC").all(accountId) as { date: string; post_karma: number; comment_karma: number }[];
+}
+
+export function upsertRedditPost(post: Omit<RedditPostRow, "fetched_at">) {
+  getDb().query(`INSERT INTO reddit_posts (id,account_id,title,selftext,subreddit,score,upvote_ratio,num_comments,permalink,url,is_self,created_utc) VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET score=excluded.score,upvote_ratio=excluded.upvote_ratio,num_comments=excluded.num_comments`).run(
+    post.id, post.account_id, post.title, post.selftext, post.subreddit, post.score, post.upvote_ratio, post.num_comments, post.permalink, post.url, post.is_self, post.created_utc);
+}
+
+export function upsertRedditComment(comment: Omit<RedditCommentRow, "fetched_at">) {
+  getDb().query(`INSERT INTO reddit_comments (id,account_id,body,subreddit,score,link_id,parent_id,depth,permalink,created_utc,is_submitter) VALUES(?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET score=excluded.score`).run(
+    comment.id, comment.account_id, comment.body, comment.subreddit, comment.score, comment.link_id, comment.parent_id, comment.depth, comment.permalink, comment.created_utc, comment.is_submitter);
+}
+
+export function getRedditPosts(accountId: number, page: number, limit: number, sort: string = "score") {
+  const db = getDb();
+  const offset = (page - 1) * limit;
+  const allowed = ["score", "num_comments", "created_utc"];
+  const col = allowed.includes(sort) ? sort : "score";
+  const total = db.query("SELECT count(*) as count FROM reddit_posts WHERE account_id = ?").get(accountId) as any;
+  const rows = db.query(`SELECT * FROM reddit_posts WHERE account_id = ? ORDER BY ${col} DESC LIMIT ? OFFSET ?`).all(accountId, limit, offset) as RedditPostRow[];
+  return { data: rows, total: total.count, page, limit, totalPages: Math.ceil(total.count / limit) };
+}
+
+export function getRedditComments(accountId: number, page: number, limit: number) {
+  const db = getDb();
+  const offset = (page - 1) * limit;
+  const total = db.query("SELECT count(*) as count FROM reddit_comments WHERE account_id = ?").get(accountId) as any;
+  const rows = db.query("SELECT * FROM reddit_comments WHERE account_id = ? ORDER BY created_utc DESC LIMIT ? OFFSET ?").all(accountId, limit, offset) as RedditCommentRow[];
+  return { data: rows, total: total.count, page, limit, totalPages: Math.ceil(total.count / limit) };
+}
+
+export function getRedditOverview(accountId: number) {
+  const db = getDb();
+  const latest = db.query("SELECT * FROM reddit_stats WHERE account_id = ? ORDER BY recorded_at DESC LIMIT 1").get(accountId) as RedditStatsRow | undefined;
+  const totalPosts = (db.query("SELECT count(*) as c FROM reddit_posts WHERE account_id = ?").get(accountId) as any)?.c ?? 0;
+  const totalComments = (db.query("SELECT count(*) as c FROM reddit_comments WHERE account_id = ?").get(accountId) as any)?.c ?? 0;
+  const totalScore = (db.query("SELECT COALESCE(SUM(score), 0) as s FROM reddit_posts WHERE account_id = ?").get(accountId) as any)?.s ?? 0;
+  const topPosts = db.query("SELECT id, title, subreddit, score, num_comments, upvote_ratio, permalink, created_utc FROM reddit_posts WHERE account_id = ? ORDER BY score DESC LIMIT 10").all(accountId) as RedditPostRow[];
+  return { stats: latest, totalPosts, totalComments, totalScore, topPosts };
 }

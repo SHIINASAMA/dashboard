@@ -32,8 +32,8 @@ accountsRouter.post("/", (c) => c.req.json().then((body) => {
   if (!screenName) {
     return c.json({ error: "screenName is required" }, 400);
   }
-  if (!authToken && platform !== "github") {
-    return c.json({ error: "authToken is required for this platform" }, 400);
+  if (!authToken) {
+    return c.json({ error: "authToken is required" }, 400);
   }
   try {
     const account = createAccount(screenName, authToken, fetchInterval || 30, platform || "twitter", instanceUrl || null);

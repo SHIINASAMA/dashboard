@@ -404,6 +404,62 @@ const MIGRATIONS: { version: number; name: string; up: (db: Database) => void }[
       `);
     },
   },
+
+  // ── Migration 9: reddit tables ─────────────────────────────────
+  {
+    version: 9,
+    name: "reddit tables",
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS reddit_stats (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          account_id INTEGER NOT NULL,
+          post_karma INTEGER NOT NULL,
+          comment_karma INTEGER NOT NULL,
+          recorded_at TEXT NOT NULL DEFAULT (datetime('now')),
+          FOREIGN KEY (account_id) REFERENCES accounts(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS reddit_posts (
+          id TEXT PRIMARY KEY,
+          account_id INTEGER NOT NULL,
+          title TEXT NOT NULL,
+          selftext TEXT NOT NULL DEFAULT '',
+          subreddit TEXT NOT NULL,
+          score INTEGER DEFAULT 0,
+          upvote_ratio REAL DEFAULT 0,
+          num_comments INTEGER DEFAULT 0,
+          permalink TEXT NOT NULL,
+          url TEXT DEFAULT '',
+          is_self INTEGER DEFAULT 0,
+          created_utc INTEGER NOT NULL,
+          fetched_at TEXT NOT NULL DEFAULT (datetime('now')),
+          FOREIGN KEY (account_id) REFERENCES accounts(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS reddit_comments (
+          id TEXT PRIMARY KEY,
+          account_id INTEGER NOT NULL,
+          body TEXT NOT NULL,
+          subreddit TEXT NOT NULL,
+          score INTEGER DEFAULT 0,
+          link_id TEXT NOT NULL,
+          parent_id TEXT,
+          depth INTEGER DEFAULT 0,
+          permalink TEXT NOT NULL,
+          created_utc INTEGER NOT NULL,
+          is_submitter INTEGER DEFAULT 0,
+          fetched_at TEXT NOT NULL DEFAULT (datetime('now')),
+          FOREIGN KEY (account_id) REFERENCES accounts(id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_reddit_stats_account_id ON reddit_stats(account_id);
+        CREATE INDEX IF NOT EXISTS idx_reddit_posts_account_id ON reddit_posts(account_id);
+        CREATE INDEX IF NOT EXISTS idx_reddit_posts_created_utc ON reddit_posts(created_utc);
+        CREATE INDEX IF NOT EXISTS idx_reddit_comments_account_id ON reddit_comments(account_id);
+      `);
+    },
+  },
 ];
 
 export function initSchema(db: Database) {

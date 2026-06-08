@@ -187,6 +187,61 @@ export interface GitlabContribution {
   count: number;
 }
 
+// ─── Reddit types ───────────────────────────────────────────────
+
+export interface RedditOverview {
+  stats: { post_karma: number; comment_karma: number } | null;
+  totalPosts: number;
+  totalComments: number;
+  totalScore: number;
+  topPosts: RedditPost[];
+}
+
+export interface RedditPost {
+  id: string;
+  account_id: number;
+  title: string;
+  selftext: string;
+  subreddit: string;
+  score: number;
+  upvote_ratio: number;
+  num_comments: number;
+  permalink: string;
+  url: string;
+  is_self: number;
+  created_utc: number;
+}
+
+export interface RedditComment {
+  id: string;
+  account_id: number;
+  body: string;
+  subreddit: string;
+  score: number;
+  link_id: string;
+  parent_id: string | null;
+  depth: number;
+  permalink: string;
+  created_utc: number;
+  is_submitter: number;
+}
+
+export interface PaginatedRedditPosts {
+  data: RedditPost[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface PaginatedRedditComments {
+  data: RedditComment[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 // ─── API methods ────────────────────────────────────────────────
 
 export const api = {
@@ -258,4 +313,12 @@ export const api = {
     fetchJSON<any[]>(`/gitlab/${accountId}/projects/${projectId}/releases`),
   setPinnedGitlabProjects: (accountId: number, projectIds: number[]) =>
     fetchJSON<{ ok: boolean }>(`/gitlab/projects/pin`, { method: "PUT", body: JSON.stringify({ accountId, projectIds }) }),
+
+  // Reddit
+  getRedditOverview: (accountId: number) => fetchJSON<RedditOverview>(`/reddit/overview/${accountId}`),
+  getRedditTimeline: (accountId: number) => fetchJSON<{ date: string; post_karma: number; comment_karma: number }[]>(`/reddit/timeline/${accountId}`),
+  getRedditPosts: (accountId: number, page = 1, limit = 20, sort = "score") =>
+    fetchJSON<PaginatedRedditPosts>(`/reddit/posts/${accountId}?page=${page}&limit=${limit}&sort=${sort}`),
+  getRedditComments: (accountId: number, page = 1, limit = 20) =>
+    fetchJSON<PaginatedRedditComments>(`/reddit/comments/${accountId}?page=${page}&limit=${limit}`),
 };
