@@ -365,20 +365,28 @@ export function getGithubTrafficViews(accountId: number, repoId: number) {
   return getDb().query("SELECT date, count, uniques FROM github_traffic_views WHERE account_id = ? AND repo_id = ? ORDER BY date ASC").all(accountId, repoId) as { date: string; count: number; uniques: number }[];
 }
 
-export function upsertGithubReferrer(t: { account_id: number; repo_id: number; referrer: string; count: number; uniques: number }) {
-  getDb().query(`INSERT INTO github_referrers (account_id,repo_id,referrer,count,uniques) VALUES(?,?,?,?,?) ON CONFLICT(account_id,repo_id,referrer) DO UPDATE SET count=excluded.count,uniques=excluded.uniques`).run(t.account_id, t.repo_id, t.referrer, t.count, t.uniques);
+export function upsertGithubReferrer(t: { account_id: number; repo_id: number; referrer: string; count: number; uniques: number; snapshot_date: string }) {
+  getDb().query(`INSERT INTO github_referrers (account_id,repo_id,referrer,count,uniques,snapshot_date) VALUES(?,?,?,?,?,?) ON CONFLICT(account_id,repo_id,referrer,snapshot_date) DO UPDATE SET count=excluded.count,uniques=excluded.uniques`).run(t.account_id, t.repo_id, t.referrer, t.count, t.uniques, t.snapshot_date);
 }
 
 export function getGithubReferrers(accountId: number, repoId: number) {
-  return getDb().query("SELECT referrer, count, uniques FROM github_referrers WHERE account_id = ? AND repo_id = ? ORDER BY count DESC").all(accountId, repoId) as { referrer: string; count: number; uniques: number }[];
+  return getDb().query("SELECT snapshot_date, referrer, count, uniques FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY referrer ORDER BY snapshot_date DESC) as rn FROM github_referrers WHERE account_id = ? AND repo_id = ?) WHERE rn = 1 ORDER BY count DESC").all(accountId, repoId) as { snapshot_date: string; referrer: string; count: number; uniques: number }[];
 }
 
-export function upsertGithubPath(t: { account_id: number; repo_id: number; path: string; title: string | null; count: number; uniques: number }) {
-  getDb().query(`INSERT INTO github_paths (account_id,repo_id,path,title,count,uniques) VALUES(?,?,?,?,?,?) ON CONFLICT(account_id,repo_id,path) DO UPDATE SET count=excluded.count,uniques=excluded.uniques,title=excluded.title`).run(t.account_id, t.repo_id, t.path, t.title, t.count, t.uniques);
+export function getGithubReferrerHistory(accountId: number, repoId: number) {
+  return getDb().query("SELECT snapshot_date, referrer, count, uniques FROM github_referrers WHERE account_id = ? AND repo_id = ? ORDER BY referrer, snapshot_date ASC").all(accountId, repoId) as { snapshot_date: string; referrer: string; count: number; uniques: number }[];
+}
+
+export function upsertGithubPath(t: { account_id: number; repo_id: number; path: string; title: string | null; count: number; uniques: number; snapshot_date: string }) {
+  getDb().query(`INSERT INTO github_paths (account_id,repo_id,path,title,count,uniques,snapshot_date) VALUES(?,?,?,?,?,?,?) ON CONFLICT(account_id,repo_id,path,snapshot_date) DO UPDATE SET count=excluded.count,uniques=excluded.uniques,title=excluded.title`).run(t.account_id, t.repo_id, t.path, t.title, t.count, t.uniques, t.snapshot_date);
 }
 
 export function getGithubPaths(accountId: number, repoId: number) {
-  return getDb().query("SELECT path, title, count, uniques FROM github_paths WHERE account_id = ? AND repo_id = ? ORDER BY count DESC").all(accountId, repoId) as { path: string; title: string | null; count: number; uniques: number }[];
+  return getDb().query("SELECT snapshot_date, path, title, count, uniques FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY path ORDER BY snapshot_date DESC) as rn FROM github_paths WHERE account_id = ? AND repo_id = ?) WHERE rn = 1 ORDER BY count DESC").all(accountId, repoId) as { snapshot_date: string; path: string; title: string | null; count: number; uniques: number }[];
+}
+
+export function getGithubPathHistory(accountId: number, repoId: number) {
+  return getDb().query("SELECT snapshot_date, path, title, count, uniques FROM github_paths WHERE account_id = ? AND repo_id = ? ORDER BY path, snapshot_date ASC").all(accountId, repoId) as { snapshot_date: string; path: string; title: string | null; count: number; uniques: number }[];
 }
 
 export function upsertGithubRelease(r: { account_id: number; repo_id: number; release_id: number; tag_name: string | null; name: string | null; body: string | null; prerelease: number; published_at: string | null; html_url: string | null; total_downloads: number }) {

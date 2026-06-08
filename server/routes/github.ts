@@ -3,6 +3,7 @@ import {
   getGithubOverview, getGithubStatsTimeline, getGithubContributions,
   getGithubRepoSnapshots, getGithubTrafficClones, getGithubTrafficViews,
   getGithubReferrers, getGithubPaths, getGithubReleases,
+  getGithubReferrerHistory, getGithubPathHistory,
   setPinnedRepos,
 } from "../db";
 
@@ -64,10 +65,22 @@ githubRouter.get("/:accountId/repos/:repoId/referrers", (c) => {
   return c.json(getGithubReferrers(accountId, repoId));
 });
 
+githubRouter.get("/:accountId/repos/:repoId/referrers/history", (c) => {
+  const accountId = Number(c.req.param("accountId"));
+  const repoId = Number(c.req.param("repoId"));
+  return c.json(getGithubReferrerHistory(accountId, repoId));
+});
+
 githubRouter.get("/:accountId/repos/:repoId/paths", (c) => {
   const accountId = Number(c.req.param("accountId"));
   const repoId = Number(c.req.param("repoId"));
   return c.json(getGithubPaths(accountId, repoId));
+});
+
+githubRouter.get("/:accountId/repos/:repoId/paths/history", (c) => {
+  const accountId = Number(c.req.param("accountId"));
+  const repoId = Number(c.req.param("repoId"));
+  return c.json(getGithubPathHistory(accountId, repoId));
 });
 
 githubRouter.get("/:accountId/repos/:repoId/releases", (c) => {

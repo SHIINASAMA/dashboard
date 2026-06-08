@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -6,9 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../co
 import { Badge } from "../components/ui/badge";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  AreaChart, Area,
+  AreaChart, Area, Legend, LineChart, Line,
 } from "recharts";
 import { ArrowLeft, Star, GitFork, Download, ExternalLink, Globe, TrendingUp, Eye, Activity, FileText } from "lucide-react";
+
+const COLORS = ["#3b82f6", "#ec4899", "#f59e0b", "#10b981", "#8b5cf6"];
 
 export function RepoDetail() {
   const { t } = useTranslation();
@@ -49,9 +52,21 @@ export function RepoDetail() {
     enabled: !!aid && !!rid,
   });
 
+  const { data: referrerHistory } = useQuery({
+    queryKey: ["github", "referrers", "history", aid, rid],
+    queryFn: () => api.getGithubReferrerHistory(aid, rid),
+    enabled: !!aid && !!rid,
+  });
+
   const { data: paths } = useQuery({
     queryKey: ["github", "paths", aid, rid],
     queryFn: () => api.getGithubPaths(aid, rid),
+    enabled: !!aid && !!rid,
+  });
+
+  const { data: pathHistory } = useQuery({
+    queryKey: ["github", "paths", "history", aid, rid],
+    queryFn: () => api.getGithubPathHistory(aid, rid),
     enabled: !!aid && !!rid,
   });
 
@@ -69,6 +84,36 @@ export function RepoDetail() {
       </div>
     );
   }
+
+  const referrerHistoryChart = useMemo(() => {
+    if (!referrerHistory || referrerHistory.length === 0) return null;
+    const topReferrers = referrers?.slice(0, 5).map(r => r.referrer) || [];
+    if (topReferrers.length === 0) return null;
+    const dates = [...new Set(referrerHistory.map(r => r.snapshot_date))].sort();
+    return dates.map(date => {
+      const point: any = { date };
+      for (const ref of topReferrers) {
+        const entry = referrerHistory.find(r => r.referrer === ref && r.snapshot_date === date);
+        point[ref] = entry?.count || 0;
+      }
+      return point;
+    });
+  }, [referrerHistory, referrers]);
+
+  const pathHistoryChart = useMemo(() => {
+    if (!pathHistory || pathHistory.length === 0) return null;
+    const topPaths = paths?.slice(0, 5).map(p => p.path) || [];
+    if (topPaths.length === 0) return null;
+    const dates = [...new Set(pathHistory.map(p => p.snapshot_date))].sort();
+    return dates.map(date => {
+      const point: any = { date };
+      for (const p of topPaths) {
+        const entry = pathHistory.find(h => h.path === p && h.snapshot_date === date);
+        point[p] = entry?.count || 0;
+      }
+      return point;
+    });
+  }, [pathHistory, paths]);
 
   return (
     <div className="space-y-6">
@@ -179,19 +224,38 @@ export function RepoDetail() {
             <CardTitle className="flex items-center gap-2"><Globe size={18} /> {t("repoDetail.referringSites")}</CardTitle>
             <CardDescription>{t("repoDetail.referringSitesDesc")}</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             {referrers && referrers.length > 0 ? (
-              <div className="space-y-2">
-                {referrers.slice(0, 10).map((r) => (
-                  <div key={r.referrer} className="flex items-center justify-between p-2 rounded-lg bg-[var(--muted)]">
-                    <span className="text-sm font-mono">{r.referrer}</span>
-                    <div className="flex items-center gap-3 text-xs text-[var(--muted-foreground)]">
-                      <span>{t("repoDetail.viewsSuffix", { count: r.count })}</span>
-                      <span>{t("repoDetail.uniqueSuffix", { count: r.uniques })}</span>
+              <>
+                <div className="space-y-2">
+                  {referrers.slice(0, 10).map((r) => (
+                    <div key={r.referrer} className="flex items-center justify-between p-2 rounded-lg bg-[var(--muted)]">
+                      <span className="text-sm font-mono truncate">{r.referrer}</span>
+                      <div className="flex items-center gap-3 text-xs text-[var(--muted-foreground)] shrink-0 ml-2">
+                        <span>{t("repoDetail.viewsSuffix", { count: r.count })}</span>
+                        <span>{t("repoDetail.uniqueSuffix", { count: r.uniques })}</span>
+                      </div>
                     </div>
+                  ))}
+                </div>
+                {referrerHistoryChart && referrerHistoryChart.length > 1 && (
+                  <div>
+                    <p className="text-xs font-medium text-[var(--muted-foreground)] mb-2">{t("repoDetail.referrerHistory")}</p>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <LineChart data={referrerHistoryChart}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                        <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
+                        <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
+                        <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }} />
+                        <Legend wrapperStyle={{ fontSize: "11px" }} />
+                        {(referrers?.slice(0, 5) || []).map((ref, i) => (
+                          <Line key={ref.referrer} type="monotone" dataKey={ref.referrer} stroke={COLORS[i]} strokeWidth={2} dot={false} />
+                        ))}
+                      </LineChart>
+                    </ResponsiveContainer>
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             ) : (
               <p className="text-sm text-[var(--muted-foreground)] text-center py-8">{t("repoDetail.noReferrerData")}</p>
             )}
@@ -203,22 +267,41 @@ export function RepoDetail() {
             <CardTitle className="flex items-center gap-2"><FileText size={18} /> {t("repoDetail.popularContent")}</CardTitle>
             <CardDescription>{t("repoDetail.popularContentDesc")}</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             {paths && paths.length > 0 ? (
-              <div className="space-y-2">
-                {paths.slice(0, 10).map((p) => (
-                  <div key={p.path} className="p-2 rounded-lg bg-[var(--muted)]">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-mono truncate">{p.path}</span>
-                      <div className="flex items-center gap-3 text-xs text-[var(--muted-foreground)] shrink-0 ml-2">
-                        <span>{t("repoDetail.viewsSuffix", { count: p.count })}</span>
-                        <span>{t("repoDetail.uniqueSuffix", { count: p.uniques })}</span>
+              <>
+                <div className="space-y-2">
+                  {paths.slice(0, 10).map((p) => (
+                    <div key={p.path} className="p-2 rounded-lg bg-[var(--muted)]">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-mono truncate">{p.path}</span>
+                        <div className="flex items-center gap-3 text-xs text-[var(--muted-foreground)] shrink-0 ml-2">
+                          <span>{t("repoDetail.viewsSuffix", { count: p.count })}</span>
+                          <span>{t("repoDetail.uniqueSuffix", { count: p.uniques })}</span>
+                        </div>
                       </div>
+                      {p.title && <p className="text-xs text-[var(--muted-foreground)] mt-0.5 truncate">{p.title}</p>}
                     </div>
-                    {p.title && <p className="text-xs text-[var(--muted-foreground)] mt-0.5 truncate">{p.title}</p>}
+                  ))}
+                </div>
+                {pathHistoryChart && pathHistoryChart.length > 1 && (
+                  <div>
+                    <p className="text-xs font-medium text-[var(--muted-foreground)] mb-2">{t("repoDetail.pathHistory")}</p>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <LineChart data={pathHistoryChart}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                        <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
+                        <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
+                        <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }} />
+                        <Legend wrapperStyle={{ fontSize: "11px" }} />
+                        {(paths?.slice(0, 5) || []).map((p, i) => (
+                          <Line key={p.path} type="monotone" dataKey={p.path} stroke={COLORS[i]} strokeWidth={2} dot={false} />
+                        ))}
+                      </LineChart>
+                    </ResponsiveContainer>
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             ) : (
               <p className="text-sm text-[var(--muted-foreground)] text-center py-8">{t("repoDetail.noPopularContent")}</p>
             )}

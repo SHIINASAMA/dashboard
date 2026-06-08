@@ -245,6 +245,51 @@ const MIGRATIONS: { version: number; name: string; up: (db: Database) => void }[
       db.exec("ALTER TABLE github_repos ADD COLUMN pinned INTEGER DEFAULT 0");
     },
   },
+
+  // ── Migration 5: add snapshot_date to referrers and paths ───────
+  {
+    version: 5,
+    name: "add snapshot_date to referrers and paths",
+    up(db) {
+      // referrers
+      db.exec(`
+        ALTER TABLE github_referrers RENAME TO github_referrers_old;
+        CREATE TABLE github_referrers (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          account_id INTEGER NOT NULL,
+          repo_id INTEGER NOT NULL,
+          referrer TEXT NOT NULL,
+          count INTEGER DEFAULT 0,
+          uniques INTEGER DEFAULT 0,
+          snapshot_date TEXT NOT NULL DEFAULT (date('now')),
+          FOREIGN KEY (account_id) REFERENCES accounts(id),
+          UNIQUE(account_id, repo_id, referrer, snapshot_date)
+        );
+        INSERT INTO github_referrers (account_id, repo_id, referrer, count, uniques, snapshot_date)
+          SELECT account_id, repo_id, referrer, count, uniques, COALESCE(date(fetched_at), date('now')) FROM github_referrers_old;
+        DROP TABLE github_referrers_old;
+      `);
+      // paths
+      db.exec(`
+        ALTER TABLE github_paths RENAME TO github_paths_old;
+        CREATE TABLE github_paths (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          account_id INTEGER NOT NULL,
+          repo_id INTEGER NOT NULL,
+          path TEXT NOT NULL,
+          title TEXT,
+          count INTEGER DEFAULT 0,
+          uniques INTEGER DEFAULT 0,
+          snapshot_date TEXT NOT NULL DEFAULT (date('now')),
+          FOREIGN KEY (account_id) REFERENCES accounts(id),
+          UNIQUE(account_id, repo_id, path, snapshot_date)
+        );
+        INSERT INTO github_paths (account_id, repo_id, path, title, count, uniques, snapshot_date)
+          SELECT account_id, repo_id, path, title, count, uniques, COALESCE(date(fetched_at), date('now')) FROM github_paths_old;
+        DROP TABLE github_paths_old;
+      `);
+    },
+  },
 ];
 
 export function initSchema(db: Database) {

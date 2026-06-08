@@ -206,6 +206,8 @@
     "noTrafficData": "暂无流量数据。需要使用具有 repo 权限的经典 PAT（细粒度令牌不支持流量 API）。",
     "noReferrerData": "暂无引荐来源数据。",
     "noPopularContent": "暂无热门内容数据。",
+    "referrerHistory": "引荐来源历史",
+    "pathHistory": "内容历史",
     "noReleases": "未找到发行版。需要使用具有 repo 权限的经典 PAT。",
     "viewsSuffix": "{{count}} 次浏览",
     "uniqueSuffix": "{{count}} 个独立访客"

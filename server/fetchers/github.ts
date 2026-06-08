@@ -184,6 +184,7 @@ async function fetchRepoTraffic(accountId: number, repoId: number, fullName: str
   // Referrers
   try {
     const referrers: any[] = await ghFetch(`/repos/${owner}/${repo}/traffic/popular/referrers`, token);
+    const today = new Date().toISOString().slice(0, 10);
     if (referrers) {
       for (const r of referrers) {
         upsertGithubReferrer({
@@ -192,6 +193,7 @@ async function fetchRepoTraffic(accountId: number, repoId: number, fullName: str
           referrer: r.referrer || "unknown",
           count: r.count || 0,
           uniques: r.uniques || 0,
+          snapshot_date: today,
         });
       }
     }
@@ -200,6 +202,7 @@ async function fetchRepoTraffic(accountId: number, repoId: number, fullName: str
   // Popular paths
   try {
     const paths: any[] = await ghFetch(`/repos/${owner}/${repo}/traffic/popular/paths`, token);
+    const today = new Date().toISOString().slice(0, 10);
     if (paths) {
       for (const p of paths) {
         upsertGithubPath({
@@ -209,6 +212,7 @@ async function fetchRepoTraffic(accountId: number, repoId: number, fullName: str
           title: p.title || null,
           count: p.count || 0,
           uniques: p.uniques || 0,
+          snapshot_date: today,
         });
       }
     }
