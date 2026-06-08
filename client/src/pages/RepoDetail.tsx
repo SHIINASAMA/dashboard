@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -85,35 +84,41 @@ export function RepoDetail() {
     );
   }
 
-  const referrerHistoryChart = useMemo(() => {
-    if (!referrerHistory || referrerHistory.length === 0) return null;
-    const topReferrers = referrers?.slice(0, 5).map(r => r.referrer) || [];
-    if (topReferrers.length === 0) return null;
-    const dates = [...new Set(referrerHistory.map(r => r.snapshot_date))].sort();
-    return dates.map(date => {
-      const point: any = { date };
-      for (const ref of topReferrers) {
-        const entry = referrerHistory.find(r => r.referrer === ref && r.snapshot_date === date);
-        point[ref] = entry?.count || 0;
-      }
-      return point;
-    });
-  }, [referrerHistory, referrers]);
+  let referrerHistoryChart: any = null;
+  const referrerHistoryData = referrerHistory;
+  const referrersData = referrers;
+  if (referrerHistoryData && referrerHistoryData.length > 0 && referrersData?.length) {
+    const refs = referrersData.slice(0, 5).map(r => r.referrer);
+    if (refs.length > 0) {
+      const dates = [...new Set(referrerHistoryData.map((r: any) => r.snapshot_date))].sort() as string[];
+      referrerHistoryChart = dates.map((date: string) => {
+        const point: any = { date };
+        for (const ref of refs) {
+          const entry = referrerHistoryData.find((r: any) => r.referrer === ref && r.snapshot_date === date);
+          point[ref] = entry?.count || 0;
+        }
+        return point;
+      });
+    }
+  }
 
-  const pathHistoryChart = useMemo(() => {
-    if (!pathHistory || pathHistory.length === 0) return null;
-    const topPaths = paths?.slice(0, 5).map(p => p.path) || [];
-    if (topPaths.length === 0) return null;
-    const dates = [...new Set(pathHistory.map(p => p.snapshot_date))].sort();
-    return dates.map(date => {
-      const point: any = { date };
-      for (const p of topPaths) {
-        const entry = pathHistory.find(h => h.path === p && h.snapshot_date === date);
-        point[p] = entry?.count || 0;
-      }
-      return point;
-    });
-  }, [pathHistory, paths]);
+  let pathHistoryChart: any = null;
+  const pathHistoryData = pathHistory;
+  const pathsData = paths;
+  if (pathHistoryData && pathHistoryData.length > 0 && pathsData?.length) {
+    const pts = pathsData.slice(0, 5).map(p => p.path);
+    if (pts.length > 0) {
+      const dates = [...new Set(pathHistoryData.map((p: any) => p.snapshot_date))].sort() as string[];
+      pathHistoryChart = dates.map((date: string) => {
+        const point: any = { date };
+        for (const pp of pts) {
+          const entry = pathHistoryData.find((h: any) => h.path === pp && h.snapshot_date === date);
+          point[pp] = entry?.count || 0;
+        }
+        return point;
+      });
+    }
+  }
 
   return (
     <div className="space-y-6">
