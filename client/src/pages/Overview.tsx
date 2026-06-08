@@ -9,7 +9,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area,
 } from "recharts";
-import { MessageSquare, Repeat2, Eye, TrendingUp, ArrowUpRight } from "lucide-react";
+import { MessageSquare, Heart, Repeat2, Eye, TrendingUp, ArrowUpRight } from "lucide-react";
 
 export function Overview() {
   const { t } = useTranslation();
