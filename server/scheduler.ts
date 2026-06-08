@@ -6,16 +6,24 @@ import { fetchRedditAccount, fetchRedditPublicAccount } from "./fetchers/reddit"
 
 let running = false;
 let intervalId: ReturnType<typeof setInterval> | null = null;
+let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
 export function startScheduler() {
   if (running) return;
   running = true;
   console.log("[Scheduler] Started (checking every 60s)");
-  runCycle();
-  intervalId = setInterval(runCycle, 60_000);
+  // Don't run immediately on startup — wait for the first real interval tick.
+  // This prevents hammering APIs with every restart when accounts are already
+  // within their fetch interval.
+  const firstRunMs = 60_000 + Math.random() * 30_000; // 60–90s jitter on cold start
+  timeoutId = setTimeout(() => {
+    runCycle();
+    intervalId = setInterval(runCycle, 60_000);
+  }, firstRunMs);
 }
 
 export function stopScheduler() {
+  if (timeoutId) clearTimeout(timeoutId);
   if (intervalId) clearInterval(intervalId);
   running = false;
 }
