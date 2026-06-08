@@ -2,6 +2,7 @@ import { Database } from "bun:sqlite";
 import { initSchema } from "../db/schema";
 import { join } from "path";
 import { fileURLToPath } from "url";
+import { encrypt, decrypt } from "./crypto";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = join(__filename, "..");
@@ -16,6 +17,18 @@ export function getDb(): Database {
     initSchema(db);
   }
   return db;
+}
+
+/**
+ * Encrypt a token before storing, decrypt when reading.
+ * If DASHBOARD_SECRET is not set, pass through as plaintext (development fallback).
+ */
+function encToken(plain: string): string {
+  try { return encrypt(plain); } catch { return plain; }
+}
+
+function decToken(cipher: string): string {
+  try { return decrypt(cipher); } catch { return cipher; }
 }
 
 // ─── Account types ──────────────────────────────────────────────
@@ -123,11 +136,14 @@ export function getAccounts(): AccountPublic[] {
 }
 
 export function getActiveAccounts(): AccountRow[] {
-  return getDb().query("SELECT * FROM accounts WHERE is_active = 1").all() as AccountRow[];
+  const accounts = getDb().query("SELECT * FROM accounts WHERE is_active = 1").all() as AccountRow[];
+  return accounts.map(a => ({ ...a, auth_token: decToken(a.auth_token) }));
 }
 
 export function getAccountById(id: number): AccountRow | undefined {
-  return getDb().query("SELECT * FROM accounts WHERE id = ?").get(id) as AccountRow | undefined;
+  const row = getDb().query("SELECT * FROM accounts WHERE id = ?").get(id) as AccountRow | undefined;
+  if (row) row.auth_token = decToken(row.auth_token);
+  return row;
 }
 
 export function createAccount(
@@ -139,17 +155,24 @@ export function createAccount(
   authType: string | null = null
 ): AccountRow {
   const db = getDb();
+  const token = encToken(authToken);
   db.query(`
     INSERT INTO accounts (screen_name, auth_token, fetch_interval, platform, instance_url, auth_type)
     VALUES (?, ?, ?, ?, ?, ?)
-  `).run(screenName, authToken, fetchInterval, platform, instanceUrl, authType);
-  return db.query("SELECT * FROM accounts WHERE id = last_insert_rowid()").get() as AccountRow;
+  `).run(screenName, token, fetchInterval, platform, instanceUrl, authType);
+  const row = db.query("SELECT * FROM accounts WHERE id = last_insert_rowid()").get() as AccountRow;
+  row.auth_token = decToken(row.auth_token);
+  return row;
 }
 
 export function updateAccount(id: number, updates: Partial<AccountRow>) {
+  const safe = { ...updates };
+  if (safe.auth_token) {
+    safe.auth_token = encToken(safe.auth_token);
+  }
   const sets: string[] = ["updated_at = datetime('now')"];
   const params: (string | number | null)[] = [];
-  for (const [key, val] of Object.entries(updates)) {
+  for (const [key, val] of Object.entries(safe)) {
     if (val !== undefined) {
       sets.push(`${key} = ?`);
       params.push(val as any);

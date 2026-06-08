@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import Layout from "./components/Layout";
 import { Overview } from "./pages/Overview";
 import { X } from "./pages/X";
@@ -13,14 +13,40 @@ import { ProjectDetail } from "./pages/ProjectDetail";
 import { Reddit } from "./pages/Reddit";
 import { RedditDetail } from "./pages/RedditDetail";
 import { Settings } from "./pages/Settings";
+import { Login } from "./pages/Login";
+import { api } from "./api";
 
 const queryClient = new QueryClient();
+
+function AuthGuard({ children }: { children: React.ReactNode }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["auth", "me"],
+    queryFn: () => api.checkAuth(),
+    retry: 1,
+    staleTime: 60_000,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-[var(--background)]">
+        <div className="text-sm text-[var(--muted-foreground)]">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!data?.authenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
+}
 
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Routes>
-        <Route element={<Layout />}>
+        <Route path="login" element={<Login />} />
+        <Route element={<AuthGuard><Layout /></AuthGuard>}>
           <Route index element={<Overview />} />
           <Route path="x" element={<X />} />
           <Route path="x/:id" element={<XDetail />} />

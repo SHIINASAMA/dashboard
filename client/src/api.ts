@@ -1,8 +1,9 @@
-const API_BASE = "/api";
+const API_BASE = import.meta.env.BASE_URL + "api";
 
 async function fetchJSON<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${url}`, {
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     ...options,
   });
   if (!res.ok) {
@@ -326,4 +327,9 @@ export const api = {
     fetchJSON<{ posts: { date: string; count: number }[]; comments: { date: string; count: number }[] }>(`/reddit/activity/${accountId}`),
   getRedditSubreddits: (accountId: number) =>
     fetchJSON<{ subreddit: string; count: number }[]>(`/reddit/subreddits/${accountId}`),
+
+  // Auth
+  login: (password: string) => fetchJSON<{ ok: boolean; user?: string }>("/auth/login", { method: "POST", body: JSON.stringify({ password }) }),
+  checkAuth: () => fetchJSON<{ authenticated: boolean; user?: string }>("/auth/me"),
+  logout: () => fetchJSON<{ ok: boolean }>("/auth/logout", { method: "POST" }),
 };

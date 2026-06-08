@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { serveStatic } from "hono/bun";
 import { networkInterfaces } from "os";
+import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import tweetsRouter from "./routes/tweets";
 import statsRouter from "./routes/stats";
 import accountsRouter from "./routes/accounts";
@@ -13,22 +15,136 @@ import { fetchAccount } from "./fetcher";
 import { fetchGithubAccount } from "./fetchers/github";
 import { fetchGitlabAccount } from "./fetchers/gitlab";
 import { fetchRedditAccount, fetchRedditPublicAccount } from "./fetchers/reddit";
+import { sign, verifySignature } from "./crypto";
+import checkPassword from "./auth";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
+import { readFileSync, existsSync } from "fs";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// ── Configuration ────────────────────────────────────────────────
+
+const SECRET_PREFIX = process.env.DASHBOARD_URL_PREFIX || "";
+// Normalise: ensure leading / but no trailing /
+const BASE = SECRET_PREFIX.replace(/\/+$/, "") || "";
+
+const port = Number(process.env.PORT) || 3001;
+const protocol = process.env.HTTPS === "true" ? "https" : "http";
+const host = process.env.HOST || "localhost";
+const serverUrl = `${protocol}://${host}${port === 443 || port === 80 ? "" : `:${port}`}${BASE}`;
+
+const CLIENT_DIST = join(__dirname, "..", "client", "dist");
+const isProd = existsSync(join(CLIENT_DIST, "index.html"));
+
+// ── Session helpers ──────────────────────────────────────────────
+
+const SESSION_COOKIE = "dash_session";
+const SESSION_MAX_AGE = 7 * 24 * 60 * 60; // 7 days
+
+function createSessionToken(username: string): string {
+  const expires = Date.now() + SESSION_MAX_AGE * 1000;
+  const payload = `${username}:${expires}`;
+  const sig = sign(payload);
+  return `${payload}:${sig}`;
+}
+
+function validateSession(token: string): string | null {
+  const parts = token.split(":");
+  if (parts.length !== 3) return null;
+  const [username, expiresStr, sig] = parts;
+  const payload = `${username}:${expiresStr}`;
+  if (!verifySignature(payload, sig)) return null;
+  if (parseInt(expiresStr) < Date.now()) return null;
+  return username;
+}
+
+// ── App setup ────────────────────────────────────────────────────
 
 const app = new Hono();
 
-app.use("/*", cors());
+// CORS
+app.use("/*", cors({
+  origin: (origin) => origin, // reflect the origin
+  credentials: true,
+}));
 
-app.route("/api/tweets", tweetsRouter);
-app.route("/api/stats", statsRouter);
-app.route("/api/accounts", accountsRouter);
-app.route("/api/github", githubRouter);
-app.route("/api/gitlab", gitlabRouter);
-app.route("/api/reddit", redditRouter);
+// ── Auth middleware ───────────────────────────────────────────────
 
-app.get("/api/health", (c) => c.json({ status: "ok" }));
+// Require auth for all API routes except auth endpoints and health
+app.use(`${BASE}/api/*`, async (c, next) => {
+  const path = c.req.path;
+
+  // Public endpoints
+  if (path === `${BASE}/api/health`) return next();
+  if (path === `${BASE}/api/auth/login`) return next();
+  if (path === `${BASE}/api/reddit/callback`) return next();
+
+  const token = getCookie(c, SESSION_COOKIE);
+  if (!token) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+  const username = validateSession(token);
+  if (!username) {
+    return c.json({ error: "Session expired or invalid" }, 401);
+  }
+
+  // Attach user info for potential use
+  c.set("sessionUser", username);
+  return next();
+});
+
+// ── Auth routes ───────────────────────────────────────────────────
+
+app.post(`${BASE}/api/auth/login`, async (c) => {
+  try {
+    const { password } = await c.req.json();
+    const valid = await checkPassword(password);
+    if (!valid) {
+      await new Promise(r => setTimeout(r, 800)); // delay on failure
+      return c.json({ error: "Invalid password" }, 401);
+    }
+    const session = createSessionToken("admin");
+    setCookie(c, SESSION_COOKIE, session, {
+      path: `${BASE}/`,
+      httpOnly: true,
+      secure: protocol === "https",
+      sameSite: "Lax",
+      maxAge: SESSION_MAX_AGE,
+    });
+    return c.json({ ok: true, user: "admin" });
+  } catch (e) {
+    return c.json({ error: "Invalid request" }, 400);
+  }
+});
+
+app.get(`${BASE}/api/auth/me`, (c) => {
+  const token = getCookie(c, SESSION_COOKIE);
+  if (!token) return c.json({ authenticated: false }, 401);
+  const username = validateSession(token);
+  if (!username) return c.json({ authenticated: false }, 401);
+  return c.json({ authenticated: true, user: username });
+});
+
+app.post(`${BASE}/api/auth/logout`, (c) => {
+  deleteCookie(c, SESSION_COOKIE, { path: `${BASE}/` });
+  return c.json({ ok: true });
+});
+
+// ── API routes ────────────────────────────────────────────────────
+
+app.route(`${BASE}/api/tweets`, tweetsRouter);
+app.route(`${BASE}/api/stats`, statsRouter);
+app.route(`${BASE}/api/accounts`, accountsRouter);
+app.route(`${BASE}/api/github`, githubRouter);
+app.route(`${BASE}/api/gitlab`, gitlabRouter);
+app.route(`${BASE}/api/reddit`, redditRouter);
+
+app.get(`${BASE}/api/health`, (c) => c.json({ status: "ok" }));
 
 // Manual trigger for any platform
-app.post("/api/fetch/:id", async (c) => {
+app.post(`${BASE}/api/fetch/:id`, async (c) => {
   const id = Number(c.req.param("id"));
   const account = getAccountById(id);
   if (!account || !account.is_active) return c.json({ error: "Account not found or inactive" }, 404);
@@ -45,13 +161,31 @@ app.post("/api/fetch/:id", async (c) => {
   return c.json({ message: "Fetch started" });
 });
 
+// ── Serve client SPA (production) ─────────────────────────────────
+
+if (isProd) {
+  // Serve static assets (JS, CSS, images etc.)
+  app.use(`${BASE}/assets/*`, serveStatic({ root: join(CLIENT_DIST, "assets") }));
+  app.use(`${BASE}/*`, serveStatic({ root: CLIENT_DIST }));
+
+  // SPA fallback: serve index.html for all non-API GET routes
+  app.get(`${BASE}/*`, async (c) => {
+    const indexPath = join(CLIENT_DIST, "index.html");
+    if (existsSync(indexPath)) {
+      c.header("Content-Type", "text/html");
+      return c.body(readFileSync(indexPath, "utf-8"));
+    }
+    return c.notFound();
+  });
+}
+
 startScheduler();
 
-const port = Number(process.env.PORT) || 3001;
-const protocol = process.env.HTTPS === "true" ? "https" : "http";
-const host = process.env.HOST || "localhost";
-const serverUrl = `${protocol}://${host}${port === 443 || port === 80 ? "" : `:${port}`}`;
 console.log(`Server running on ${serverUrl}`);
+console.log(`URL prefix: ${BASE || "(none)"}`);
+if (isProd) console.log("Serving production client build");
+if (!process.env.DASHBOARD_SECRET) console.warn("⚠  DASHBOARD_SECRET not set — tokens are NOT encrypted at rest!");
+if (!process.env.DASHBOARD_PASSWORD) console.warn("⚠  DASHBOARD_PASSWORD not set — login accepts any password!");
 
 // Export the redirect URI so the fetcher can use it for OAuth callbacks
 export function getServerBaseUrl(): string {

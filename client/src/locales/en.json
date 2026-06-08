@@ -11,6 +11,12 @@
     "save": "Save",
     "copyright": "© 2026 Dashboard"
   },
+  "login": {
+    "password": "Password",
+    "login": "Log in",
+    "loggingIn": "Logging in…",
+    "invalidPassword": "Invalid password"
+  },
   "nav": {
     "overview": "Overview",
     "x": "X",
