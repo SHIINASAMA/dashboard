@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  AreaChart, Area,
+  AreaChart, Area, LineChart, Line, PieChart, Pie, Cell, Legend,
 } from "recharts";
 import { MessageSquare, Heart, Repeat2, Eye, TrendingUp, ArrowUpRight, Star, GitFork, ThumbsUp } from "lucide-react";
 import { XIcon, GithubIcon, GitlabIcon, RedditIcon } from "../components/BrandIcons";
@@ -105,12 +105,77 @@ export function Overview() {
     })),
   });
 
+  const redditTimelines = useQueries({
+    queries: redditAccounts.map((acc) => ({
+      queryKey: ["reddit", "timeline", acc.id],
+      queryFn: () => api.getRedditTimeline(acc.id),
+      staleTime: 30_000,
+    })),
+  });
+
+  const redditActivities = useQueries({
+    queries: redditAccounts.map((acc) => ({
+      queryKey: ["reddit", "activity", acc.id],
+      queryFn: () => api.getRedditActivity(acc.id),
+      staleTime: 30_000,
+    })),
+  });
+
+  const redditSubreddits = useQueries({
+    queries: redditAccounts.map((acc) => ({
+      queryKey: ["reddit", "subreddits", acc.id],
+      queryFn: () => api.getRedditSubreddits(acc.id),
+      staleTime: 30_000,
+    })),
+  });
+
   if (isLoading) {
     return <div className="text-center py-12 text-[var(--muted-foreground)]">{t("common.loading")}</div>;
   }
 
-  // ── aggregate GH stats across all accounts ──────────────────
-  const ghAllRepos = ghOverviews.flatMap((o) => o.data?.allRepos ?? []);
+  // ── aggregate Reddit stats across all accounts ──────────────────
+  const redditAllTimeline = redditTimelines.flatMap((o) => o.data ?? []);
+  const redditAllActivityPosts = redditActivities.flatMap((o) => o.data?.posts ?? []);
+  const redditAllActivityComments = redditActivities.flatMap((o) => o.data?.comments ?? []);
+  const redditAllSubreddits = redditSubreddits.flatMap((o) => o.data ?? []);
+
+  // Merge daily activity across accounts by date
+  const redditDailyMap = new Map<string, { posts: number; comments: number }>();
+  for (const d of redditAllActivityPosts) {
+    const cur = redditDailyMap.get(d.date) || { posts: 0, comments: 0 };
+    cur.posts += d.count;
+    redditDailyMap.set(d.date, cur);
+  }
+  for (const d of redditAllActivityComments) {
+    const cur = redditDailyMap.get(d.date) || { posts: 0, comments: 0 };
+    cur.comments += d.count;
+    redditDailyMap.set(d.date, cur);
+  }
+  const redditDailyActivity = Array.from(redditDailyMap.entries())
+    .map(([date, v]) => ({ date, posts: v.posts, comments: v.comments }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  // Merge subreddit counts across accounts
+  const subredditMap = new Map<string, number>();
+  for (const s of redditAllSubreddits) {
+    subredditMap.set(s.subreddit, (subredditMap.get(s.subreddit) ?? 0) + s.count);
+  }
+  const mergedSubreddits = Array.from(subredditMap.entries())
+    .map(([subreddit, count]) => ({ subreddit, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+
+  // Karma timeline across accounts
+  const karmaByDate = new Map<string, { post: number; comment: number }>();
+  for (const d of redditAllTimeline) {
+    const cur = karmaByDate.get(d.date) || { post: 0, comment: 0 };
+    cur.post += d.post_karma;
+    cur.comment += d.comment_karma;
+    karmaByDate.set(d.date, cur);
+  }
+  const redditKarmaTimeline = Array.from(karmaByDate.entries())
+    .map(([date, v]) => ({ date, post_karma: v.post, comment_karma: v.comment }))
+    .sort((a, b) => a.date.localeCompare(b.date));  const ghAllRepos = ghOverviews.flatMap((o) => o.data?.allRepos ?? []);
   const ghPinned = ghAllRepos.filter((r) => r.pinned);
   const ghTotalStars = ghAllRepos.reduce((s, r) => s + r.stars, 0);
   const ghTotalForks = ghAllRepos.reduce((s, r) => s + r.forks, 0);
@@ -280,6 +345,69 @@ export function Overview() {
             <StatCard title={t("overview.stats.redditPosts")} value={redditOverviews.reduce((s, o) => s + (o.data?.totalPosts ?? 0), 0)} icon={<MessageSquare size={16} />} />
             <StatCard title={t("overview.stats.redditComments")} value={redditOverviews.reduce((s, o) => s + (o.data?.totalComments ?? 0), 0)} icon={<MessageSquare size={16} />} />
           </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+            {/* Karma timeline */}
+            <Card className="border-0 shadow-none bg-transparent">
+              <CardHeader className="pb-1"><CardTitle className="text-xs font-medium text-[var(--muted-foreground)]">{t("overview.charts.redditKarma")}</CardTitle></CardHeader>
+              <CardContent className="p-0">
+                {redditKarmaTimeline.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={160}>
+                    <LineChart data={redditKarmaTimeline}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                      <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
+                      <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={30} />
+                      <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
+                      <Line type="monotone" dataKey="post_karma" stroke="var(--primary)" strokeWidth={2} dot={false} name={t("overview.charts.redditPostKarma")} />
+                      <Line type="monotone" dataKey="comment_karma" stroke="#3b82f6" strokeWidth={2} dot={false} name={t("overview.charts.redditCommentKarma")} />
+                      <Legend />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-[160px] text-xs text-[var(--muted-foreground)]">{t("redditDetail.noData")}</div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Daily activity */}
+            <Card className="border-0 shadow-none bg-transparent">
+              <CardHeader className="pb-1"><CardTitle className="text-xs font-medium text-[var(--muted-foreground)]">{t("overview.charts.redditActivity")}</CardTitle></CardHeader>
+              <CardContent className="p-0">
+                {redditDailyActivity.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={160}>
+                    <BarChart data={redditDailyActivity}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                      <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
+                      <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={30} />
+                      <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
+                      <Bar dataKey="posts" fill="var(--primary)" radius={[3, 3, 0, 0]} name={t("overview.stats.redditPosts")} />
+                      <Bar dataKey="comments" fill="#f97316" radius={[3, 3, 0, 0]} name={t("overview.stats.redditComments")} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-[160px] text-xs text-[var(--muted-foreground)]">{t("redditDetail.noData")}</div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {mergedSubreddits.length > 0 && (
+            <Card className="border-0 shadow-none bg-transparent">
+              <CardHeader className="pb-1"><CardTitle className="text-xs font-medium text-[var(--muted-foreground)]">{t("overview.charts.redditSubreddits")}</CardTitle></CardHeader>
+              <CardContent className="p-0">
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie data={mergedSubreddits} dataKey="count" nameKey="subreddit" cx="50%" cy="50%" outerRadius={70} label={({ subreddit, count }) => `${subreddit} (${count})`} labelLine={{ stroke: "var(--muted-foreground)", strokeWidth: 0.5 }}>
+                      {mergedSubreddits.map((_, i) => (
+                        <Cell key={i} fill={["var(--primary)", "#3b82f6", "#f97316", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#14b8a6", "#f43f5e", "#6366f1"][i % 10]} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
         </section>
       )}
 

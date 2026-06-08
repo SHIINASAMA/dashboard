@@ -6,15 +6,16 @@ import { api, type Account } from "../api";
 import { Card, CardContent } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { StatCard } from "../components/StatCard";
-import AddAccountForm from "../components/AddAccountForm";
+import EditAccountForm from "../components/EditAccountForm";
 import { formatDateTime } from "../lib/i18n";
-import { Plus, Play, Trash2, AlertCircle, ArrowUpRight, MessageSquare, Repeat2, Eye, TrendingUp } from "lucide-react";
+import { Pencil, Plus, Play, Trash2, AlertCircle, ArrowUpRight, MessageSquare, Repeat2, Eye, TrendingUp } from "lucide-react";
 
 export function X() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editAccount, setEditAccount] = useState<Account | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["accounts"],
@@ -108,6 +109,13 @@ export function X() {
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <button
+                          onClick={(e) => { e.stopPropagation(); setEditAccount(account); }}
+                          className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors"
+                          title={t("x.accountCard.edit")}
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button
                           onClick={(e) => { e.stopPropagation(); triggerMutation.mutate(account.id); }}
                           disabled={triggerMutation.isPending}
                           className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors disabled:opacity-40"
@@ -150,6 +158,7 @@ export function X() {
       </div>
 
       {showAddForm && <AddAccountForm onClose={() => setShowAddForm(false)} defaultPlatform="twitter" />}
+      {editAccount && <EditAccountForm account={editAccount} onClose={() => setEditAccount(null)} />}
     </div>
   );
 }

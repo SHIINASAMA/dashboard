@@ -80,7 +80,15 @@
       "topLikedDesc": "Your most popular tweets by likes",
       "noTweetData": "No tweet activity data yet. Add an X account and fetch tweets to populate this chart.",
       "noEngagementData": "No engagement data yet. Add an X account and fetch tweets to populate this chart.",
-      "noTweets": "No tweets yet. Add an X account and fetch tweets to see your top content here."
+      "noTweets": "No tweets yet. Add an X account and fetch tweets to see your top content here.",
+      "redditKarma": "Karma Over Time",
+      "redditKarmaDesc": "Post and comment karma trends",
+      "redditPostKarma": "Post Karma",
+      "redditCommentKarma": "Comment Karma",
+      "redditActivity": "Daily Activity",
+      "redditActivityDesc": "Posts and comments per day",
+      "redditSubreddits": "Top Subreddits",
+      "redditSubredditsDesc": "Where you post most"
     },
     "pinnedRepos": "Pinned Repositories",
     "pinnedProjects": "Pinned Projects"
@@ -150,6 +158,7 @@
       "interval": "Interval: every {{minutes}}m",
       "last": "Last: {{date}}",
       "fetchNow": "Fetch now",
+      "edit": "Edit",
       "delete": "Delete"
     }
   },
@@ -248,6 +257,7 @@
       "interval": "Interval: every {{minutes}}m",
       "last": "Last: {{date}}",
       "fetchNow": "Fetch now",
+      "edit": "Edit",
       "delete": "Delete"
     }
   },
@@ -388,6 +398,12 @@
       "step3": "Copy the auth_token value and paste it on the left"
     }
   },
+  "editAccountForm": {
+    "title": "Edit Account",
+    "save": "Save Changes",
+    "saving": "Saving...",
+    "tokenHint": "Leave blank to keep the current token."
+  },
   "reddit": {
     "heading": "Reddit",
     "accounts_one": "1 account configured",
@@ -413,6 +429,7 @@
       "interval": "Interval: every {{minutes}}m",
       "last": "Last: {{date}}",
       "fetchNow": "Fetch now",
+      "edit": "Edit",
       "delete": "Delete",
       "publicMode": "Public mode — limited data"
     }

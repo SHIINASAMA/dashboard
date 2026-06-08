@@ -58,6 +58,8 @@ accountsRouter.put("/:id", (c) => c.req.json().then((body) => {
   if (body.authToken) updates.auth_token = body.authToken;
   if (body.fetchInterval !== undefined) updates.fetch_interval = body.fetchInterval;
   if (body.isActive !== undefined) updates.is_active = body.isActive ? 1 : 0;
+  if (body.instanceUrl !== undefined) updates.instance_url = body.instanceUrl;
+  if (body.authType !== undefined) updates.auth_type = body.authType;
 
   updateAccount(id, updates);
   const updated = getAccountById(id)!;

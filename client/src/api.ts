@@ -251,7 +251,7 @@ export const api = {
   getAccount: (id: number) => fetchJSON<Account & { stats: any }>(`/accounts/${id}`),
   createAccount: (data: { screenName: string; authToken?: string; fetchInterval?: number; platform?: string; instanceUrl?: string; authType?: string }) =>
     fetchJSON<Account>("/accounts", { method: "POST", body: JSON.stringify(data) }),
-  updateAccount: (id: number, data: { screenName?: string; authToken?: string; fetchInterval?: number; isActive?: boolean }) =>
+  updateAccount: (id: number, data: { screenName?: string; authToken?: string; fetchInterval?: number; isActive?: boolean; instanceUrl?: string; authType?: string }) =>
     fetchJSON<Account>(`/accounts/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteAccount: (id: number) => fetchJSON<{ success: boolean }>(`/accounts/${id}`, { method: "DELETE" }),
   triggerFetch: (id: number) => fetchJSON<{ message: string }>(`/fetch/${id}`, { method: "POST" }),
