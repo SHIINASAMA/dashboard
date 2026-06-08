@@ -622,8 +622,8 @@ export function getRedditDailyActivity(accountId: number) {
 export function getRedditSubredditDistribution(accountId: number) {
   const db = getDb();
   return db.query(
-    "SELECT subreddit, COUNT(*) as count FROM reddit_posts WHERE account_id = ? GROUP BY subreddit ORDER BY count DESC LIMIT 10"
-  ).all(accountId) as { subreddit: string; count: number }[];
+    "SELECT subreddit, COUNT(*) as count FROM (SELECT subreddit FROM reddit_posts WHERE account_id = ? UNION ALL SELECT subreddit FROM reddit_comments WHERE account_id = ?) GROUP BY subreddit ORDER BY count DESC LIMIT 10"
+  ).all(accountId, accountId) as { subreddit: string; count: number }[];
 }
 
 export function getRedditDailyCommentActivity(accountId: number) {
