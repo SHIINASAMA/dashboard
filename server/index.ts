@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { networkInterfaces } from "os";
 import tweetsRouter from "./routes/tweets";
 import statsRouter from "./routes/stats";
 import accountsRouter from "./routes/accounts";

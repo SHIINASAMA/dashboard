@@ -83,7 +83,7 @@ export async function fetchAccount(account: AccountRow) {
       const params: Record<string, unknown> = { userId, count: batchSize };
       if (cursor) params.cursor = cursor;
 
-      const resp = await apiCall(() => client.getTweetApi().getUserTweets(params as any));
+      const resp = await apiCall(() => client.getTweetApi().getUserTweetsAndReplies(params as any));
       const tweets = ((resp.data as any).data || []) as any[];
 
       if (tweets.length === 0) break;
