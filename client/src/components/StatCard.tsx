@@ -10,16 +10,16 @@ interface StatCardProps {
 
 export function StatCard({ title, value, icon, description }: StatCardProps) {
   return (
-    <Card>
-      <CardContent className="flex items-start gap-4 p-6">
-        <div className="rounded-lg bg-[var(--muted)] p-2.5 text-[var(--primary)]">
+    <Card className="overflow-hidden">
+      <CardContent className="flex items-center gap-3 p-3">
+        <div className="rounded-md bg-[var(--muted)] p-2 text-[var(--primary)] shrink-0">
           {icon}
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm text-[var(--muted-foreground)] truncate">{title}</p>
-          <p className="text-2xl font-bold mt-0.5">{value.toLocaleString()}</p>
+        <div className="min-w-0">
+          <p className="text-[11px] text-[var(--muted-foreground)] truncate">{title}</p>
+          <p className="text-lg font-bold">{value.toLocaleString()}</p>
           {description && (
-            <p className="text-xs text-[var(--muted-foreground)] mt-1">{description}</p>
+            <p className="text-[10px] text-[var(--muted-foreground)]">{description}</p>
           )}
         </div>
       </CardContent>
