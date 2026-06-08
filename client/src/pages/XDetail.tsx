@@ -137,6 +137,24 @@ export function XDetail() {
             </CardContent>
           </Card>
           <Card>
+            <CardHeader><CardTitle>{t("xDetail.views")}</CardTitle></CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={250}>
+                <AreaChart data={timeline.dailyTweets}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
+                  <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+                  <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }} />
+                  <Area type="monotone" dataKey="total_views" stroke="#10b981" fill="#10b98120" name={t("xDetail.views")} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+      {timeline && timeline.dailyTweets.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
             <CardHeader><CardTitle>{t("xDetail.engagement")}</CardTitle></CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={250}>

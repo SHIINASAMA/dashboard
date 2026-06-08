@@ -106,7 +106,8 @@
     "engagement": "Engagement",
     "likes": "Likes",
     "retweets": "Retweets",
-    "recentTweets": "Recent Tweets"
+    "recentTweets": "Recent Tweets",
+    "views": "Views"
   },
   "github": {
     "heading": "GitHub",
