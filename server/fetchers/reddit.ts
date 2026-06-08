@@ -169,22 +169,26 @@ export async function fetchRedditAccount(account: AccountRow) {
   }
 }
 
-// ── Public (unauthenticated) fetcher ───────────────────────────
+// ── Public (cookie-based) fetcher ──────────────────────────────
+// Uses the loid cookie to access Reddit's JSON API without OAuth.
+// The auth_token field stores the loid cookie value (from browser dev tools).
+// This works because Reddit allows unauthenticated JSON access when a
+// valid loid cookie is present. OAuth is NOT required for basic profile data.
 
-async function redditPublicFetch(path: string): Promise<any> {
+async function redditPublicFetch(path: string, loid: string): Promise<any> {
   const proxy = getProxyUrl();
-  const res = await fetch(`https://www.reddit.com${path}.json`, {
+  const res = await fetch(`https://old.reddit.com${path}`, {
     headers: {
       "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
       "Accept": "application/json",
-      "Accept-Language": "en-US,en;q=0.9",
+      "Cookie": `loid=${loid}`,
     },
     tls: { rejectUnauthorized: false },
     proxy,
   });
   if (!res.ok) {
     if (res.status === 403) {
-      throw new Error("Reddit is blocking unauthenticated API access (403). Public data fetching is currently unavailable — Reddit may have tightened bot protection. OAuth-based accounts are not affected.");
+      throw new Error("Reddit rejected the request (403). Your loid cookie may have expired. Get a new one from your browser's dev tools (Application > Cookies > loid).");
     }
     throw new Error(`Reddit public API ${res.status} for ${path}`);
   }
@@ -192,15 +196,16 @@ async function redditPublicFetch(path: string): Promise<any> {
 }
 
 export async function fetchRedditPublicAccount(account: AccountRow) {
+  const loid = account.auth_token;
   const username = account.screen_name;
 
   try {
     console.log(`[Reddit Public] Fetching @${username}...`);
 
     // 1. Fetch public profile
-    const profile = await redditPublicFetch(`/user/${username}/about`);
+    const profile = await redditPublicFetch(`/user/${username}/about.json`, loid);
     if (!profile?.data?.name) {
-      throw new Error("Invalid Reddit user profile");
+      throw new Error("Invalid Reddit user profile — user may not exist");
     }
 
     const pdata = profile.data;
@@ -211,12 +216,12 @@ export async function fetchRedditPublicAccount(account: AccountRow) {
     });
     console.log(`[Reddit Public] @${username}: karma recorded (post=${pdata.link_karma}, comment=${pdata.comment_karma})`);
 
-    // 2. Fetch posts (limited to 50 for public API rate limits)
+    // 2. Fetch posts
     let postCount = 0;
     let after: string | undefined;
     while (postCount < 50) {
-      const path = `/user/${username}/submitted?limit=25&sort=new${after ? `&after=${after}` : ""}`;
-      const posts = await redditPublicFetch(path);
+      const path = `/user/${username}/submitted.json?limit=25&sort=new${after ? `&after=${after}` : ""}`;
+      const posts = await redditPublicFetch(path, loid);
       const children = posts?.data?.children ?? [];
       if (children.length === 0) break;
 
@@ -246,12 +251,12 @@ export async function fetchRedditPublicAccount(account: AccountRow) {
     }
     console.log(`[Reddit Public] @${username}: ${postCount} posts fetched`);
 
-    // 3. Fetch comments (limited to 50)
+    // 3. Fetch comments
     let commentCount = 0;
     after = undefined;
     while (commentCount < 50) {
-      const path = `/user/${username}/comments?limit=25&sort=new${after ? `&after=${after}` : ""}`;
-      const comments = await redditPublicFetch(path);
+      const path = `/user/${username}/comments.json?limit=25&sort=new${after ? `&after=${after}` : ""}`;
+      const comments = await redditPublicFetch(path, loid);
       const children = comments?.data?.children ?? [];
       if (children.length === 0) break;
 
