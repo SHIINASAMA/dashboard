@@ -161,7 +161,10 @@ async function fetchRepoTraffic(accountId: number, repoId: number, fullName: str
     }
   } catch (e: any) {
     const msg = e.message || String(e);
-    if (msg.includes("403")) return "GitHub API returned 403 — your PAT needs repo scope (classic token, not fine-grained)";
+    if (msg.includes("403")) {
+      if (msg.includes("blocked") || msg.includes("tos")) return null;
+      return "GitHub API returned 403 — your PAT needs repo scope (classic token, not fine-grained)";
+    }
     if (msg.includes("401")) return "GitHub API returned 401 — invalid token";
     return null;
   }
