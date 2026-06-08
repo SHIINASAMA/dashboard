@@ -344,7 +344,7 @@
       "title": "How to set up Reddit:",
       "step1": "Go to",
       "step2": "Choose \"script\" as the app type",
-      "step3": "Set redirect URI to http://localhost:8080",
+      "step3": "Set redirect URI to {url}",
       "step4": "Note the client ID (under app name) and secret",
       "step5": "Put REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET in your .env file",
       "fields": "Form fields:",

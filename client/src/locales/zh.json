@@ -344,7 +344,7 @@
       "title": "如何配置 Reddit：",
       "step1": "前往",
       "step2": "选择 \"script\" 作为应用类型",
-      "step3": "将 redirect URI 设为 http://localhost:8080",
+      "step3": "将 redirect URI 设为 {url}",
       "step4": "记下 client ID（在应用名称下方）和 secret",
       "step5": "将 REDDIT_CLIENT_ID 和 REDDIT_CLIENT_SECRET 填入 .env 文件",
       "fields": "表单字段说明：",

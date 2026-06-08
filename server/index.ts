@@ -46,6 +46,15 @@ app.post("/api/fetch/:id", async (c) => {
 
 startScheduler();
 
-const port = 3001;
-console.log(`Server running on http://localhost:${port}`);
+const port = Number(process.env.PORT) || 3001;
+const protocol = process.env.HTTPS === "true" ? "https" : "http";
+const host = process.env.HOST || "localhost";
+const serverUrl = `${protocol}://${host}${port === 443 || port === 80 ? "" : `:${port}`}`;
+console.log(`Server running on ${serverUrl}`);
+
+// Export the redirect URI so the fetcher can use it for OAuth callbacks
+export function getServerBaseUrl(): string {
+  return serverUrl;
+}
+
 export default { port, fetch: app.fetch };

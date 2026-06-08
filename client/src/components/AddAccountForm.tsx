@@ -130,7 +130,7 @@ export default function AddAccountForm({ onClose, defaultPlatform = "twitter" }:
                 <ol className="list-decimal list-inside space-y-1 text-[var(--muted-foreground)]">
                   <li>{t("addAccountForm.redditGuide.step1")} <a href="https://www.reddit.com/prefs/apps" target="_blank" rel="noopener noreferrer" className="text-[var(--primary)] hover:underline">{t("addAccountForm.howToCreateRedditApp")}</a></li>
                   <li>{t("addAccountForm.redditGuide.step2")}</li>
-                  <li>{t("addAccountForm.redditGuide.step3")}</li>
+                  <li>{t("addAccountForm.redditGuide.step3").replace("{url}", `${window.location.protocol}//${window.location.host}/api/reddit/callback`)}</li>
                   <li>{t("addAccountForm.redditGuide.step4")}</li>
                   <li>{t("addAccountForm.redditGuide.step5")}</li>
                 </ol>
