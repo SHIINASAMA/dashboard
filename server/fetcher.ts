@@ -95,6 +95,8 @@ export async function fetchAccount(account: AccountRow) {
         const tweetId = String(legacyTweet.idStr || "");
         if (!tweetId) continue;
 
+        const views = tweet.raw?.result?.views;
+
         const mediaUrls = (get(legacyTweet, "extendedEntities.media", []) as any[])
           .filter((m: any) => m.type === "photo")
           .map((m: any) => m.mediaUrlHttps);
@@ -113,7 +115,7 @@ export async function fetchAccount(account: AccountRow) {
           favorite_count: legacyTweet.favoriteCount || 0,
           retweet_count: legacyTweet.retweetCount || 0,
           reply_count: legacyTweet.replyCount || 0,
-          view_count: legacyTweet.viewCount || 0,
+          view_count: views?.count ? parseInt(String(views.count), 10) || 0 : 0,
           bookmark_count: legacyTweet.bookmarkCount || 0,
           is_quote: Boolean(legacyTweet.isQuoteStatus) ? 1 : 0,
           is_reply: Boolean(legacyTweet.inReplyToStatusIdStr) ? 1 : 0,
