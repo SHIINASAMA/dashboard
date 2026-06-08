@@ -60,7 +60,14 @@ const DEFAULTS: DashboardConfig = {
 };
 
 function generatePrefix(): string {
-  return "/" + randomBytes(8).toString("base64url");
+  return randomBytes(12).toString("base64url"); // 12 bytes = 16 base64url chars, no leading /
+}
+
+// prefixValue returns the urlPrefix value from config (no slash).
+// Empty string means no prefix → use '/' as the base path.
+function prefixValue(cfg: DashboardConfig): string {
+  const p = (cfg.urlPrefix || "").replace(/^\/+|\/+$/g, "");
+  return p;
 }
 
 // ── Load / save ───────────────────────────────────────────────────
@@ -76,11 +83,18 @@ export function loadConfig(): DashboardConfig {
     try {
       const raw = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
       _config = { ...DEFAULTS, ...raw };
-      // Migrate: if config exists but urlPrefix is empty, generate one
+      // Normalise: strip leading/trailing slashes from any existing value
+      const clean = (_config.urlPrefix || "").replace(/^\/+|\/+$/g, "");
+      _config.urlPrefix = clean;
+      // Migrate: if urlPrefix is still empty, generate one
       if (!_config.urlPrefix) {
         _config.urlPrefix = generatePrefix();
         saveConfig(_config);
         console.log("🔒 URL prefix auto-generated:", _config.urlPrefix);
+      }
+      // If we normalised (had extra slashes), save the cleaned version
+      if (clean !== (raw.urlPrefix || "")) {
+        saveConfig(_config);
       }
       return _config;
     } catch (e) {
@@ -90,7 +104,7 @@ export function loadConfig(): DashboardConfig {
 
   // First run — auto-generate urlPrefix, migrate other env vars
   _config = {
-    urlPrefix: process.env.DASHBOARD_URL_PREFIX || generatePrefix(),
+    urlPrefix: process.env.DASHBOARD_URL_PREFIX?.replace(/^\/+|\/+$/g, "") || generatePrefix(),
     host: process.env.HOST || "localhost",
     port: Number(process.env.PORT) || 3001,
     https: process.env.HTTPS === "true",
@@ -106,6 +120,10 @@ export function loadConfig(): DashboardConfig {
 
 export function saveConfig(updates: Partial<DashboardConfig>): DashboardConfig {
   _config = { ...loadConfig(), ...updates };
+  // Normalise urlPrefix on save
+  if (_config.urlPrefix) {
+    _config.urlPrefix = _config.urlPrefix.replace(/^\/+|\/+$/g, "");
+  }
   writeFileSync(CONFIG_PATH, JSON.stringify(_config, null, 2) + "\n", { mode: 0o600 });
   return _config;
 }

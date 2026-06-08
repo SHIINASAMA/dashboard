@@ -32,7 +32,9 @@ await bootstrap();
 // ── Configuration ────────────────────────────────────────────────
 
 const cfg = loadConfig();
-const BASE = cfg.urlPrefix.replace(/\/+$/, "") || "";
+// urlPrefix is always set and does not contain slashes
+const PREFIX = cfg.urlPrefix;
+const BASE = PREFIX ? `/${PREFIX}` : "";
 
 const port = cfg.port;
 const protocol = cfg.https ? "https" : "http";
