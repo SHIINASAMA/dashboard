@@ -9,7 +9,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area,
 } from "recharts";
-import { MessageSquare, Heart, Repeat2, Eye, Bookmark, TrendingUp, ArrowUpRight } from "lucide-react";
+import { MessageSquare, Repeat2, Eye, TrendingUp, ArrowUpRight } from "lucide-react";
 
 export function Overview() {
   const { t } = useTranslation();
@@ -94,11 +94,9 @@ export function Overview() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title={t("overview.stats.totalTweets")} value={stats?.total_tweets ?? 0} icon={<MessageSquare size={20} />} description={stats ? t("overview.stats.today", { count: stats.todayTweets }) : t("overview.stats.dash")} />
-        <StatCard title={t("overview.stats.totalLikes")} value={stats?.total_likes ?? 0} icon={<Heart size={20} />} description={stats ? t("overview.stats.today", { count: stats.todayLikes }) : t("overview.stats.dash")} />
         <StatCard title={t("overview.stats.totalRetweets")} value={stats?.total_retweets ?? 0} icon={<Repeat2 size={20} />} description={stats ? t("overview.stats.today", { count: stats.todayRetweets }) : t("overview.stats.dash")} />
         <StatCard title={t("overview.stats.avgEngagement")} value={stats?.avgEngagement ?? "0"} icon={<TrendingUp size={20} />} description={t("overview.stats.perTweet")} />
         <StatCard title={t("overview.stats.totalViews")} value={stats?.total_views ?? 0} icon={<Eye size={20} />} />
-        <StatCard title={t("overview.stats.totalBookmarks")} value={stats?.total_bookmarks ?? 0} icon={<Bookmark size={20} />} />
         <StatCard title={t("overview.stats.followers")} value={stats?.followersCount ?? 0} icon={<TrendingUp size={20} />} description={stats ? t("overview.stats.following", { count: stats.followingCount }) : t("overview.stats.dash")} />
       </div>
 

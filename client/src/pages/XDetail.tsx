@@ -35,7 +35,7 @@ export function XDetail() {
 
   const { data: timeline } = useQuery<TimelineData>({
     queryKey: ["timeline", accountId],
-    queryFn: () => api.getTimeline(6),
+    queryFn: () => api.getTimeline(6, accountId),
     enabled: !!accountId,
   });
 

@@ -89,13 +89,16 @@ export async function fetchAccount(account: AccountRow) {
       if (tweets.length === 0) break;
 
       for (const tweet of tweets) {
-        const legacyTweet = tweet.raw?.result?.legacy;
+        const t = tweet.tweet;
+        if (!t) continue;
+
+        const legacyTweet = t.legacy;
         if (!legacyTweet) continue;
 
         const tweetId = String(legacyTweet.idStr || "");
         if (!tweetId) continue;
 
-        const views = tweet.raw?.result?.views;
+        const views = t.views;
 
         const mediaUrls = (get(legacyTweet, "extendedEntities.media", []) as any[])
           .filter((m: any) => m.type === "photo")

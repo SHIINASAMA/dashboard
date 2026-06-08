@@ -163,7 +163,11 @@ export const api = {
     return fetchJSON<PaginatedTweets>(url);
   },
   getTweet: (id: string) => fetchJSON<Tweet>(`/tweets/${id}`),
-  getTimeline: (months = 6) => fetchJSON<TimelineData>(`/stats/timeline?months=${months}`),
+  getTimeline: (months = 6, accountId?: number) => {
+    let url = `/stats/timeline?months=${months}`;
+    if (accountId) url += `&accountIds=${accountId}`;
+    return fetchJSON<TimelineData>(url);
+  },
   getTopTweets: (metric = "favorite_count", limit = 10) =>
     fetchJSON<Tweet[]>(`/stats/top?metric=${metric}&limit=${limit}`),
   getCalendar: (year?: number) =>
