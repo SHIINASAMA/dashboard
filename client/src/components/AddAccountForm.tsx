@@ -32,7 +32,7 @@ export default function AddAccountForm({ onClose, defaultPlatform = "twitter" }:
   const mutation = useMutation({
     mutationFn: () => api.createAccount({
       screenName,
-      authToken: isRedditPublic ? "" : authToken,
+      authToken,
       fetchInterval,
       platform,
       instanceUrl: instanceUrl || null,
@@ -100,28 +100,20 @@ export default function AddAccountForm({ onClose, defaultPlatform = "twitter" }:
 
               <div>
                 <label className="block text-xs font-medium mb-1 text-[var(--muted-foreground)]">
-                  {platform === "github" ? t("addAccountForm.personalAccessToken") : platform === "gitlab" ? t("addAccountForm.personalAccessToken") : platform === "reddit" ? t("addAccountForm.refreshToken") : t("addAccountForm.authToken")}
+                  {platform === "github" ? t("addAccountForm.personalAccessToken") : platform === "gitlab" ? t("addAccountForm.personalAccessToken") : platform === "reddit" ? (isRedditPublic ? t("addAccountForm.loidCookie") : t("addAccountForm.refreshToken")) : t("addAccountForm.authToken")}
                 </label>
-                {isRedditPublic ? (
-                  <div className="px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--muted)] text-xs text-[var(--muted-foreground)]">
-                    {t("addAccountForm.helpRedditPublic")}
-                  </div>
-                ) : (
-                  <>
-                    <input
-                      type="password" value={authToken}
-                      onChange={(e) => setAuthToken(e.target.value)}
-                      placeholder={platform === "github" ? t("addAccountForm.placeholderGithubToken") : platform === "gitlab" ? t("addAccountForm.placeholderGitlabToken") : platform === "reddit" ? t("addAccountForm.placeholderRedditToken") : t("addAccountForm.placeholderXToken")}
-                      className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] font-mono text-xs"
-                    />
-                    <p className="text-[11px] text-[var(--muted-foreground)] mt-1 leading-snug">
-                      {platform === "github" ? t("addAccountForm.helpGithub")
-                        : platform === "gitlab" ? t("addAccountForm.helpGitlab")
-                        : platform === "reddit" ? t("addAccountForm.helpReddit")
-                        : t("addAccountForm.helpX")}
-                    </p>
-                  </>
-                )}
+                <input
+                  type="password" value={authToken}
+                  onChange={(e) => setAuthToken(e.target.value)}
+                  placeholder={platform === "github" ? t("addAccountForm.placeholderGithubToken") : platform === "gitlab" ? t("addAccountForm.placeholderGitlabToken") : platform === "reddit" ? (isRedditPublic ? t("addAccountForm.placeholderRedditToken") : t("addAccountForm.placeholderRedditOAuthToken")) : t("addAccountForm.placeholderXToken")}
+                  className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] font-mono text-xs"
+                />
+                <p className="text-[11px] text-[var(--muted-foreground)] mt-1 leading-snug">
+                  {platform === "github" ? t("addAccountForm.helpGithub")
+                    : platform === "gitlab" ? t("addAccountForm.helpGitlab")
+                    : platform === "reddit" ? (isRedditPublic ? t("addAccountForm.helpRedditPublic") : t("addAccountForm.helpReddit"))
+                    : t("addAccountForm.helpX")}
+                </p>
               </div>
 
               {platform === "gitlab" && (
@@ -216,7 +208,7 @@ export default function AddAccountForm({ onClose, defaultPlatform = "twitter" }:
           <div className="flex gap-2">
             <button
               onClick={() => mutation.mutate()}
-              disabled={mutation.isPending || !screenName || (!isRedditPublic && !authToken)}
+              disabled={mutation.isPending || !screenName || !authToken}
               className="flex-1 px-4 py-2 rounded-lg bg-[var(--primary)] text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-40 text-sm"
             >
               {mutation.isPending ? t("addAccountForm.adding") : t("addAccountForm.addAccount")}
