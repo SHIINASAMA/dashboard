@@ -1,29 +1,27 @@
-import bcrypt from "bcrypt";
+import { password } from "bun";
 import { getSetting, setSetting } from "./db";
 
-const SALT_ROUNDS = 12;
-
-export async function verifyPassword(password: string): Promise<boolean> {
+export async function verifyPassword(input: string): Promise<boolean> {
   const hash = getSetting("password_hash");
   if (!hash) return true; // No password set — open access
   try {
-    return await bcrypt.compare(password, hash);
+    return password.verify(input, hash);
   } catch {
     return false;
   }
 }
 
-export async function setPassword(password: string): Promise<void> {
-  const hash = await bcrypt.hash(password, SALT_ROUNDS);
+export async function setNewPassword(pw: string): Promise<void> {
+  const hash = await password.hash(pw, { algorithm: "argon2id" });
   setSetting("password_hash", hash);
 }
 
 export async function changePassword(oldPassword: string, newPassword: string): Promise<boolean> {
   const hash = getSetting("password_hash");
   if (hash) {
-    const ok = await bcrypt.compare(oldPassword, hash);
+    const ok = await verifyPassword(oldPassword);
     if (!ok) return false;
   }
-  await setPassword(newPassword);
+  await setNewPassword(newPassword);
   return true;
 }

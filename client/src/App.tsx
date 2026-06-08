@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, BrowserRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import Layout from "./components/Layout";
 import { Overview } from "./pages/Overview";
@@ -44,24 +44,26 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Routes>
-        <Route path="login" element={<Login />} />
-        <Route element={<AuthGuard><Layout /></AuthGuard>}>
-          <Route index element={<Overview />} />
-          <Route path="x" element={<X />} />
-          <Route path="x/:id" element={<XDetail />} />
-          <Route path="github" element={<GitHub />} />
-          <Route path="github/:id" element={<GitHubDetail />} />
-          <Route path="github/:accountId/repos/:repoId" element={<RepoDetail />} />
-          <Route path="gitlab" element={<GitLab />} />
-          <Route path="gitlab/:id" element={<GitLabDetail />} />
-          <Route path="gitlab/:accountId/projects/:projectId" element={<ProjectDetail />} />
-          <Route path="reddit" element={<Reddit />} />
-          <Route path="reddit/:id" element={<RedditDetail />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
+        <Routes>
+          <Route path="login" element={<Login />} />
+          <Route element={<AuthGuard><Layout /></AuthGuard>}>
+            <Route index element={<Overview />} />
+            <Route path="x" element={<X />} />
+            <Route path="x/:id" element={<XDetail />} />
+            <Route path="github" element={<GitHub />} />
+            <Route path="github/:id" element={<GitHubDetail />} />
+            <Route path="github/:accountId/repos/:repoId" element={<RepoDetail />} />
+            <Route path="gitlab" element={<GitLab />} />
+            <Route path="gitlab/:id" element={<GitLabDetail />} />
+            <Route path="gitlab/:accountId/projects/:projectId" element={<ProjectDetail />} />
+            <Route path="reddit" element={<Reddit />} />
+            <Route path="reddit/:id" element={<RedditDetail />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
     </QueryClientProvider>
   );
 }

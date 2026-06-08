@@ -131,7 +131,7 @@ app.get(`${BASE}/api/auth/me`, (c) => {
 });
 
 app.post(`${BASE}/api/auth/logout`, (c) => {
-  deleteCookie(c, SESSION_COOKIE, { path: `${BASE}/` });
+  deleteCookie(c, SESSION_COOKIE, { path: `${BASE}/`, httpOnly: true, secure: protocol === "https", sameSite: "Lax" });
   return c.json({ ok: true });
 });
 
