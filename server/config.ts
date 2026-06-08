@@ -59,6 +59,10 @@ const DEFAULTS: DashboardConfig = {
   passwordHash: "",
 };
 
+function generatePrefix(): string {
+  return "/" + randomBytes(8).toString("base64url");
+}
+
 // ── Load / save ───────────────────────────────────────────────────
 
 let _config: DashboardConfig | null = null;
@@ -72,15 +76,21 @@ export function loadConfig(): DashboardConfig {
     try {
       const raw = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
       _config = { ...DEFAULTS, ...raw };
+      // Migrate: if config exists but urlPrefix is empty, generate one
+      if (!_config.urlPrefix) {
+        _config.urlPrefix = generatePrefix();
+        saveConfig(_config);
+        console.log("🔒 URL prefix auto-generated:", _config.urlPrefix);
+      }
       return _config;
     } catch (e) {
       console.warn("⚠  config.json is corrupt — using defaults");
     }
   }
 
-  // First run — migrate from env vars, generate config.json
+  // First run — auto-generate urlPrefix, migrate other env vars
   _config = {
-    urlPrefix: process.env.DASHBOARD_URL_PREFIX || "",
+    urlPrefix: process.env.DASHBOARD_URL_PREFIX || generatePrefix(),
     host: process.env.HOST || "localhost",
     port: Number(process.env.PORT) || 3001,
     https: process.env.HTTPS === "true",
@@ -88,6 +98,9 @@ export function loadConfig(): DashboardConfig {
   };
   writeFileSync(CONFIG_PATH, JSON.stringify(_config, null, 2) + "\n", { mode: 0o600 });
   console.log("📄 config.json created at", CONFIG_PATH);
+  if (!process.env.DASHBOARD_URL_PREFIX) {
+    console.log("🔒 URL prefix auto-generated:", _config.urlPrefix);
+  }
   return _config;
 }
 
