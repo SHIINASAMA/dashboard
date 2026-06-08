@@ -1,18 +1,13 @@
 import { Database } from "bun:sqlite";
 import { initSchema } from "../db/schema";
-import { join } from "path";
-import { fileURLToPath } from "url";
+import { dbPath as _dbPath } from "./config";
 import { encrypt, decrypt } from "./crypto";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = join(__filename, "..");
-const DB_PATH = join(__dirname, "..", "data", "dashboard.db");
 
 let db: Database | null = null;
 
 export function getDb(): Database {
   if (!db) {
-    db = new Database(DB_PATH);
+    db = new Database(_dbPath());
     db.exec("PRAGMA journal_mode = WAL");
     initSchema(db);
   }
@@ -159,13 +154,13 @@ export function createAccount(
   instanceUrl: string | null = null,
   authType: string | null = null
 ): AccountRow {
-  const db = getDb();
+  const d = getDb();
   const token = encToken(authToken);
-  db.query(`
+  d.query(`
     INSERT INTO accounts (screen_name, auth_token, fetch_interval, platform, instance_url, auth_type)
     VALUES (?, ?, ?, ?, ?, ?)
   `).run(screenName, token, fetchInterval, platform, instanceUrl, authType);
-  const row = db.query("SELECT * FROM accounts WHERE id = last_insert_rowid()").get() as AccountRow;
+  const row = d.query("SELECT * FROM accounts WHERE id = last_insert_rowid()").get() as AccountRow;
   row.auth_token = decToken(row.auth_token);
   return row;
 }

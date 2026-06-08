@@ -21,21 +21,22 @@ import { fileURLToPath } from "url";
 import { readFileSync, existsSync } from "fs";
 import { bootstrap } from "./setup";
 
+import { loadConfig } from "./config";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// ── Bootstrap (crypto keys, password) ────────────────────────────
+// ── Bootstrap (crypto keys) ──────────────────────────────────────
 await bootstrap();
 
 // ── Configuration ────────────────────────────────────────────────
 
-const SECRET_PREFIX = process.env.DASHBOARD_URL_PREFIX || "";
-// Normalise: ensure leading / but no trailing /
-const BASE = SECRET_PREFIX.replace(/\/+$/, "") || "";
+const cfg = loadConfig();
+const BASE = cfg.urlPrefix.replace(/\/+$/, "") || "";
 
-const port = Number(process.env.PORT) || 3001;
-const protocol = process.env.HTTPS === "true" ? "https" : "http";
-const host = process.env.HOST || "localhost";
+const port = cfg.port;
+const protocol = cfg.https ? "https" : "http";
+const host = cfg.host;
 const serverUrl = `${protocol}://${host}${port === 443 || port === 80 ? "" : `:${port}`}${BASE}`;
 
 const CLIENT_DIST = join(__dirname, "..", "client", "dist");
@@ -131,7 +132,7 @@ app.get(`${BASE}/api/auth/me`, (c) => {
 });
 
 app.post(`${BASE}/api/auth/logout`, (c) => {
-  deleteCookie(c, SESSION_COOKIE, { path: `${BASE}/`, httpOnly: true, secure: protocol === "https", sameSite: "Lax" });
+  deleteCookie(c, SESSION_COOKIE, { path: `${BASE}/`, maxAge: 0 });
   return c.json({ ok: true });
 });
 
@@ -154,9 +155,9 @@ app.post(`${BASE}/api/auth/change-password`, async (c) => {
 });
 
 // Import here to avoid circular dependency
-import { getSetting } from "./db";
+import { loadConfig } from "./config";
 function getUserHasPassword(): boolean {
-  try { return !!getSetting("password_hash"); } catch { return false; }
+  try { return !!loadConfig().passwordHash; } catch { return false; }
 }
 
 // ── API routes ────────────────────────────────────────────────────
