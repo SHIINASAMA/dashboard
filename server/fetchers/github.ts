@@ -14,7 +14,7 @@ async function ghFetch(path: string, token?: string) {
     Accept: "application/vnd.github.v3+json",
     "User-Agent": "x-kit-dashboard",
   };
-  if (token) headers.Authorization = `token ${token}`;
+  if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${GITHUB_API}${path}`, { headers });
   if (res.status === 403) {
