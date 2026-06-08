@@ -19,10 +19,15 @@ export function getDb(): Database {
   return db;
 }
 
-/**
- * Encrypt a token before storing, decrypt when reading.
- * If DASHBOARD_SECRET is not set, pass through as plaintext (development fallback).
- */
+export function getSetting(key: string): string | null {
+  const row = getDb().query("SELECT value FROM settings WHERE key = ?").get(key) as { value: string } | undefined;
+  return row?.value ?? null;
+}
+
+export function setSetting(key: string, value: string): void {
+  getDb().query("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)").run(key, value);
+}
+
 function encToken(plain: string): string {
   try { return encrypt(plain); } catch { return plain; }
 }

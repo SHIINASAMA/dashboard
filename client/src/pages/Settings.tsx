@@ -1,7 +1,9 @@
-import { Sun, Moon, Monitor } from "lucide-react";
+import { Sun, Moon, Monitor, Key, Eye, EyeOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../components/ThemeProvider";
 import { themes, type ThemeCategory } from "../lib/themes";
+import { api } from "../api";
+import { useState } from "react";
 
 const MODE_ICONS = {
   system: Monitor,
@@ -18,6 +20,40 @@ const MODE_OPTIONS = [
 export function Settings() {
   const { t, i18n } = useTranslation();
   const { settings, setSettings } = useTheme();
+  const [pwError, setPwError] = useState("");
+  const [pwSuccess, setPwSuccess] = useState("");
+  const [pwLoading, setPwLoading] = useState(false);
+
+  const handleChangePassword = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setPwError("");
+    setPwSuccess("");
+    const form = new FormData(e.currentTarget);
+    const currentPassword = (form.get("currentPassword") as string) || "";
+    const newPassword = (form.get("newPassword") as string) || "";
+    const confirm = (form.get("confirmPassword") as string) || "";
+
+    if (newPassword !== confirm) {
+      setPwError(t("settings.passwordsDontMatch"));
+      return;
+    }
+    if (newPassword.length < 4) {
+      setPwError(t("settings.passwordTooShort"));
+      return;
+    }
+
+    setPwLoading(true);
+    try {
+      await api.changePassword(currentPassword, newPassword);
+      setPwSuccess(t("settings.passwordChanged"));
+      (e.target as HTMLFormElement).reset();
+    } catch (err: any) {
+      setPwError(err.message || t("settings.passwordChangeFailed"));
+    } finally {
+      setPwLoading(false);
+    }
+  };
+
   const filtered = (category: ThemeCategory) =>
     themes.filter((theme) => theme.category === category);
 
@@ -57,6 +93,43 @@ export function Settings() {
               </button>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <h3 className="text-sm font-semibold flex items-center gap-1.5"><Key size={14} /> {t("settings.security")}</h3>
+        <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--card)]">
+          <form onSubmit={handleChangePassword} className="flex flex-col gap-3">
+            <div>
+              <label className="block text-xs font-medium mb-1 text-[var(--muted-foreground)]">{t("settings.currentPassword")}</label>
+              <input
+                name="currentPassword" type="password" autoComplete="current-password"
+                className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1 text-[var(--muted-foreground)]">{t("settings.newPassword")}</label>
+              <input
+                name="newPassword" type="password" autoComplete="new-password"
+                className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1 text-[var(--muted-foreground)]">{t("settings.confirmPassword")}</label>
+              <input
+                name="confirmPassword" type="password" autoComplete="new-password"
+                className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] text-sm"
+              />
+            </div>
+            {pwError && <p className="text-xs text-red-500">{pwError}</p>}
+            {pwSuccess && <p className="text-xs text-green-500">{pwSuccess}</p>}
+            <button
+              type="submit" disabled={pwLoading}
+              className="self-start px-4 py-2 rounded-lg bg-[var(--primary)] text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-40 text-sm"
+            >
+              {pwLoading ? t("settings.saving") : t("settings.changePassword")}
+            </button>
+          </form>
         </div>
       </section>
 

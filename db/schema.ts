@@ -469,6 +469,19 @@ const MIGRATIONS: { version: number; name: string; up: (db: Database) => void }[
       db.exec("ALTER TABLE accounts ADD COLUMN auth_type TEXT");
     },
   },
+  // ── Migration 11: settings table ───────────────────────────────
+  {
+    version: 11,
+    name: "settings table",
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS settings (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL
+        )
+      `);
+    },
+  },
 ];
 
 export function initSchema(db: Database) {

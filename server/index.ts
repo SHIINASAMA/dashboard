@@ -1,7 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { serveStatic } from "hono/bun";
-import { networkInterfaces } from "os";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import tweetsRouter from "./routes/tweets";
 import statsRouter from "./routes/stats";
@@ -16,13 +15,17 @@ import { fetchGithubAccount } from "./fetchers/github";
 import { fetchGitlabAccount } from "./fetchers/gitlab";
 import { fetchRedditAccount, fetchRedditPublicAccount } from "./fetchers/reddit";
 import { sign, verifySignature } from "./crypto";
-import checkPassword from "./auth";
+import { verifyPassword, setPassword, changePassword } from "./auth";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { readFileSync, existsSync } from "fs";
+import { bootstrap } from "./setup";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// ── Bootstrap (crypto keys, password) ────────────────────────────
+await bootstrap();
 
 // ── Configuration ────────────────────────────────────────────────
 
@@ -100,9 +103,9 @@ app.use(`${BASE}/api/*`, async (c, next) => {
 app.post(`${BASE}/api/auth/login`, async (c) => {
   try {
     const { password } = await c.req.json();
-    const valid = await checkPassword(password);
+    const valid = await verifyPassword(password);
     if (!valid) {
-      await new Promise(r => setTimeout(r, 800)); // delay on failure
+      await new Promise(r => setTimeout(r, 800));
       return c.json({ error: "Invalid password" }, 401);
     }
     const session = createSessionToken("admin");
@@ -124,13 +127,37 @@ app.get(`${BASE}/api/auth/me`, (c) => {
   if (!token) return c.json({ authenticated: false }, 401);
   const username = validateSession(token);
   if (!username) return c.json({ authenticated: false }, 401);
-  return c.json({ authenticated: true, user: username });
+  return c.json({ authenticated: true, user: username, hasPassword: getUserHasPassword() });
 });
 
 app.post(`${BASE}/api/auth/logout`, (c) => {
   deleteCookie(c, SESSION_COOKIE, { path: `${BASE}/` });
   return c.json({ ok: true });
 });
+
+// Change password (requires current session)
+app.post(`${BASE}/api/auth/change-password`, async (c) => {
+  try {
+    const { currentPassword, newPassword } = await c.req.json();
+    if (!newPassword || newPassword.length < 4) {
+      return c.json({ error: "Password must be at least 4 characters" }, 400);
+    }
+    const ok = await changePassword(currentPassword, newPassword);
+    if (!ok) {
+      await new Promise(r => setTimeout(r, 800));
+      return c.json({ error: "Current password is incorrect" }, 401);
+    }
+    return c.json({ ok: true });
+  } catch (e) {
+    return c.json({ error: "Invalid request" }, 400);
+  }
+});
+
+// Import here to avoid circular dependency
+import { getSetting } from "./db";
+function getUserHasPassword(): boolean {
+  try { return !!getSetting("password_hash"); } catch { return false; }
+}
 
 // ── API routes ────────────────────────────────────────────────────
 
@@ -184,8 +211,6 @@ startScheduler();
 console.log(`Server running on ${serverUrl}`);
 console.log(`URL prefix: ${BASE || "(none)"}`);
 if (isProd) console.log("Serving production client build");
-if (!process.env.DASHBOARD_SECRET) console.warn("⚠  DASHBOARD_SECRET not set — tokens are NOT encrypted at rest!");
-if (!process.env.DASHBOARD_PASSWORD) console.warn("⚠  DASHBOARD_PASSWORD not set — login accepts any password!");
 
 // Export the redirect URI so the fetcher can use it for OAuth callbacks
 export function getServerBaseUrl(): string {
