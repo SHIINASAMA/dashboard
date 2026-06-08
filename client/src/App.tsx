@@ -7,6 +7,7 @@ import { XDetail } from "./pages/XDetail";
 import { GitHub } from "./pages/GitHub";
 import { GitHubDetail } from "./pages/GitHubDetail";
 import { RepoDetail } from "./pages/RepoDetail";
+import { Settings } from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="github" element={<GitHub />} />
           <Route path="github/:id" element={<GitHubDetail />} />
           <Route path="github/:accountId/repos/:repoId" element={<RepoDetail />} />
+          <Route path="settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

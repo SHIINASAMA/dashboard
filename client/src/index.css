@@ -1,6 +1,12 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
+  --radius: 0.5rem;
+}
+
+[data-theme="default-light"] {
   --background: #ffffff;
   --foreground: #0f172a;
   --muted: #f1f5f9;
@@ -11,22 +17,19 @@
   --card: #ffffff;
   --card-foreground: #0f172a;
   --ring: #3b82f6;
-  --radius: 0.5rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0f172a;
-    --foreground: #f8fafc;
-    --muted: #1e293b;
-    --muted-foreground: #94a3b8;
-    --border: #334155;
-    --primary: #3b82f6;
-    --primary-foreground: #ffffff;
-    --card: #1e293b;
-    --card-foreground: #f8fafc;
-    --ring: #3b82f6;
-  }
+[data-theme="default-dark"] {
+  --background: #0f172a;
+  --foreground: #f8fafc;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --border: #334155;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --card: #1e293b;
+  --card-foreground: #f8fafc;
+  --ring: #3b82f6;
 }
 
 body {

@@ -1,16 +1,24 @@
 <!doctype html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard</title>
+  <script>
+    (function() {
+      try {
+        var s = JSON.parse(localStorage.getItem('theme-settings') || '{"mode":"system","lightTheme":"default-light","darkTheme":"default-dark"}');
+        var dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var id = s.mode === 'light' ? s.lightTheme : s.mode === 'dark' ? s.darkTheme : dark ? s.darkTheme : s.lightTheme;
+        document.documentElement.setAttribute('data-theme', id);
+        if (id.endsWith('-dark')) document.documentElement.classList.add('dark');
+      } catch(e) {}
+    })();
+  </script>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard</title>
 </head>
-
 <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
 </body>
-
 </html>

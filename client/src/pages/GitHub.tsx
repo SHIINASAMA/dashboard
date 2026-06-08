@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Navigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, type Account } from "../api";
 import { Card, CardContent } from "../components/ui/card";
@@ -39,10 +39,6 @@ export function GitHub() {
 
   if (isLoading) {
     return <div className="text-center py-12 text-[var(--muted-foreground)]">Loading...</div>;
-  }
-
-  if (!isLoading && ghAccounts.length === 1) {
-    return <Navigate to={`/github/${ghAccounts[0].id}`} replace />;
   }
 
   return (
