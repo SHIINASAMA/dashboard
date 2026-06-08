@@ -236,6 +236,6 @@
     "placeholderXToken": "您的 X auth_token cookie",
     "helpGithub": "GitHub Personal Access Token（经典）需具备 repo 权限。细粒度令牌不支持流量数据。",
     "helpX": "来自 X.com cookies → auth_token。请妥善保管。",
-    "howToCreateToken": "如何创建 GitHub 令牌 →"
+    "howToCreateToken": "创建经典令牌（已预选所需权限） →"
   }
 }

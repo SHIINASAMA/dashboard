@@ -236,6 +236,6 @@
     "placeholderXToken": "Your X auth_token cookie",
     "helpGithub": "GitHub Personal Access Token (classic) with repo scope. Fine-grained tokens don't support traffic data.",
     "helpX": "From X.com cookies → auth_token. Keep this private.",
-    "howToCreateToken": "How to create a GitHub token →"
+    "howToCreateToken": "Create a classic token with pre-selected scopes →"
   }
 }

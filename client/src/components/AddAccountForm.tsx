@@ -75,7 +75,7 @@ export default function AddAccountForm({ onClose, defaultPlatform = "twitter" }:
             </p>
             {platform === "github" && (
               <p className="text-xs mt-1.5">
-                <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer"
+                <a href="https://github.com/settings/tokens/new?scopes=repo,read:user&description=Dashboard" target="_blank" rel="noopener noreferrer"
                   className="text-[var(--primary)] hover:underline">
                   {t("addAccountForm.howToCreateToken")}
                 </a>
