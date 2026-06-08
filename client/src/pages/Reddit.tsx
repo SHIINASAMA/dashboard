@@ -8,14 +8,7 @@ import { Badge } from "../components/ui/badge";
 import AddAccountForm from "../components/AddAccountForm";
 import { formatDateTime } from "../lib/i18n";
 import { Plus, Play, Trash2, AlertCircle, ArrowUpRight, MessageSquare, TrendingUp, ThumbsUp } from "lucide-react";
-
-function RedditIcon({ size }: { size?: number }) {
-  return (
-    <svg viewBox="0 0 24 24" width={size || 18} height={size || 18} fill="currentColor">
-      <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547.8-3.747c.104-.487.548-.83 1.051-.83.585 0 1.06.475 1.06 1.06a1.032 1.032 0 0 1-.86 1.022l-.206.034.244 2.538c.09-.004.183-.01.277-.01.264 0 .518.048.753.134zm-11.799.434c1.518 0 2.66.625 3.722 1.484 2.237-1.545 5.383-1.892 7.07-1.76l-1.1 5.08c.004.042.006.085.006.128 0 2.78-3.147 5.044-7.016 5.044-3.87 0-7.017-2.263-7.017-5.044 0-.043.002-.086.006-.128l-1.1-5.08c1.687-.132 4.833.215 7.07 1.76 1.062-.86 2.204-1.484 3.722-1.484h.637zM12 16.801c-2.03 0-3.676-.992-3.676-2.216s1.646-2.216 3.676-2.216 3.676.992 3.676 2.216-1.647 2.216-3.676 2.216zm0-3.829a1.728 1.728 0 0 0 0 3.457 1.728 1.728 0 0 0 0-3.457zm3.075 1.228a.74.74 0 1 0 0 1.48.74.74 0 0 0 0-1.48zm-6.15 0a.74.74 0 1 0 0 1.48.74.74 0 0 0 0-1.48z" />
-    </svg>
-  );
-}
+import { RedditIcon } from "../components/BrandIcons";
 
 export function Reddit() {
   const { t } = useTranslation();
