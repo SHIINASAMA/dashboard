@@ -229,40 +229,22 @@ export function RepoDetail() {
             <CardTitle className="flex items-center gap-2"><Globe size={18} /> {t("repoDetail.referringSites")}</CardTitle>
             <CardDescription>{t("repoDetail.referringSitesDesc")}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {referrers && referrers.length > 0 ? (
-              <>
-                <div className="space-y-2">
-                  {referrers.slice(0, 10).map((r) => (
-                    <div key={r.referrer} className="flex items-center justify-between p-2 rounded-lg bg-[var(--muted)]">
-                      <span className="text-sm font-mono truncate">{r.referrer}</span>
-                      <div className="flex items-center gap-3 text-xs text-[var(--muted-foreground)] shrink-0 ml-2">
-                        <span>{t("repoDetail.viewsSuffix", { count: r.count })}</span>
-                        <span>{t("repoDetail.uniqueSuffix", { count: r.uniques })}</span>
-                      </div>
-                    </div>
+          <CardContent>
+            {referrerHistoryChart && referrerHistoryChart.length > 1 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={referrerHistoryChart}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
+                  <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+                  <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }} />
+                  <Legend layout="horizontal" verticalAlign="bottom" align="left" wrapperStyle={{ fontSize: "12px" }} />
+                  {(referrers?.slice(0, 5) || []).map((ref, i) => (
+                    <Line key={ref.referrer} type="monotone" dataKey={ref.referrer} stroke={COLORS[i]} strokeWidth={2} dot={false} />
                   ))}
-                </div>
-                {referrerHistoryChart && referrerHistoryChart.length > 1 && (
-                  <div>
-                    <p className="text-xs font-medium text-[var(--muted-foreground)] mb-2">{t("repoDetail.referrerHistory")}</p>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <LineChart data={referrerHistoryChart}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                        <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                        <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
-                        <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }} />
-                        <Legend wrapperStyle={{ fontSize: "11px" }} />
-                        {(referrers?.slice(0, 5) || []).map((ref, i) => (
-                          <Line key={ref.referrer} type="monotone" dataKey={ref.referrer} stroke={COLORS[i]} strokeWidth={2} dot={false} />
-                        ))}
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
-              </>
+                </LineChart>
+              </ResponsiveContainer>
             ) : (
-              <p className="text-sm text-[var(--muted-foreground)] text-center py-8">{t("repoDetail.noReferrerData")}</p>
+              <p className="text-sm text-[var(--muted-foreground)] text-center py-12">{t("repoDetail.noReferrerData")}</p>
             )}
           </CardContent>
         </Card>
@@ -272,43 +254,22 @@ export function RepoDetail() {
             <CardTitle className="flex items-center gap-2"><FileText size={18} /> {t("repoDetail.popularContent")}</CardTitle>
             <CardDescription>{t("repoDetail.popularContentDesc")}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {paths && paths.length > 0 ? (
-              <>
-                <div className="space-y-2">
-                  {paths.slice(0, 10).map((p) => (
-                    <div key={p.path} className="p-2 rounded-lg bg-[var(--muted)]">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-mono truncate">{p.path}</span>
-                        <div className="flex items-center gap-3 text-xs text-[var(--muted-foreground)] shrink-0 ml-2">
-                          <span>{t("repoDetail.viewsSuffix", { count: p.count })}</span>
-                          <span>{t("repoDetail.uniqueSuffix", { count: p.uniques })}</span>
-                        </div>
-                      </div>
-                      {p.title && <p className="text-xs text-[var(--muted-foreground)] mt-0.5 truncate">{p.title}</p>}
-                    </div>
+          <CardContent>
+            {pathHistoryChart && pathHistoryChart.length > 1 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={pathHistoryChart}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
+                  <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+                  <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }} />
+                  <Legend layout="horizontal" verticalAlign="bottom" align="left" wrapperStyle={{ fontSize: "12px" }} />
+                  {(paths?.slice(0, 5) || []).map((p, i) => (
+                    <Line key={p.path} type="monotone" dataKey={p.path} stroke={COLORS[i]} strokeWidth={2} dot={false} />
                   ))}
-                </div>
-                {pathHistoryChart && pathHistoryChart.length > 1 && (
-                  <div>
-                    <p className="text-xs font-medium text-[var(--muted-foreground)] mb-2">{t("repoDetail.pathHistory")}</p>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <LineChart data={pathHistoryChart}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                        <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                        <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
-                        <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }} />
-                        <Legend wrapperStyle={{ fontSize: "11px" }} />
-                        {(paths?.slice(0, 5) || []).map((p, i) => (
-                          <Line key={p.path} type="monotone" dataKey={p.path} stroke={COLORS[i]} strokeWidth={2} dot={false} />
-                        ))}
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
-              </>
+                </LineChart>
+              </ResponsiveContainer>
             ) : (
-              <p className="text-sm text-[var(--muted-foreground)] text-center py-8">{t("repoDetail.noPopularContent")}</p>
+              <p className="text-sm text-[var(--muted-foreground)] text-center py-12">{t("repoDetail.noPopularContent")}</p>
             )}
           </CardContent>
         </Card>

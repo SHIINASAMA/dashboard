@@ -19,7 +19,8 @@ async function ghFetch(path: string, token?: string) {
   const res = await fetch(`${GITHUB_API}${path}`, { headers });
   if (res.status === 403) {
     const body = await res.text().catch(() => "");
-    throw new Error(`GitHub API 403: ${body.slice(0, 200)}`);
+    const err = new Error(`GitHub API 403: ${body.slice(0, 200)}`);
+    throw err;
   }
   if (!res.ok) {
     throw new Error(`GitHub API ${res.status}: ${res.statusText}`);

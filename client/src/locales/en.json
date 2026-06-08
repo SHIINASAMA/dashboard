@@ -204,13 +204,9 @@
     "noStarHistory": "No star history yet. Data is recorded with each fetch.",
     "noCloneData": "No clone data. Requires a classic PAT with repo scope (fine-grained tokens don't support traffic API).",
     "noTrafficData": "No traffic data. Requires a classic PAT with repo scope (fine-grained tokens don't support traffic API).",
-    "noReferrerData": "No referrer data.",
-    "noPopularContent": "No popular content data.",
-    "referrerHistory": "Referrer history",
-    "pathHistory": "Content history",
-    "noReleases": "No releases found. Requires a classic PAT with repo scope.",
-    "viewsSuffix": "{{count}} views",
-    "uniqueSuffix": "{{count}} unique"
+    "noReferrerData": "No referrer data yet. More data will appear after additional fetches.",
+    "noPopularContent": "No popular content data yet. More data will appear after additional fetches.",
+    "noReleases": "No releases found. Requires a classic PAT with repo scope."
   },
   "settings": {
     "heading": "Settings",
