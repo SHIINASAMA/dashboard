@@ -23,7 +23,8 @@ export function getDb(): Database {
 export interface AccountRow {
   id: number;
   screen_name: string;
-  user_id: string;
+  platform: string;
+  user_id: string | null;
   auth_token: string;
   fetch_interval: number;
   is_active: number;
@@ -66,6 +67,40 @@ export interface UserStatsRow {
   recorded_at: string;
 }
 
+export interface GithubStatsRow {
+  account_id: number;
+  public_repos: number;
+  public_gists: number;
+  followers: number;
+  following: number;
+  recorded_at: string;
+}
+
+export interface GithubRepoRow {
+  id: number;
+  account_id: number;
+  repo_id: number;
+  name: string;
+  full_name: string;
+  description: string | null;
+  language: string | null;
+  stars: number;
+  forks: number;
+  open_issues: number;
+  topics: string;
+  homepage: string | null;
+  is_fork: number;
+  created_at: string | null;
+  updated_at: string | null;
+  pushed_at: string | null;
+}
+
+export interface GithubContributionRow {
+  date: string;
+  count: number;
+  level: number;
+}
+
 export interface DailyStatsRow {
   date: string;
   tweets_count: number;
@@ -80,7 +115,7 @@ export interface DailyStatsRow {
 
 export function getAccounts(): AccountPublic[] {
   return getDb().query(
-    "SELECT id, screen_name, user_id, fetch_interval, is_active, last_fetched_at, error_message, created_at, updated_at FROM accounts ORDER BY created_at DESC"
+    "SELECT id, screen_name, platform, user_id, fetch_interval, is_active, last_fetched_at, error_message, created_at, updated_at FROM accounts ORDER BY created_at DESC"
   ).all() as AccountPublic[];
 }
 
@@ -92,23 +127,27 @@ export function getAccountById(id: number): AccountRow | undefined {
   return getDb().query("SELECT * FROM accounts WHERE id = ?").get(id) as AccountRow | undefined;
 }
 
-export function createAccount(screenName: string, authToken: string, fetchInterval: number): AccountRow {
+export function createAccount(
+  screenName: string,
+  authToken: string,
+  fetchInterval: number,
+  platform: string = "twitter"
+): AccountRow {
   const db = getDb();
   db.query(`
-    INSERT INTO accounts (screen_name, auth_token, fetch_interval)
-    VALUES (?, ?, ?)
-  `).run(screenName, authToken, fetchInterval);
-  const row = db.query("SELECT * FROM accounts WHERE id = last_insert_rowid()").get() as AccountRow;
-  return row;
+    INSERT INTO accounts (screen_name, auth_token, fetch_interval, platform)
+    VALUES (?, ?, ?, ?)
+  `).run(screenName, authToken, fetchInterval, platform);
+  return db.query("SELECT * FROM accounts WHERE id = last_insert_rowid()").get() as AccountRow;
 }
 
-export function updateAccount(id: number, updates: Partial<Pick<AccountRow, "screen_name" | "auth_token" | "fetch_interval" | "is_active" | "user_id" | "last_fetched_at" | "error_message">>) {
+export function updateAccount(id: number, updates: Partial<AccountRow>) {
   const sets: string[] = ["updated_at = datetime('now')"];
-  const params: any[] = [];
+  const params: (string | number | null)[] = [];
   for (const [key, val] of Object.entries(updates)) {
     if (val !== undefined) {
       sets.push(`${key} = ?`);
-      params.push(val);
+      params.push(val as any);
     }
   }
   params.push(id);
@@ -119,10 +158,13 @@ export function deleteAccount(id: number) {
   const db = getDb();
   db.query("DELETE FROM tweets WHERE account_id = ?").run(id);
   db.query("DELETE FROM user_stats WHERE account_id = ?").run(id);
+  db.query("DELETE FROM github_repos WHERE account_id = ?").run(id);
+  db.query("DELETE FROM github_stats WHERE account_id = ?").run(id);
+  db.query("DELETE FROM github_contributions WHERE account_id = ?").run(id);
   db.query("DELETE FROM accounts WHERE id = ?").run(id);
 }
 
-// ─── Tweets ─────────────────────────────────────────────────────
+// ─── Twitter queries ────────────────────────────────────────────
 
 export function getOverviewStats(accountIds?: number[]) {
   const db = getDb();
@@ -153,26 +195,21 @@ export function getOverviewStats(accountIds?: number[]) {
     FROM user_stats u1
     INNER JOIN (
       SELECT account_id, MAX(recorded_at) as max_recorded
-      FROM user_stats
-      GROUP BY account_id
+      FROM user_stats GROUP BY account_id
     ) u2 ON u1.account_id = u2.account_id AND u1.recorded_at = u2.max_recorded
     ${accountIds && accountIds.length > 0 ? `WHERE u1.account_id IN (${accountIds.join(",")})` : ""}
   `).all() as UserStatsRow[];
 
-  const followersCount = latestStatsRows.reduce((sum, r) => sum + r.followers_count, 0);
-  const followingCount = latestStatsRows.reduce((sum, r) => sum + r.following_count, 0);
-  const userTweetCount = latestStatsRows.reduce((sum, r) => sum + r.tweet_count, 0);
-
-  const avgEngagement = tweetStats.total_tweets > 0
-    ? ((tweetStats.total_likes + tweetStats.total_retweets + tweetStats.total_replies) / tweetStats.total_tweets).toFixed(1)
-    : "0";
+  const followersCount = latestStatsRows.reduce((s, r) => s + r.followers_count, 0);
+  const followingCount = latestStatsRows.reduce((s, r) => s + r.following_count, 0);
+  const userTweetCount = latestStatsRows.reduce((s, r) => s + r.tweet_count, 0);
 
   return {
     ...tweetStats,
-    avgEngagement,
-    followersCount,
-    followingCount,
-    userTweetCount,
+    avgEngagement: tweetStats.total_tweets > 0
+      ? ((tweetStats.total_likes + tweetStats.total_retweets + tweetStats.total_replies) / tweetStats.total_tweets).toFixed(1)
+      : "0",
+    followersCount, followingCount, userTweetCount,
     todayLikes: todayStats?.today_likes ?? 0,
     todayRetweets: todayStats?.today_retweets ?? 0,
     todayTweets: todayStats?.today_tweets ?? 0,
@@ -182,37 +219,17 @@ export function getOverviewStats(accountIds?: number[]) {
 export function getTweets(page: number, limit: number, sort: string, order: string, search?: string, accountIds?: number[]) {
   const db = getDb();
   const offset = (page - 1) * limit;
-
   const conditions: string[] = [];
   const params: any[] = [];
-  if (search) {
-    conditions.push("full_text LIKE ?");
-    params.push(`%${search}%`);
-  }
-  if (accountIds && accountIds.length > 0) {
-    conditions.push(`account_id IN (${accountIds.join(",")})`);
-  }
+  if (search) { conditions.push("full_text LIKE ?"); params.push(`%${search}%`); }
+  if (accountIds?.length) conditions.push(`account_id IN (${accountIds.join(",")})`);
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
-
   const allowedSorts = ["created_at", "favorite_count", "retweet_count", "reply_count", "view_count"];
   const sortCol = allowedSorts.includes(sort) ? sort : "created_at";
   const sortOrder = order === "asc" ? "ASC" : "DESC";
-
   const total = db.query(`SELECT COUNT(*) as count FROM tweets ${whereClause}`).get(...params) as any;
-
-  const rows = db.query(`
-    SELECT * FROM tweets ${whereClause}
-    ORDER BY ${sortCol} ${sortOrder}
-    LIMIT ? OFFSET ?
-  `).all(...params, limit, offset) as TweetRow[];
-
-  return {
-    data: rows,
-    total: total.count,
-    page,
-    limit,
-    totalPages: Math.ceil(total.count / limit),
-  };
+  const rows = db.query(`SELECT * FROM tweets ${whereClause} ORDER BY ${sortCol} ${sortOrder} LIMIT ? OFFSET ?`).all(...params, limit, offset) as TweetRow[];
+  return { data: rows, total: total.count, page, limit, totalPages: Math.ceil(total.count / limit) };
 }
 
 export function getTweetById(id: string) {
@@ -221,90 +238,80 @@ export function getTweetById(id: string) {
 
 export function getTimelineStats(months: number, accountIds?: number[]) {
   const db = getDb();
-  const since = new Date();
-  since.setMonth(since.getMonth() - months);
-
-  const whereClause = accountIds && accountIds.length > 0
-    ? `WHERE created_at >= ? AND account_id IN (${accountIds.join(",")})`
-    : "WHERE created_at >= ?";
-
-  const dailyTweets = db.query(`
-    SELECT
-      date(created_at) as date,
-      COUNT(*) as tweets_count,
-      COALESCE(SUM(favorite_count), 0) as total_likes,
-      COALESCE(SUM(retweet_count), 0) as total_retweets,
-      COALESCE(SUM(reply_count), 0) as total_replies,
-      COALESCE(SUM(view_count), 0) as total_views
-    FROM tweets ${whereClause}
-    GROUP BY date(created_at)
-    ORDER BY date ASC
-  `).all(since.toISOString()) as DailyStatsRow[];
-
-  const followerGrowth = db.query(`
-    SELECT recorded_at as date, followers_count, following_count, tweet_count
-    FROM user_stats
-    WHERE recorded_at >= ? ${accountIds && accountIds.length > 0 ? `AND account_id IN (${accountIds.join(",")})` : ""}
-    ORDER BY recorded_at ASC
-  `).all(since.toISOString()) as UserStatsRow[];
-
+  const since = new Date(); since.setMonth(since.getMonth() - months);
+  const w = accountIds?.length ? `WHERE created_at >= ? AND account_id IN (${accountIds.join(",")})` : "WHERE created_at >= ?";
+  const dailyTweets = db.query(`SELECT date(created_at) as date, COUNT(*) as tweets_count, COALESCE(SUM(favorite_count),0) as total_likes, COALESCE(SUM(retweet_count),0) as total_retweets, COALESCE(SUM(reply_count),0) as total_replies, COALESCE(SUM(view_count),0) as total_views FROM tweets ${w} GROUP BY date(created_at) ORDER BY date ASC`).all(since.toISOString()) as DailyStatsRow[];
+  const fw = accountIds?.length ? `WHERE recorded_at >= ? AND account_id IN (${accountIds.join(",")})` : "WHERE recorded_at >= ?";
+  const followerGrowth = db.query(`SELECT recorded_at as date, followers_count, following_count, tweet_count FROM user_stats ${fw} ORDER BY recorded_at ASC`).all(since.toISOString()) as UserStatsRow[];
   return { dailyTweets, followerGrowth };
 }
 
 export function getTopTweets(metric: string, limit: number, accountIds?: number[]) {
   const db = getDb();
-  const allowedMetrics = ["favorite_count", "retweet_count", "reply_count", "view_count", "bookmark_count"];
-  const metricCol = allowedMetrics.includes(metric) ? metric : "favorite_count";
-  const whereClause = accountIds && accountIds.length > 0 ? `WHERE account_id IN (${accountIds.join(",")})` : "";
-
-  return db.query(`
-    SELECT * FROM tweets ${whereClause} ORDER BY ${metricCol} DESC LIMIT ?
-  `).all(limit) as TweetRow[];
+  const allowed = ["favorite_count", "retweet_count", "reply_count", "view_count", "bookmark_count"];
+  const col = allowed.includes(metric) ? metric : "favorite_count";
+  const w = accountIds?.length ? `WHERE account_id IN (${accountIds.join(",")})` : "";
+  return db.query(`SELECT * FROM tweets ${w} ORDER BY ${col} DESC LIMIT ?`).all(limit) as TweetRow[];
 }
 
 export function getCalendarData(year: number, accountIds?: number[]) {
   const db = getDb();
-  const whereClause = accountIds && accountIds.length > 0
-    ? `WHERE strftime('%Y', created_at) = ? AND account_id IN (${accountIds.join(",")})`
-    : "WHERE strftime('%Y', created_at) = ?";
-
-  return db.query(`
-    SELECT date(created_at) as date, COUNT(*) as count
-    FROM tweets ${whereClause}
-    GROUP BY date(created_at)
-    ORDER BY date ASC
-  `).all(String(year)) as { date: string; count: number }[];
+  const w = accountIds?.length ? `WHERE strftime('%Y', created_at) = ? AND account_id IN (${accountIds.join(",")})` : "WHERE strftime('%Y', created_at) = ?";
+  return db.query(`SELECT date(created_at) as date, COUNT(*) as count FROM tweets ${w} GROUP BY date(created_at) ORDER BY date ASC`).all(String(year)) as { date: string; count: number }[];
 }
 
 export function upsertTweet(tweet: Omit<TweetRow, "fetched_at">) {
-  getDb().query(`
-    INSERT INTO tweets (id, account_id, full_text, created_at, favorite_count, retweet_count,
-      reply_count, view_count, bookmark_count, is_quote, is_reply, is_retweet,
-      media_urls, urls, hashtags, mentions, lang)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ON CONFLICT(id) DO UPDATE SET
-      favorite_count = excluded.favorite_count,
-      retweet_count = excluded.retweet_count,
-      reply_count = excluded.reply_count,
-      view_count = excluded.view_count,
-      bookmark_count = excluded.bookmark_count
-  `).run(
-    tweet.id, tweet.account_id, tweet.full_text, tweet.created_at, tweet.favorite_count,
-    tweet.retweet_count, tweet.reply_count, tweet.view_count, tweet.bookmark_count,
-    tweet.is_quote, tweet.is_reply, tweet.is_retweet,
-    tweet.media_urls, tweet.urls, tweet.hashtags, tweet.mentions, tweet.lang
-  );
+  getDb().query(`INSERT INTO tweets (id,account_id,full_text,created_at,favorite_count,retweet_count,reply_count,view_count,bookmark_count,is_quote,is_reply,is_retweet,media_urls,urls,hashtags,mentions,lang) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET favorite_count=excluded.favorite_count,retweet_count=excluded.retweet_count,reply_count=excluded.reply_count,view_count=excluded.view_count,bookmark_count=excluded.bookmark_count`).run(
+    tweet.id, tweet.account_id, tweet.full_text, tweet.created_at, tweet.favorite_count, tweet.retweet_count, tweet.reply_count, tweet.view_count, tweet.bookmark_count, tweet.is_quote, tweet.is_reply, tweet.is_retweet, tweet.media_urls, tweet.urls, tweet.hashtags, tweet.mentions, tweet.lang);
 }
 
 export function insertUserStats(stats: Omit<UserStatsRow, "recorded_at">) {
-  getDb().query(`
-    INSERT INTO user_stats (account_id, followers_count, following_count, tweet_count, listed_count)
-    VALUES (?, ?, ?, ?, ?)
-  `).run(stats.account_id, stats.followers_count, stats.following_count, stats.tweet_count, stats.listed_count);
+  getDb().query(`INSERT INTO user_stats (account_id, followers_count, following_count, tweet_count, listed_count) VALUES(?,?,?,?,?)`).run(stats.account_id, stats.followers_count, stats.following_count, stats.tweet_count, stats.listed_count);
 }
 
 export function getLatestUserStats(accountId: number) {
-  return getDb().query(`
-    SELECT * FROM user_stats WHERE account_id = ? ORDER BY recorded_at DESC LIMIT 1
-  `).get(accountId) as UserStatsRow | undefined;
+  return getDb().query("SELECT * FROM user_stats WHERE account_id = ? ORDER BY recorded_at DESC LIMIT 1").get(accountId) as UserStatsRow | undefined;
+}
+
+// ─── GitHub queries ──────────────────────────────────────────────
+
+export function getGithubOverview(accountId: number) {
+  const db = getDb();
+  const latest = db.query("SELECT * FROM github_stats WHERE account_id = ? ORDER BY recorded_at DESC LIMIT 1").get(accountId) as GithubStatsRow | undefined;
+  const repos = db.query("SELECT * FROM github_repos WHERE account_id = ? ORDER BY stars DESC").all(accountId) as GithubRepoRow[];
+  const totalStars = repos.reduce((s, r) => s + r.stars, 0);
+  const totalForks = repos.reduce((s, r) => s + r.forks, 0);
+  const languages = repos.filter(r => r.language).reduce((acc: Record<string, number>, r) => {
+    acc[r.language!] = (acc[r.language!] || 0) + 1;
+    return acc;
+  }, {});
+  const topRepos = repos.sort((a, b) => b.stars - a.stars).slice(0, 10);
+  return { stats: latest, repos, totalStars, totalForks, totalRepos: repos.length, languages, topRepos };
+}
+
+export function getGithubStatsTimeline(accountId: number) {
+  return getDb().query(
+    "SELECT recorded_at as date, public_repos, followers, following FROM github_stats WHERE account_id = ? ORDER BY recorded_at ASC"
+  ).all(accountId) as { date: string; public_repos: number; followers: number; following: number }[];
+}
+
+export function getGithubContributions(accountId: number, year?: number) {
+  const db = getDb();
+  if (year) {
+    return db.query("SELECT date, count, level FROM github_contributions WHERE account_id = ? AND strftime('%Y', date) = ? ORDER BY date ASC").all(accountId, String(year)) as GithubContributionRow[];
+  }
+  return db.query("SELECT date, count, level FROM github_contributions WHERE account_id = ? ORDER BY date ASC").all(accountId) as GithubContributionRow[];
+}
+
+export function upsertGithubRepo(repo: Omit<GithubRepoRow, "id" | "fetched_at">) {
+  getDb().query(`INSERT INTO github_repos (account_id,repo_id,name,full_name,description,language,stars,forks,open_issues,topics,homepage,is_fork,created_at,updated_at,pushed_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(account_id,repo_id) DO UPDATE SET stars=excluded.stars,forks=excluded.forks,open_issues=excluded.open_issues,topics=excluded.topics,language=excluded.language,description=excluded.description,pushed_at=excluded.pushed_at,updated_at=excluded.updated_at`).run(
+    repo.account_id, repo.repo_id, repo.name, repo.full_name, repo.description, repo.language, repo.stars, repo.forks, repo.open_issues, repo.topics, repo.homepage, repo.is_fork, repo.created_at, repo.updated_at, repo.pushed_at);
+}
+
+export function insertGithubStats(stats: Omit<GithubStatsRow, "recorded_at">) {
+  getDb().query("INSERT INTO github_stats (account_id, public_repos, public_gists, followers, following) VALUES(?,?,?,?,?)").run(stats.account_id, stats.public_repos, stats.public_gists, stats.followers, stats.following);
+}
+
+export function upsertGithubContribution(c: { account_id: number; date: string; count: number; level: number }) {
+  getDb().query("INSERT INTO github_contributions (account_id, date, count, level) VALUES(?,?,?,?) ON CONFLICT(account_id,date) DO UPDATE SET count=excluded.count, level=excluded.level").run(c.account_id, c.date, c.count, c.level);
 }

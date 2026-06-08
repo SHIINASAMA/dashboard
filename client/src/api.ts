@@ -81,6 +81,7 @@ export interface CalendarDay {
 export interface Account {
   id: number;
   screen_name: string;
+  platform: string;
   user_id: string | null;
   fetch_interval: number;
   is_active: number;
@@ -100,20 +101,60 @@ export interface AccountsResponse {
   overview: OverviewStats;
 }
 
+// ─── GitHub types ───────────────────────────────────────────────
+
+export interface GithubOverview {
+  stats: {
+    public_repos: number;
+    public_gists: number;
+    followers: number;
+    following: number;
+  } | null;
+  repos: GithubRepo[];
+  totalStars: number;
+  totalForks: number;
+  totalRepos: number;
+  languages: Record<string, number>;
+  topRepos: GithubRepo[];
+}
+
+export interface GithubRepo {
+  id: number;
+  account_id: number;
+  repo_id: number;
+  name: string;
+  full_name: string;
+  description: string | null;
+  language: string | null;
+  stars: number;
+  forks: number;
+  open_issues: number;
+  topics: string;
+  homepage: string | null;
+  is_fork: number;
+  created_at: string;
+}
+
+export interface GithubContribution {
+  date: string;
+  count: number;
+  level: number;
+}
+
+// ─── API methods ────────────────────────────────────────────────
+
 export const api = {
   // Accounts
   getAccounts: () => fetchJSON<AccountsResponse>("/accounts"),
   getAccount: (id: number) => fetchJSON<Account & { stats: any }>(`/accounts/${id}`),
-  createAccount: (data: { screenName: string; authToken: string; fetchInterval?: number }) =>
+  createAccount: (data: { screenName: string; authToken: string; fetchInterval?: number; platform?: string }) =>
     fetchJSON<Account>("/accounts", { method: "POST", body: JSON.stringify(data) }),
   updateAccount: (id: number, data: { screenName?: string; authToken?: string; fetchInterval?: number; isActive?: boolean }) =>
     fetchJSON<Account>(`/accounts/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteAccount: (id: number) => fetchJSON<{ success: boolean }>(`/accounts/${id}`, { method: "DELETE" }),
-
-  // Fetch trigger
   triggerFetch: (id: number) => fetchJSON<{ message: string }>(`/fetch/${id}`, { method: "POST" }),
 
-  // Stats
+  // Twitter
   getOverview: () => fetchJSON<OverviewStats>("/stats/overview"),
   getTweets: (page = 1, limit = 20, sort = "created_at", order = "desc", search?: string, accountIds?: number[]) => {
     let url = `/tweets?page=${page}&limit=${limit}&sort=${sort}&order=${order}`;
@@ -127,4 +168,10 @@ export const api = {
     fetchJSON<Tweet[]>(`/stats/top?metric=${metric}&limit=${limit}`),
   getCalendar: (year?: number) =>
     fetchJSON<CalendarDay[]>(`/stats/calendar?year=${year || new Date().getFullYear()}`),
+
+  // GitHub
+  getGithubOverview: (accountId: number) => fetchJSON<GithubOverview>(`/github/overview/${accountId}`),
+  getGithubTimeline: (accountId: number) => fetchJSON<{ date: string; public_repos: number; followers: number; following: number }[]>(`/github/timeline/${accountId}`),
+  getGithubContributions: (accountId: number, year?: number) =>
+    fetchJSON<GithubContribution[]>(`/github/contributions/${accountId}${year ? `?year=${year}` : ""}`),
 };

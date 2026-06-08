@@ -27,17 +27,20 @@ accountsRouter.get("/:id", (c) => {
 });
 
 accountsRouter.post("/", (c) => c.req.json().then((body) => {
-  const { screenName, authToken, fetchInterval } = body;
-  if (!screenName || !authToken) {
-    return c.json({ error: "screenName and authToken are required" }, 400);
+  const { screenName, authToken, fetchInterval, platform } = body;
+  if (!screenName) {
+    return c.json({ error: "screenName is required" }, 400);
+  }
+  if (!authToken && platform !== "github") {
+    return c.json({ error: "authToken is required for this platform" }, 400);
   }
   try {
-    const account = createAccount(screenName, authToken, fetchInterval || 30);
+    const account = createAccount(screenName, authToken, fetchInterval || 30, platform || "twitter");
     const { auth_token, ...pub } = account;
     return c.json(pub, 201);
   } catch (e: any) {
     if (e.message?.includes?.("UNIQUE")) {
-      return c.json({ error: "Account with this screen name already exists" }, 409);
+      return c.json({ error: "Account with this screen name already exists on this platform" }, 409);
     }
     return c.json({ error: e.message }, 500);
   }
