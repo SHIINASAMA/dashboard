@@ -27,6 +27,7 @@
     "github": "GitHub",
     "gitlab": "GitLab",
     "reddit": "Reddit",
+    "redditPublic": "Public",
     "gh": "GH",
     "x": "X",
     "yes": "Yes",
@@ -336,6 +337,10 @@
     "helpGithub": "GitHub Personal Access Token (classic) with repo scope. Fine-grained tokens don't support traffic data.",
     "helpGitlab": "GitLab Personal Access Token with read_api, read_user, and read_repository scopes.",
     "helpReddit": "Reddit refresh token from a script app. Set REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET in .env.",
+    "helpRedditPublic": "Fetches publicly visible karma, posts, and comments. No OAuth setup needed. Data is limited to 50 posts and 50 comments.",
+    "redditAuthType": "Access mode",
+    "redditOAuth": "OAuth (full access)",
+    "redditPublic": "Public (no auth)",
     "helpX": "From X.com cookies → auth_token. Keep this private.",
     "howToCreateToken": "Create a classic token with pre-selected scopes →",
     "howToCreateGitlabToken": "Create a token →",
@@ -350,6 +355,13 @@
       "fields": "Form fields:",
       "fieldUsername": "Username: your Reddit username (e.g. spez)",
       "fieldToken": "Token: use your Reddit account password as the refresh token (Reddit's script app OAuth uses password grant)"
+    },
+    "redditPublicGuide": {
+      "title": "Public access (no setup required)",
+      "step1": "Enter your Reddit username on the left",
+      "step2": "Select \"Public\" as the access mode",
+      "step3": "Click \"Add Account\" — that's it!",
+      "step4": "Public karma, posts, and comments will be fetched automatically"
     },
     "githubGuide": {
       "title": "How to set up GitHub:",
@@ -394,7 +406,8 @@
       "interval": "Interval: every {{minutes}}m",
       "last": "Last: {{date}}",
       "fetchNow": "Fetch now",
-      "delete": "Delete"
+      "delete": "Delete",
+      "publicMode": "Public mode — limited data"
     }
   },
   "redditDetail": {

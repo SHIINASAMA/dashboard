@@ -168,3 +168,134 @@ export async function fetchRedditAccount(account: AccountRow) {
     throw e;
   }
 }
+
+// ── Public (unauthenticated) fetcher ───────────────────────────
+
+async function redditPublicFetch(path: string): Promise<any> {
+  const proxy = getProxyUrl();
+  const res = await fetch(`https://www.reddit.com${path}.json`, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "Accept": "application/json",
+      "Accept-Language": "en-US,en;q=0.9",
+    },
+    tls: { rejectUnauthorized: false },
+    proxy,
+  });
+  if (!res.ok) {
+    if (res.status === 403) {
+      throw new Error("Reddit is blocking unauthenticated API access (403). Public data fetching is currently unavailable — Reddit may have tightened bot protection. OAuth-based accounts are not affected.");
+    }
+    throw new Error(`Reddit public API ${res.status} for ${path}`);
+  }
+  return res.json();
+}
+
+export async function fetchRedditPublicAccount(account: AccountRow) {
+  const username = account.screen_name;
+
+  try {
+    console.log(`[Reddit Public] Fetching @${username}...`);
+
+    // 1. Fetch public profile
+    const profile = await redditPublicFetch(`/user/${username}/about`);
+    if (!profile?.data?.name) {
+      throw new Error("Invalid Reddit user profile");
+    }
+
+    const pdata = profile.data;
+    insertRedditStats({
+      account_id: account.id,
+      post_karma: pdata.link_karma ?? 0,
+      comment_karma: pdata.comment_karma ?? 0,
+    });
+    console.log(`[Reddit Public] @${username}: karma recorded (post=${pdata.link_karma}, comment=${pdata.comment_karma})`);
+
+    // 2. Fetch posts (limited to 50 for public API rate limits)
+    let postCount = 0;
+    let after: string | undefined;
+    while (postCount < 50) {
+      const path = `/user/${username}/submitted?limit=25&sort=new${after ? `&after=${after}` : ""}`;
+      const posts = await redditPublicFetch(path);
+      const children = posts?.data?.children ?? [];
+      if (children.length === 0) break;
+
+      for (const child of children) {
+        const p = child.data;
+        if (!p?.id) continue;
+        upsertRedditPost({
+          id: p.id,
+          account_id: account.id,
+          title: p.title || "",
+          selftext: p.selftext || "",
+          subreddit: p.subreddit || "",
+          score: p.score ?? 0,
+          upvote_ratio: p.upvote_ratio ?? 0,
+          num_comments: p.num_comments ?? 0,
+          permalink: p.permalink || "",
+          url: p.url || "",
+          is_self: p.is_self ? 1 : 0,
+          created_utc: Math.round(p.created_utc ?? 0),
+        });
+        postCount++;
+      }
+
+      after = posts?.data?.after || undefined;
+      if (!after) break;
+      await sleep(2000);
+    }
+    console.log(`[Reddit Public] @${username}: ${postCount} posts fetched`);
+
+    // 3. Fetch comments (limited to 50)
+    let commentCount = 0;
+    after = undefined;
+    while (commentCount < 50) {
+      const path = `/user/${username}/comments?limit=25&sort=new${after ? `&after=${after}` : ""}`;
+      const comments = await redditPublicFetch(path);
+      const children = comments?.data?.children ?? [];
+      if (children.length === 0) break;
+
+      for (const child of children) {
+        const c = child.data;
+        if (!c?.id) continue;
+        upsertRedditComment({
+          id: c.id,
+          account_id: account.id,
+          body: c.body || "",
+          subreddit: c.subreddit || "",
+          score: c.score ?? 0,
+          link_id: c.link_id || "",
+          parent_id: c.parent_id || null,
+          depth: c.depth ?? 0,
+          permalink: c.permalink || "",
+          created_utc: Math.round(c.created_utc ?? 0),
+          is_submitter: c.is_submitter ? 1 : 0,
+        });
+        commentCount++;
+      }
+
+      after = comments?.data?.after || undefined;
+      if (!after) break;
+      await sleep(2000);
+    }
+    console.log(`[Reddit Public] @${username}: ${commentCount} comments fetched`);
+
+    const { updateAccount } = await import("../db");
+    updateAccount(account.id, {
+      last_fetched_at: new Date().toISOString(),
+      user_id: pdata.id || username,
+      error_message: null,
+    });
+
+    console.log(`[Reddit Public] Fetch complete for @${username}`);
+    return { posts: postCount, comments: commentCount };
+  } catch (e: any) {
+    const { updateAccount } = await import("../db");
+    updateAccount(account.id, {
+      last_fetched_at: new Date().toISOString(),
+      error_message: e.message || "Reddit public fetch failed",
+    });
+    console.error(`[Reddit Public] Fetch failed for @${username}:`, e.message);
+    throw e;
+  }
+}

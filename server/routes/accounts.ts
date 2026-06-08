@@ -28,15 +28,16 @@ accountsRouter.get("/:id", (c) => {
 });
 
 accountsRouter.post("/", (c) => c.req.json().then((body) => {
-  const { screenName, authToken, fetchInterval, platform, instanceUrl } = body;
+  const { screenName, authToken, fetchInterval, platform, instanceUrl, authType } = body;
   if (!screenName) {
     return c.json({ error: "screenName is required" }, 400);
   }
-  if (!authToken) {
+  if (!authToken && authType !== "reddit_public") {
     return c.json({ error: "authToken is required" }, 400);
   }
+  const token = authToken || "reddit_public";
   try {
-    const account = createAccount(screenName, authToken, fetchInterval || 30, platform || "twitter", instanceUrl || null);
+    const account = createAccount(screenName, token, fetchInterval || 30, platform || "twitter", instanceUrl || null, authType || null);
     const { auth_token, ...pub } = account;
     return c.json(pub, 201);
   } catch (e: any) {

@@ -2,7 +2,7 @@ import { getActiveAccounts } from "./db";
 import { fetchAccount } from "./fetcher";
 import { fetchGithubAccount } from "./fetchers/github";
 import { fetchGitlabAccount } from "./fetchers/gitlab";
-import { fetchRedditAccount } from "./fetchers/reddit";
+import { fetchRedditAccount, fetchRedditPublicAccount } from "./fetchers/reddit";
 
 let running = false;
 let intervalId: ReturnType<typeof setInterval> | null = null;
@@ -36,7 +36,11 @@ async function runCycle() {
       } else if (account.platform === "gitlab") {
         await fetchGitlabAccount(account);
       } else if (account.platform === "reddit") {
-        await fetchRedditAccount(account);
+        if (account.auth_type === "reddit_public") {
+          await fetchRedditPublicAccount(account);
+        } else {
+          await fetchRedditAccount(account);
+        }
       } else {
         await fetchAccount(account);
       }

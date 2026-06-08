@@ -88,6 +88,7 @@ export interface Account {
   is_active: number;
   last_fetched_at: string | null;
   error_message: string | null;
+  auth_type: string | null;
   created_at: string;
   updated_at: string;
   stats?: {
@@ -248,7 +249,7 @@ export const api = {
   // Accounts
   getAccounts: () => fetchJSON<AccountsResponse>("/accounts"),
   getAccount: (id: number) => fetchJSON<Account & { stats: any }>(`/accounts/${id}`),
-  createAccount: (data: { screenName: string; authToken: string; fetchInterval?: number; platform?: string; instanceUrl?: string }) =>
+  createAccount: (data: { screenName: string; authToken?: string; fetchInterval?: number; platform?: string; instanceUrl?: string; authType?: string }) =>
     fetchJSON<Account>("/accounts", { method: "POST", body: JSON.stringify(data) }),
   updateAccount: (id: number, data: { screenName?: string; authToken?: string; fetchInterval?: number; isActive?: boolean }) =>
     fetchJSON<Account>(`/accounts/${id}`, { method: "PUT", body: JSON.stringify(data) }),

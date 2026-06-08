@@ -460,6 +460,15 @@ const MIGRATIONS: { version: number; name: string; up: (db: Database) => void }[
       `);
     },
   },
+
+  // ── Migration 10: add auth_type to accounts ────────────────────
+  {
+    version: 10,
+    name: "add auth_type to accounts",
+    up(db) {
+      db.exec("ALTER TABLE accounts ADD COLUMN auth_type TEXT");
+    },
+  },
 ];
 
 export function initSchema(db: Database) {

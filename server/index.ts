@@ -12,7 +12,7 @@ import { getAccountById } from "./db";
 import { fetchAccount } from "./fetcher";
 import { fetchGithubAccount } from "./fetchers/github";
 import { fetchGitlabAccount } from "./fetchers/gitlab";
-import { fetchRedditAccount } from "./fetchers/reddit";
+import { fetchRedditAccount, fetchRedditPublicAccount } from "./fetchers/reddit";
 
 const app = new Hono();
 
@@ -35,7 +35,8 @@ app.post("/api/fetch/:id", async (c) => {
 
   const fn = account.platform === "github" ? fetchGithubAccount
     : account.platform === "gitlab" ? fetchGitlabAccount
-    : account.platform === "reddit" ? fetchRedditAccount
+    : account.platform === "reddit"
+      ? (account.auth_type === "reddit_public" ? fetchRedditPublicAccount : fetchRedditAccount)
     : fetchAccount;
   fn(account).then((count) => {
     console.log(`[Manual] Fetch complete for @${account.screen_name} (${account.platform})`);

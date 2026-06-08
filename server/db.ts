@@ -31,6 +31,7 @@ export interface AccountRow {
   last_fetched_at: string | null;
   error_message: string | null;
   instance_url: string | null;
+  auth_type: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -117,7 +118,7 @@ export interface DailyStatsRow {
 
 export function getAccounts(): AccountPublic[] {
   return getDb().query(
-    "SELECT id, screen_name, platform, user_id, instance_url, fetch_interval, is_active, last_fetched_at, error_message, created_at, updated_at FROM accounts ORDER BY created_at DESC"
+    "SELECT id, screen_name, platform, user_id, instance_url, fetch_interval, is_active, last_fetched_at, error_message, auth_type, created_at, updated_at FROM accounts ORDER BY created_at DESC"
   ).all() as AccountPublic[];
 }
 
@@ -134,13 +135,14 @@ export function createAccount(
   authToken: string,
   fetchInterval: number,
   platform: string = "twitter",
-  instanceUrl: string | null = null
+  instanceUrl: string | null = null,
+  authType: string | null = null
 ): AccountRow {
   const db = getDb();
   db.query(`
-    INSERT INTO accounts (screen_name, auth_token, fetch_interval, platform, instance_url)
-    VALUES (?, ?, ?, ?, ?)
-  `).run(screenName, authToken, fetchInterval, platform, instanceUrl);
+    INSERT INTO accounts (screen_name, auth_token, fetch_interval, platform, instance_url, auth_type)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(screenName, authToken, fetchInterval, platform, instanceUrl, authType);
   return db.query("SELECT * FROM accounts WHERE id = last_insert_rowid()").get() as AccountRow;
 }
 

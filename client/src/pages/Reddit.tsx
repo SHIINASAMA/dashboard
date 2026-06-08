@@ -104,6 +104,7 @@ export function Reddit() {
                           <span className="font-semibold text-base">{account.screen_name}</span>
                           <ArrowUpRight size={14} className="text-[var(--muted-foreground)] opacity-0 group-hover:opacity-100 transition-opacity" />
                           <Badge className="text-[10px] px-1.5">{t("badge.reddit")}</Badge>
+                          {account.auth_type === "reddit_public" && <Badge className="text-[10px] px-1.5 bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400">{t("badge.redditPublic")}</Badge>}
                           {!account.is_active && <Badge>{t("badge.inactive")}</Badge>}
                           {account.error_message && <Badge className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">{t("badge.error")}</Badge>}
                           {isStale && account.is_active ? <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">{t("badge.stale")}</Badge> : null}

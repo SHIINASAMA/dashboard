@@ -27,6 +27,7 @@
     "github": "GitHub",
     "gitlab": "GitLab",
     "reddit": "Reddit",
+    "redditPublic": "公开",
     "gh": "GH",
     "x": "X",
     "yes": "是",
@@ -336,6 +337,10 @@
     "helpGithub": "GitHub Personal Access Token（经典）需具备 repo 权限。细粒度令牌不支持流量数据。",
     "helpGitlab": "GitLab Personal Access Token 需具备 read_api、read_user 和 read_repository 权限。",
     "helpReddit": "Reddit refresh token，来自 script app。需在 .env 中设置 REDDIT_CLIENT_ID 和 REDDIT_CLIENT_SECRET。",
+    "helpRedditPublic": "无需 OAuth 设置即可获取公开可见的 Karma、帖子和评论。数据限制为 50 条帖子和 50 条评论。",
+    "redditAuthType": "访问模式",
+    "redditOAuth": "OAuth（完整访问）",
+    "redditPublic": "公开（无需认证）",
     "helpX": "来自 X.com cookies → auth_token。请妥善保管。",
     "howToCreateToken": "创建经典令牌（已预选所需权限） →",
     "howToCreateGitlabToken": "创建令牌 →",
@@ -350,6 +355,13 @@
       "fields": "表单字段说明：",
       "fieldUsername": "用户名：你的 Reddit 用户名（例如 spez）",
       "fieldToken": "令牌：使用你的 Reddit 账户密码作为 refresh token（Reddit 的 script app OAuth 使用密码授权模式）"
+    },
+    "redditPublicGuide": {
+      "title": "公开访问（无需设置）",
+      "step1": "在左侧输入你的 Reddit 用户名",
+      "step2": "选择\"公开\"访问模式",
+      "step3": "点击\"添加账户\"——就这么简单！",
+      "step4": "公开的 Karma、帖子和评论将自动抓取"
     },
     "githubGuide": {
       "title": "如何配置 GitHub：",
@@ -394,7 +406,8 @@
       "interval": "抓取间隔：每 {{minutes}} 分钟",
       "last": "上次抓取：{{date}}",
       "fetchNow": "立即抓取",
-      "delete": "删除"
+      "delete": "删除",
+      "publicMode": "公开模式——数据有限"
     }
   },
   "redditDetail": {

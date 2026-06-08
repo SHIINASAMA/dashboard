@@ -24,15 +24,19 @@ export default function AddAccountForm({ onClose, defaultPlatform = "twitter" }:
   const [fetchInterval, setFetchInterval] = useState(30);
   const [platform, setPlatform] = useState(defaultPlatform);
   const [instanceUrl, setInstanceUrl] = useState("");
+  const [authType, setAuthType] = useState<string | null>(null);
   const [error, setError] = useState("");
+
+  const isRedditPublic = platform === "reddit" && authType === "reddit_public";
 
   const mutation = useMutation({
     mutationFn: () => api.createAccount({
       screenName,
-      authToken,
+      authToken: isRedditPublic ? "" : authToken,
       fetchInterval,
       platform,
       instanceUrl: instanceUrl || null,
+      authType: authType || undefined,
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
@@ -76,22 +80,48 @@ export default function AddAccountForm({ onClose, defaultPlatform = "twitter" }:
                 />
               </div>
 
+              {platform === "reddit" && (
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-[var(--muted-foreground)]">{t("addAccountForm.redditAuthType")}</label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button type="button" onClick={() => setAuthType(null)}
+                      className={`px-2 py-2 rounded-lg border text-xs font-medium transition-colors ${authType !== "reddit_public" ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]" : "border-[var(--border)] hover:bg-[var(--muted)]"}`}
+                    >
+                      {t("addAccountForm.redditOAuth")}
+                    </button>
+                    <button type="button" onClick={() => setAuthType("reddit_public")}
+                      className={`px-2 py-2 rounded-lg border text-xs font-medium transition-colors ${authType === "reddit_public" ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]" : "border-[var(--border)] hover:bg-[var(--muted)]"}`}
+                    >
+                      {t("addAccountForm.redditPublic")}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-medium mb-1 text-[var(--muted-foreground)]">
                   {platform === "github" ? t("addAccountForm.personalAccessToken") : platform === "gitlab" ? t("addAccountForm.personalAccessToken") : platform === "reddit" ? t("addAccountForm.refreshToken") : t("addAccountForm.authToken")}
                 </label>
-                <input
-                  type="password" value={authToken}
-                  onChange={(e) => setAuthToken(e.target.value)}
-                  placeholder={platform === "github" ? t("addAccountForm.placeholderGithubToken") : platform === "gitlab" ? t("addAccountForm.placeholderGitlabToken") : platform === "reddit" ? t("addAccountForm.placeholderRedditToken") : t("addAccountForm.placeholderXToken")}
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] font-mono text-xs"
-                />
-                <p className="text-[11px] text-[var(--muted-foreground)] mt-1 leading-snug">
-                  {platform === "github" ? t("addAccountForm.helpGithub")
-                    : platform === "gitlab" ? t("addAccountForm.helpGitlab")
-                    : platform === "reddit" ? t("addAccountForm.helpReddit")
-                    : t("addAccountForm.helpX")}
-                </p>
+                {isRedditPublic ? (
+                  <div className="px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--muted)] text-xs text-[var(--muted-foreground)]">
+                    {t("addAccountForm.helpRedditPublic")}
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      type="password" value={authToken}
+                      onChange={(e) => setAuthToken(e.target.value)}
+                      placeholder={platform === "github" ? t("addAccountForm.placeholderGithubToken") : platform === "gitlab" ? t("addAccountForm.placeholderGitlabToken") : platform === "reddit" ? t("addAccountForm.placeholderRedditToken") : t("addAccountForm.placeholderXToken")}
+                      className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] font-mono text-xs"
+                    />
+                    <p className="text-[11px] text-[var(--muted-foreground)] mt-1 leading-snug">
+                      {platform === "github" ? t("addAccountForm.helpGithub")
+                        : platform === "gitlab" ? t("addAccountForm.helpGitlab")
+                        : platform === "reddit" ? t("addAccountForm.helpReddit")
+                        : t("addAccountForm.helpX")}
+                    </p>
+                  </>
+                )}
               </div>
 
               {platform === "gitlab" && (
@@ -141,21 +171,33 @@ export default function AddAccountForm({ onClose, defaultPlatform = "twitter" }:
                 </div>
               )}
               {platform === "reddit" && (
-                <div className="p-3 rounded-lg border border-[var(--border)] bg-[var(--muted)] text-xs space-y-2">
-                  <p className="font-medium">{t("addAccountForm.redditGuide.title")}</p>
-                  <ol className="list-decimal list-inside space-y-1 text-[var(--muted-foreground)]">
-                    <li>{t("addAccountForm.redditGuide.step1")} <a href="https://www.reddit.com/prefs/apps" target="_blank" rel="noopener noreferrer" className="text-[var(--primary)] hover:underline">{t("addAccountForm.howToCreateRedditApp")}</a></li>
-                    <li>{t("addAccountForm.redditGuide.step2")}</li>
-                    <li>{t("addAccountForm.redditGuide.step3").replace("{url}", `${window.location.protocol}//${window.location.host}/api/reddit/callback`)}</li>
-                    <li>{t("addAccountForm.redditGuide.step4")}</li>
-                    <li>{t("addAccountForm.redditGuide.step5")}</li>
-                  </ol>
-                  <p className="text-[var(--muted-foreground)]">{t("addAccountForm.redditGuide.fields")}</p>
-                  <ul className="list-disc list-inside space-y-0.5 text-[var(--muted-foreground)]">
-                    <li>{t("addAccountForm.redditGuide.fieldUsername")}</li>
-                    <li>{t("addAccountForm.redditGuide.fieldToken")}</li>
-                  </ul>
-                </div>
+                isRedditPublic ? (
+                  <div className="p-3 rounded-lg border border-[var(--border)] bg-[var(--muted)] text-xs space-y-2">
+                    <p className="font-medium">{t("addAccountForm.redditPublicGuide.title")}</p>
+                    <ol className="list-decimal list-inside space-y-1 text-[var(--muted-foreground)]">
+                      <li>{t("addAccountForm.redditPublicGuide.step1")}</li>
+                      <li>{t("addAccountForm.redditPublicGuide.step2")}</li>
+                      <li>{t("addAccountForm.redditPublicGuide.step3")}</li>
+                      <li>{t("addAccountForm.redditPublicGuide.step4")}</li>
+                    </ol>
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-lg border border-[var(--border)] bg-[var(--muted)] text-xs space-y-2">
+                    <p className="font-medium">{t("addAccountForm.redditGuide.title")}</p>
+                    <ol className="list-decimal list-inside space-y-1 text-[var(--muted-foreground)]">
+                      <li>{t("addAccountForm.redditGuide.step1")} <a href="https://www.reddit.com/prefs/apps" target="_blank" rel="noopener noreferrer" className="text-[var(--primary)] hover:underline">{t("addAccountForm.howToCreateRedditApp")}</a></li>
+                      <li>{t("addAccountForm.redditGuide.step2")}</li>
+                      <li>{t("addAccountForm.redditGuide.step3").replace("{url}", `${window.location.protocol}//${window.location.host}/api/reddit/callback`)}</li>
+                      <li>{t("addAccountForm.redditGuide.step4")}</li>
+                      <li>{t("addAccountForm.redditGuide.step5")}</li>
+                    </ol>
+                    <p className="text-[var(--muted-foreground)]">{t("addAccountForm.redditGuide.fields")}</p>
+                    <ul className="list-disc list-inside space-y-0.5 text-[var(--muted-foreground)]">
+                      <li>{t("addAccountForm.redditGuide.fieldUsername")}</li>
+                      <li>{t("addAccountForm.redditGuide.fieldToken")}</li>
+                    </ul>
+                  </div>
+                )
               )}
               {platform === "twitter" && (
                 <div className="p-3 rounded-lg border border-[var(--border)] bg-[var(--muted)] text-xs space-y-2">
@@ -174,7 +216,7 @@ export default function AddAccountForm({ onClose, defaultPlatform = "twitter" }:
           <div className="flex gap-2">
             <button
               onClick={() => mutation.mutate()}
-              disabled={mutation.isPending || !screenName || !authToken}
+              disabled={mutation.isPending || !screenName || (!isRedditPublic && !authToken)}
               className="flex-1 px-4 py-2 rounded-lg bg-[var(--primary)] text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-40 text-sm"
             >
               {mutation.isPending ? t("addAccountForm.adding") : t("addAccountForm.addAccount")}
