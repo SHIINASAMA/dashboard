@@ -125,12 +125,21 @@ export default function AddAccountForm({ onClose, defaultPlatform = "twitter" }:
               </p>
             )}
             {platform === "reddit" && (
-              <p className="text-xs mt-1.5">
-                <a href="https://www.reddit.com/prefs/apps" target="_blank" rel="noopener noreferrer"
-                  className="text-[var(--primary)] hover:underline">
-                  {t("addAccountForm.howToCreateRedditApp")}
-                </a>
-              </p>
+              <div className="p-3 rounded-lg border border-[var(--border)] bg-[var(--muted)] space-y-2 text-xs">
+                <p className="font-medium">{t("addAccountForm.redditGuide.title")}</p>
+                <ol className="list-decimal list-inside space-y-1 text-[var(--muted-foreground)]">
+                  <li>{t("addAccountForm.redditGuide.step1")} <a href="https://www.reddit.com/prefs/apps" target="_blank" rel="noopener noreferrer" className="text-[var(--primary)] hover:underline">{t("addAccountForm.howToCreateRedditApp")}</a></li>
+                  <li>{t("addAccountForm.redditGuide.step2")}</li>
+                  <li>{t("addAccountForm.redditGuide.step3")}</li>
+                  <li>{t("addAccountForm.redditGuide.step4")}</li>
+                  <li>{t("addAccountForm.redditGuide.step5")}</li>
+                </ol>
+                <p className="text-[var(--muted-foreground)]">{t("addAccountForm.redditGuide.fields")}</p>
+                <ul className="list-disc list-inside space-y-0.5 text-[var(--muted-foreground)]">
+                  <li>{t("addAccountForm.redditGuide.fieldUsername")}</li>
+                  <li>{t("addAccountForm.redditGuide.fieldToken")}</li>
+                </ul>
+              </div>
             )}
           </div>
           <div>

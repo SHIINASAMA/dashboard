@@ -339,7 +339,18 @@
     "helpX": "来自 X.com cookies → auth_token。请妥善保管。",
     "howToCreateToken": "创建经典令牌（已预选所需权限） →",
     "howToCreateGitlabToken": "创建令牌 →",
-    "howToCreateRedditApp": "创建 Reddit script app →"
+    "howToCreateRedditApp": "Reddit 应用偏好设置 →",
+    "redditGuide": {
+      "title": "如何配置 Reddit：",
+      "step1": "前往",
+      "step2": "选择 \"script\" 作为应用类型",
+      "step3": "将 redirect URI 设为 http://localhost:8080",
+      "step4": "记下 client ID（在应用名称下方）和 secret",
+      "step5": "将 REDDIT_CLIENT_ID 和 REDDIT_CLIENT_SECRET 填入 .env 文件",
+      "fields": "表单字段说明：",
+      "fieldUsername": "用户名：你的 Reddit 用户名（例如 spez）",
+      "fieldToken": "令牌：使用你的 Reddit 账户密码作为 refresh token（Reddit 的 script app OAuth 使用密码授权模式）"
+    }
   },
   "reddit": {
     "heading": "Reddit",

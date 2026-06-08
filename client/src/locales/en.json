@@ -339,7 +339,18 @@
     "helpX": "From X.com cookies → auth_token. Keep this private.",
     "howToCreateToken": "Create a classic token with pre-selected scopes →",
     "howToCreateGitlabToken": "Create a token →",
-    "howToCreateRedditApp": "Create a Reddit script app →"
+    "howToCreateRedditApp": "Reddit App Preferences →",
+    "redditGuide": {
+      "title": "How to set up Reddit:",
+      "step1": "Go to",
+      "step2": "Choose \"script\" as the app type",
+      "step3": "Set redirect URI to http://localhost:8080",
+      "step4": "Note the client ID (under app name) and secret",
+      "step5": "Put REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET in your .env file",
+      "fields": "Form fields:",
+      "fieldUsername": "Username: your Reddit username (e.g. spez)",
+      "fieldToken": "Token: use your Reddit account password as the refresh token (Reddit's script app OAuth uses password grant)"
+    }
   },
   "reddit": {
     "heading": "Reddit",
