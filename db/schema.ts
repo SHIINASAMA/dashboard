@@ -380,6 +380,27 @@ const MIGRATIONS: { version: number; name: string; up: (db: Database) => void }[
         CREATE INDEX IF NOT EXISTS idx_gitlab_projects_account_id ON gitlab_projects(account_id);
         CREATE INDEX IF NOT EXISTS idx_gitlab_project_snapshots_repo ON gitlab_project_snapshots(account_id, project_id);
         CREATE INDEX IF NOT EXISTS idx_gitlab_releases_project ON gitlab_releases(account_id, project_id);
+        CREATE INDEX IF NOT EXISTS idx_gitlab_contributions_account_id ON gitlab_contributions(account_id);
+      `);
+    },
+  },
+
+  // ── Migration 8: gitlab contributions table ────────────────────
+  {
+    version: 8,
+    name: "gitlab contributions table",
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS gitlab_contributions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          account_id INTEGER NOT NULL,
+          date TEXT NOT NULL,
+          count INTEGER DEFAULT 0,
+          fetched_at TEXT NOT NULL DEFAULT (datetime('now')),
+          UNIQUE(account_id, date),
+          FOREIGN KEY (account_id) REFERENCES accounts(id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_gitlab_contributions_account_id ON gitlab_contributions(account_id);
       `);
     },
   },

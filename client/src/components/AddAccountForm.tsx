@@ -24,7 +24,7 @@ export default function AddAccountForm({ onClose, defaultPlatform = "twitter" }:
       authToken,
       fetchInterval,
       platform,
-      instanceUrl: instanceUrl || undefined,
+      instanceUrl: instanceUrl || null,
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["accounts"] });

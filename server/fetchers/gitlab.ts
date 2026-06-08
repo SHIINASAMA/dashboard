@@ -27,6 +27,9 @@ async function glFetch<T>(apiBase: string, path: string, token: string): Promise
       "PRIVATE-TOKEN": token,
       "User-Agent": "x-kit-dashboard",
     },
+    tls: {
+      rejectUnauthorized: false,
+    },
   }).catch((e: any) => {
     throw new Error(`GitLab network error: ${e.message || e}`);
   });
