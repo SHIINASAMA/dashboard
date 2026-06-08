@@ -350,6 +350,23 @@
       "fields": "Form fields:",
       "fieldUsername": "Username: your Reddit username (e.g. spez)",
       "fieldToken": "Token: use your Reddit account password as the refresh token (Reddit's script app OAuth uses password grant)"
+    },
+    "githubGuide": {
+      "title": "How to set up GitHub:",
+      "step2": "Copy the generated token",
+      "step3": "Paste it in the Token field on the left"
+    },
+    "gitlabGuide": {
+      "title": "How to set up GitLab:",
+      "step2": "Select scopes: read_api, read_user, read_repository",
+      "step3": "Copy the generated token",
+      "step4": "Paste it in the Token field on the left"
+    },
+    "xGuide": {
+      "title": "How to set up X (Twitter):",
+      "step1": "Open X.com in your browser",
+      "step2": "Open DevTools → Application → Cookies",
+      "step3": "Copy the auth_token value and paste it on the left"
     }
   },
   "reddit": {

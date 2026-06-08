@@ -350,6 +350,23 @@
       "fields": "表单字段说明：",
       "fieldUsername": "用户名：你的 Reddit 用户名（例如 spez）",
       "fieldToken": "令牌：使用你的 Reddit 账户密码作为 refresh token（Reddit 的 script app OAuth 使用密码授权模式）"
+    },
+    "githubGuide": {
+      "title": "如何配置 GitHub：",
+      "step2": "复制生成的令牌",
+      "step3": "粘贴到左侧的 Token 字段"
+    },
+    "gitlabGuide": {
+      "title": "如何配置 GitLab：",
+      "step2": "选择权限范围：read_api、read_user、read_repository",
+      "step3": "复制生成的令牌",
+      "step4": "粘贴到左侧的 Token 字段"
+    },
+    "xGuide": {
+      "title": "如何配置 X (Twitter)：",
+      "step1": "在浏览器中打开 X.com",
+      "step2": "打开 DevTools → Application → Cookies",
+      "step3": "复制 auth_token 的值并粘贴到左侧"
     }
   },
   "reddit": {
