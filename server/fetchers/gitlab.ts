@@ -27,11 +27,17 @@ async function glFetch<T>(apiBase: string, path: string, token: string): Promise
       "PRIVATE-TOKEN": token,
       "User-Agent": "x-kit-dashboard",
     },
+  }).catch((e: any) => {
+    throw new Error(`GitLab network error: ${e.message || e}`);
   });
 
   if (res.status === 429) {
     const retryAfter = parseInt(res.headers.get("Retry-After") || "60", 10);
     throw new Error(`GitLab rate limited. Retry after ${retryAfter}s`);
+  }
+
+  if (res.status === 401) {
+    throw new Error(`GitLab API 401: token invalid or expired. Check your PAT at ${apiBase.replace("/api/v4", "")}/-/user_settings/personal_access_tokens`);
   }
 
   if (!res.ok) {
@@ -85,6 +91,7 @@ export async function fetchGitlabAccount(account: AccountRow) {
 
   try {
     // 1. Fetch authenticated user profile
+    console.log(`[GitLab] Fetching user profile from ${apiBase}...`);
     const { data: user } = await glFetch<any>(apiBase, "/user", token);
 
     if (!user || !user.id) {
