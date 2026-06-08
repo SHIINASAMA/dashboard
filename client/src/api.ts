@@ -322,4 +322,8 @@ export const api = {
     fetchJSON<PaginatedRedditPosts>(`/reddit/posts/${accountId}?page=${page}&limit=${limit}&sort=${sort}`),
   getRedditComments: (accountId: number, page = 1, limit = 20) =>
     fetchJSON<PaginatedRedditComments>(`/reddit/comments/${accountId}?page=${page}&limit=${limit}`),
+  getRedditActivity: (accountId: number) =>
+    fetchJSON<{ posts: { date: string; count: number }[]; comments: { date: string; count: number }[] }>(`/reddit/activity/${accountId}`),
+  getRedditSubreddits: (accountId: number) =>
+    fetchJSON<{ subreddit: string; count: number }[]>(`/reddit/subreddits/${accountId}`),
 };

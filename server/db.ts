@@ -611,3 +611,24 @@ export function getRedditOverview(accountId: number) {
   const topPosts = db.query("SELECT id, title, subreddit, score, num_comments, upvote_ratio, permalink, created_utc FROM reddit_posts WHERE account_id = ? ORDER BY score DESC LIMIT 10").all(accountId) as RedditPostRow[];
   return { stats: latest, totalPosts, totalComments, totalScore, topPosts };
 }
+
+export function getRedditDailyActivity(accountId: number) {
+  const db = getDb();
+  return db.query(
+    "SELECT date(created_utc, 'unixepoch') as date, COUNT(*) as count FROM reddit_posts WHERE account_id = ? GROUP BY date ORDER BY date ASC"
+  ).all(accountId) as { date: string; count: number }[];
+}
+
+export function getRedditSubredditDistribution(accountId: number) {
+  const db = getDb();
+  return db.query(
+    "SELECT subreddit, COUNT(*) as count FROM reddit_posts WHERE account_id = ? GROUP BY subreddit ORDER BY count DESC LIMIT 10"
+  ).all(accountId) as { subreddit: string; count: number }[];
+}
+
+export function getRedditDailyCommentActivity(accountId: number) {
+  const db = getDb();
+  return db.query(
+    "SELECT date(created_utc, 'unixepoch') as date, COUNT(*) as count FROM reddit_comments WHERE account_id = ? GROUP BY date ORDER BY date ASC"
+  ).all(accountId) as { date: string; count: number }[];
+}

@@ -438,6 +438,12 @@
     "noPosts": "No posts yet. Trigger a fetch to retrieve data.",
     "noComments": "No comments yet. Trigger a fetch to retrieve data.",
     "noData": "No data yet",
-    "noDataDesc": "Trigger a fetch from the detail page to retrieve data."
+    "noDataDesc": "Trigger a fetch from the detail page to retrieve data.",
+    "karmaTimeline": "Karma Over Time",
+    "karmaTimelineDesc": "Post and comment karma history",
+    "dailyActivity": "Daily Activity",
+    "dailyActivityDesc": "Posts and comments per day",
+    "topSubreddits": "Top Subreddits",
+    "topSubredditsDesc": "Where you post most"
   }
 }

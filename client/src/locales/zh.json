@@ -438,6 +438,12 @@
     "noPosts": "暂无帖子。触发一次抓取以获取数据。",
     "noComments": "暂无评论。触发一次抓取以获取数据。",
     "noData": "暂无数据",
-    "noDataDesc": "从详情页触发一次抓取以获取数据。"
+    "noDataDesc": "从详情页触发一次抓取以获取数据。",
+    "karmaTimeline": "Karma 趋势",
+    "karmaTimelineDesc": "发帖与评论 Karma 历史",
+    "dailyActivity": "每日活跃度",
+    "dailyActivityDesc": "每天的帖子与评论数",
+    "topSubreddits": "热门子版块",
+    "topSubredditsDesc": "最常发帖的地方"
   }
 }

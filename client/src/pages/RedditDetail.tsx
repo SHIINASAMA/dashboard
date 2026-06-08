@@ -8,6 +8,10 @@ import { Badge } from "../components/ui/badge";
 import { StatCard } from "../components/StatCard";
 import { ArrowLeft, ArrowUpRight, Play, RefreshCw, Trash2, AlertCircle, ThumbsUp, MessageSquare, TrendingUp, FileText } from "lucide-react";
 import { RedditIcon } from "../components/BrandIcons";
+import {
+  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+} from "recharts";
 
 export function RedditDetail() {
   const { t } = useTranslation();
@@ -38,6 +42,24 @@ export function RedditDetail() {
   const { data: commentsData } = useQuery({
     queryKey: ["reddit", "comments", accountId, 1],
     queryFn: () => api.getRedditComments(accountId!, 1, 50),
+    enabled: !!accountId,
+  });
+
+  const { data: timeline } = useQuery({
+    queryKey: ["reddit", "timeline", accountId],
+    queryFn: () => api.getRedditTimeline(accountId!),
+    enabled: !!accountId,
+  });
+
+  const { data: activity } = useQuery({
+    queryKey: ["reddit", "activity", accountId],
+    queryFn: () => api.getRedditActivity(accountId!),
+    enabled: !!accountId,
+  });
+
+  const { data: subreddits } = useQuery({
+    queryKey: ["reddit", "subreddits", accountId],
+    queryFn: () => api.getRedditSubreddits(accountId!),
     enabled: !!accountId,
   });
 
@@ -113,6 +135,82 @@ export function RedditDetail() {
             <StatCard title={t("redditDetail.commentKarma")} value={overview.stats?.comment_karma ?? 0} icon={<MessageSquare size={20} />} />
             <StatCard title={t("redditDetail.totalPosts")} value={overview.totalPosts} icon={<FileText size={20} />} />
             <StatCard title={t("redditDetail.totalScore")} value={overview.totalScore.toLocaleString()} icon={<TrendingUp size={20} />} />
+          </div>
+
+          {/* ── Karma Timeline ── */}
+          {timeline && timeline.length > 1 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><TrendingUp size={18} /> {t("redditDetail.karmaTimeline")}</CardTitle>
+                <CardDescription>{t("redditDetail.karmaTimelineDesc")}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={timeline}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
+                    <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+                    <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }} />
+                    <Legend />
+                    <Line type="monotone" dataKey="post_karma" stroke="#f97316" name={t("redditDetail.postKarma")} dot={false} />
+                    <Line type="monotone" dataKey="comment_karma" stroke="#3b82f6" name={t("redditDetail.commentKarma")} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── Daily Activity + Subreddit Pie ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {activity && (activity.posts.length > 0 || activity.comments.length > 0) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><FileText size={18} /> {t("redditDetail.dailyActivity")}</CardTitle>
+                  <CardDescription>{t("redditDetail.dailyActivityDesc")}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={(() => {
+                      const map: Record<string, { date: string; posts: number; comments: number }> = {};
+                      for (const p of activity.posts) map[p.date] = { ...map[p.date], date: p.date, posts: p.count, comments: 0 };
+                      for (const c of activity.comments) {
+                        if (map[c.date]) map[c.date].comments = c.count;
+                        else map[c.date] = { date: c.date, posts: 0, comments: c.count };
+                      }
+                      return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
+                    })()}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                      <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
+                      <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
+                      <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }} />
+                      <Legend />
+                      <Bar dataKey="posts" fill="#f97316" name={t("redditDetail.totalPosts")} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="comments" fill="#3b82f6" name={t("redditDetail.recentComments")} radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+            {subreddits && subreddits.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><ThumbsUp size={18} /> {t("redditDetail.topSubreddits")}</CardTitle>
+                  <CardDescription>{t("redditDetail.topSubredditsDesc")}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie data={subreddits} dataKey="count" nameKey="subreddit" cx="50%" cy="50%" outerRadius={80} label={({ subreddit, count }) => `r/${subreddit} (${count})`}>
+                        {subreddits.map((_, i) => (
+                          <Cell key={i} fill={["#f97316", "#3b82f6", "#22c55e", "#ef4444", "#a855f7", "#ec4899", "#14b8a6", "#eab308", "#6366f1", "#84cc16"][i % 10]} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           <Card>

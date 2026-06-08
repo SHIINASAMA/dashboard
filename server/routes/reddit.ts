@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getRedditOverview, getRedditStatsTimeline, getRedditPosts, getRedditComments } from "../db";
+import { getRedditOverview, getRedditStatsTimeline, getRedditPosts, getRedditComments, getRedditDailyActivity, getRedditSubredditDistribution, getRedditDailyCommentActivity } from "../db";
 
 const redditRouter = new Hono();
 
@@ -27,6 +27,18 @@ redditRouter.get("/comments/:accountId", (c) => {
   const page = Number(c.req.query("page")) || 1;
   const limit = Number(c.req.query("limit")) || 20;
   return c.json(getRedditComments(accountId, page, limit));
+});
+
+redditRouter.get("/activity/:accountId", (c) => {
+  const accountId = Number(c.req.param("accountId"));
+  const posts = getRedditDailyActivity(accountId);
+  const comments = getRedditDailyCommentActivity(accountId);
+  return c.json({ posts, comments });
+});
+
+redditRouter.get("/subreddits/:accountId", (c) => {
+  const accountId = Number(c.req.param("accountId"));
+  return c.json(getRedditSubredditDistribution(accountId));
 });
 
 export default redditRouter;
