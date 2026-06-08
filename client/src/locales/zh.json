@@ -48,6 +48,7 @@
     "githubNoAccounts": "尚未配置 GitHub 账户。在 GitHub 页面中添加一个以查看统计数据。",
     "githubAccounts_other": "{{count}} 个账户",
     "gitlabHeading": "GitLab",
+    "redditHeading": "Reddit",
     "noGithubAccounts": "暂无 GitHub 账户",
     "stats": {
       "totalTweets": "总推文数",
@@ -62,6 +63,10 @@
       "today": "今日 {{count}}",
       "perTweet": "每推文",
       "following": "正在关注 {{count}}",
+      "postKarma": "发帖 Karma",
+      "commentKarma": "评论 Karma",
+      "redditPosts": "帖子",
+      "redditComments": "评论",
       "dash": "—"
     },
     "charts": {

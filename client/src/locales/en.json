@@ -48,6 +48,7 @@
     "githubNoAccounts": "No GitHub accounts configured. Add one in the GitHub page to see stats.",
     "githubAccounts_other": "{{count}} accounts",
     "gitlabHeading": "GitLab",
+    "redditHeading": "Reddit",
     "noGithubAccounts": "No GitHub accounts",
     "stats": {
       "totalTweets": "Total Tweets",
@@ -62,6 +63,10 @@
       "today": "{{count}} today",
       "perTweet": "per tweet",
       "following": "Following {{count}}",
+    "postKarma": "Post Karma",
+    "commentKarma": "Comment Karma",
+    "redditPosts": "Posts",
+    "redditComments": "Comments",
       "dash": "—"
     },
     "charts": {

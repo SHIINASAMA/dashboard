@@ -9,7 +9,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area,
 } from "recharts";
-import { MessageSquare, Heart, Repeat2, Eye, TrendingUp, ArrowUpRight, Star, GitFork } from "lucide-react";
+import { MessageSquare, Heart, Repeat2, Eye, TrendingUp, ArrowUpRight, Star, GitFork, ThumbsUp } from "lucide-react";
 import { XIcon, GithubIcon, GitlabIcon, RedditIcon } from "../components/BrandIcons";
 
 type LangColors = Record<string, string>;
@@ -96,6 +96,14 @@ export function Overview() {
 
   // ── filter Reddit accounts ────────────────────────────────────
   const redditAccounts = allAccounts.filter((a: Account) => a.platform === "reddit");
+
+  const redditOverviews = useQueries({
+    queries: redditAccounts.map((acc) => ({
+      queryKey: ["reddit", "overview", acc.id],
+      queryFn: () => api.getRedditOverview(acc.id),
+      staleTime: 30_000,
+    })),
+  });
 
   if (isLoading) {
     return <div className="text-center py-12 text-[var(--muted-foreground)]">{t("common.loading")}</div>;
@@ -259,6 +267,19 @@ export function Overview() {
               </div>
             </div>
           )}
+        </section>
+      )}
+
+      {/* ── Reddit ── */}
+      {redditAccounts.length > 0 && (
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold flex items-center gap-1.5 text-[var(--muted-foreground)]"><RedditIcon /> {t("overview.redditHeading")}</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <StatCard title={t("overview.stats.postKarma")} value={redditOverviews.reduce((s, o) => s + (o.data?.stats?.post_karma ?? 0), 0)} icon={<ThumbsUp size={16} />} />
+            <StatCard title={t("overview.stats.commentKarma")} value={redditOverviews.reduce((s, o) => s + (o.data?.stats?.comment_karma ?? 0), 0)} icon={<MessageSquare size={16} />} />
+            <StatCard title={t("overview.stats.redditPosts")} value={redditOverviews.reduce((s, o) => s + (o.data?.totalPosts ?? 0), 0)} icon={<MessageSquare size={16} />} />
+            <StatCard title={t("overview.stats.redditComments")} value={redditOverviews.reduce((s, o) => s + (o.data?.totalComments ?? 0), 0)} icon={<MessageSquare size={16} />} />
+          </div>
         </section>
       )}
 
