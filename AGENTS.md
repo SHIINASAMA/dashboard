@@ -3,11 +3,6 @@
 ## Rules (MUST follow)
 
 - **NEVER commit or `git push` without explicit user permission.** The user must explicitly ask you to commit or push before you do so. Running `/goal` does not count as permission to commit.
-- **NEVER run destructive database operations** (drop, truncate, or delete password_hash from the database or config.json) without explicit user permission.
-
-## Rules (MUST follow)
-
-- **NEVER commit or `git push` without explicit user permission.** The user must explicitly ask you to commit or push before you do so. Running `/goal` does not count as permission to commit.
 - **NEVER run destructive database operations** (drop, truncate, or delete password_hash/rows in the database or config.json) without explicit user permission.
 - **NEVER delete or modify `data/config.json`** unless the user explicitly asks. This file contains the user's password hash and URL prefix.
 
