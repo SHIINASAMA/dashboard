@@ -1,22 +1,18 @@
-import { siX, siGithub, siGitlab, siReddit } from "simple-icons";
+import { SiX, SiGithub, SiGitlab, SiReddit } from "react-icons/si";
 
-function BrandIcon({ si, className }: { si: typeof siGithub; className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="currentColor">
-      <path d={si.path} />
-    </svg>
-  );
+function BrandIcon({ Icon, className }: { Icon: React.ComponentType<{ className?: string }>; className?: string }) {
+  return <Icon className={className} />;
 }
 
 export function XIcon({ size }: { size?: number }) {
-  return <BrandIcon si={siX} className={`w-${size ?? 4} h-${size ?? 4}`} />;
+  return <BrandIcon Icon={SiX} className={`w-${size ?? 4} h-${size ?? 4}`} />;
 }
 export function GithubIcon({ size }: { size?: number }) {
-  return <BrandIcon si={siGithub} className={`w-${size ?? 4} h-${size ?? 4}`} />;
+  return <BrandIcon Icon={SiGithub} className={`w-${size ?? 4} h-${size ?? 4}`} />;
 }
 export function GitlabIcon({ size }: { size?: number }) {
-  return <BrandIcon si={siGitlab} className={`w-${size ?? 4} h-${size ?? 4}`} />;
+  return <BrandIcon Icon={SiGitlab} className={`w-${size ?? 4} h-${size ?? 4}`} />;
 }
 export function RedditIcon({ size }: { size?: number }) {
-  return <BrandIcon si={siReddit} className={`w-${size ?? 4} h-${size ?? 4}`} />;
+  return <BrandIcon Icon={SiReddit} className={`w-${size ?? 4} h-${size ?? 4}`} />;
 }
