@@ -95,6 +95,16 @@ export async function fetchAccount(account: AccountRow) {
         const legacyTweet = t.legacy;
         if (!legacyTweet) continue;
 
+        // Skip retweets — they show up in getUserTweetsAndReplies but their
+        // author ID differs from the account. The library's tweet.retweeted flag
+        // doesn't always work for this endpoint, so we compare userId directly.
+        const tweetAuthorId = legacyTweet.userIdStr || "";
+        if (tweetAuthorId && tweetAuthorId !== userId) continue;
+
+        // Also skip native retweets (text starts with "RT @") — edge case
+        // where the API server-side includes retweeted tweets with correct userId.
+        if ((legacyTweet.fullText || "").startsWith("RT @")) continue;
+
         const tweetId = String(legacyTweet.idStr || "");
         if (!tweetId) continue;
 
@@ -122,7 +132,7 @@ export async function fetchAccount(account: AccountRow) {
           bookmark_count: legacyTweet.bookmarkCount || 0,
           is_quote: Boolean(legacyTweet.isQuoteStatus) ? 1 : 0,
           is_reply: Boolean(legacyTweet.inReplyToStatusIdStr) ? 1 : 0,
-          is_retweet: (legacyTweet.fullText || "").startsWith("RT @") ? 1 : 0,
+          is_retweet: 0,
           media_urls: JSON.stringify(mediaUrls),
           urls: JSON.stringify(urls),
           hashtags: JSON.stringify(hashtags),
