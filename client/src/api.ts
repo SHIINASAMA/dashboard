@@ -328,7 +328,6 @@ export const api = {
   getRedditSubreddits: (accountId: number) =>
     fetchJSON<{ subreddit: string; count: number }[]>(`/reddit/subreddits/${accountId}`),
 
-  // Auth
   login: (password: string) => fetchJSON<{ ok: boolean; user?: string }>("/auth/login", { method: "POST", body: JSON.stringify({ password }) }),
   checkAuth: () => fetchJSON<{ authenticated: boolean; user?: string; hasPassword?: boolean }>("/auth/me"),
   logout: () => fetchJSON<{ ok: boolean }>("/auth/logout", { method: "POST" }),

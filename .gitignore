@@ -42,8 +42,5 @@ node_modules/*
 
 # Dashboard
 /data/*
-!/data/.gitkeep
-!/data/config.json
-!/data/.secret
 client/node_modules/
 client/dist/

@@ -23,7 +23,8 @@
     "github": "GitHub",
     "gitlab": "GitLab",
     "reddit": "Reddit",
-    "settings": "Settings"
+    "settings": "Settings",
+    "logout": "Log out"
   },
   "badge": {
     "inactive": "Inactive",

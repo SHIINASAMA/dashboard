@@ -82,9 +82,10 @@ app.use("/*", cors({
 app.use(`${BASE}/api/*`, async (c, next) => {
   const path = c.req.path;
 
-  // Public endpoints
+  // Public endpoints (no session required)
   if (path === `${BASE}/api/health`) return next();
   if (path === `${BASE}/api/auth/login`) return next();
+  if (path === `${BASE}/api/auth/me`) return next();
   if (path === `${BASE}/api/reddit/callback`) return next();
 
   const token = getCookie(c, SESSION_COOKIE);
@@ -127,9 +128,9 @@ app.post(`${BASE}/api/auth/login`, async (c) => {
 
 app.get(`${BASE}/api/auth/me`, (c) => {
   const token = getCookie(c, SESSION_COOKIE);
-  if (!token) return c.json({ authenticated: false }, 401);
+  if (!token) return c.json({ authenticated: false });
   const username = validateSession(token);
-  if (!username) return c.json({ authenticated: false }, 401);
+  if (!username) return c.json({ authenticated: false });
   return c.json({ authenticated: true, user: username, hasPassword: getUserHasPassword() });
 });
 

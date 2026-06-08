@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
 
 export function Login() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -17,6 +19,7 @@ export function Login() {
     try {
       const res = await api.login(password);
       if (res.ok) {
+        queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
         navigate("/", { replace: true });
       } else {
         setError(t("login.invalidPassword"));

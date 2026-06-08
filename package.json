@@ -4,7 +4,7 @@
   "scripts": {
     "server": "bun run server/index.ts",
     "client": "bun run --cwd client dev",
-    "dev": "bun run server & bun run client"
+    "dev": "bun run server & bun run --cwd client dev"
   },
   "devDependencies": {
     "@types/bun": "latest",

@@ -1,10 +1,12 @@
 import { useState, useCallback } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { Allotment } from "allotment";
 import "allotment/dist/style.css";
 import { useTranslation } from "react-i18next";
-import { LayoutDashboard, PanelLeft, Settings } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { LayoutDashboard, PanelLeft, Settings, LogOut } from "lucide-react";
 import { XIcon, GithubIcon, GitlabIcon, RedditIcon } from "./BrandIcons";
+import { api } from "../api";
 
 const SIDEBAR_KEY = "sidebar-state";
 
@@ -18,7 +20,25 @@ function saveVisible(v: boolean) {
 
 export default function Layout() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [visible, setVisible] = useState(loadVisible);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await api.logout();
+      queryClient.setQueryData(["auth", "me"], { authenticated: false });
+      navigate("/login", { replace: true });
+    } catch {
+      // Force logout even if API fails
+      queryClient.setQueryData(["auth", "me"], { authenticated: false });
+      navigate("/login", { replace: true });
+    } finally {
+      setLoggingOut(false);
+    }
+  };
 
   const handleVisibleChange = useCallback((_index: number, v: boolean) => {
     setVisible(v);
@@ -104,6 +124,14 @@ export default function Layout() {
                 <Settings size={18} />
                 {t("nav.settings")}
               </NavLink>
+              <button
+                onClick={handleLogout}
+                disabled={loggingOut}
+                className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-[var(--muted-foreground)] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40 w-full text-left"
+              >
+                <LogOut size={18} />
+                {loggingOut ? "…" : t("nav.logout")}
+              </button>
               <p className="text-xs text-[var(--muted-foreground)] px-3">{t("common.copyright")}</p>
             </div>
           </aside>

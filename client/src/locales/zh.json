@@ -23,7 +23,8 @@
     "github": "GitHub",
     "gitlab": "GitLab",
     "reddit": "Reddit",
-    "settings": "设置"
+    "settings": "设置",
+    "logout": "退出登录"
   },
   "badge": {
     "inactive": "未激活",
