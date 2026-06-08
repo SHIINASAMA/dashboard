@@ -3,6 +3,11 @@ import { upsertTweet, insertUserStats, updateAccount } from "./db";
 import { _xClient } from "../scripts/utils";
 import { get } from "lodash";
 
+function toISO(createdAt: string | undefined): string {
+  if (!createdAt) return "";
+  return new Date(createdAt).toISOString();
+}
+
 async function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
@@ -104,7 +109,7 @@ export async function fetchAccount(account: AccountRow) {
           id: tweetId,
           account_id: account.id,
           full_text: legacyTweet.fullText || "",
-          created_at: legacyTweet.createdAt || "",
+          created_at: toISO(legacyTweet.createdAt),
           favorite_count: legacyTweet.favoriteCount || 0,
           retweet_count: legacyTweet.retweetCount || 0,
           reply_count: legacyTweet.replyCount || 0,

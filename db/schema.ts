@@ -218,6 +218,24 @@ const MIGRATIONS: { version: number; name: string; up: (db: Database) => void }[
       `);
     },
   },
+
+  // ── Migration 3: normalize tweet created_at to ISO 8601 ──────────
+  {
+    version: 3,
+    name: "normalize tweet created_at to ISO 8601",
+    up(db) {
+      const rows = db.query("SELECT id, created_at FROM tweets").all() as { id: string; created_at: string }[];
+      const stmt = db.prepare("UPDATE tweets SET created_at = ? WHERE id = ?");
+      for (const row of rows) {
+        try {
+          const iso = new Date(row.created_at).toISOString();
+          stmt.run(iso, row.id);
+        } catch {
+          // keep original if parsing fails
+        }
+      }
+    },
+  },
 ];
 
 export function initSchema(db: Database) {

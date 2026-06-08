@@ -8,7 +8,7 @@ import { Badge } from "../components/ui/badge";
 import { StatCard } from "../components/StatCard";
 import AddAccountForm from "../components/AddAccountForm";
 import { formatDateTime } from "../lib/i18n";
-import { Plus, Play, Trash2, AlertCircle, ArrowUpRight, MessageSquare, Heart, Repeat2, Eye, TrendingUp } from "lucide-react";
+import { Plus, Play, Trash2, AlertCircle, ArrowUpRight, MessageSquare, Heart, Repeat2, Eye, Bookmark, TrendingUp } from "lucide-react";
 
 export function X() {
   const { t } = useTranslation();
@@ -66,6 +66,7 @@ export function X() {
         <StatCard title={t("overview.stats.totalRetweets")} value={overview?.total_retweets ?? 0} icon={<Repeat2 size={20} />} description={overview ? t("overview.stats.today", { count: overview.todayRetweets }) : t("overview.stats.dash")} />
         <StatCard title={t("overview.stats.avgEngagement")} value={overview?.avgEngagement ?? "0"} icon={<TrendingUp size={20} />} description={t("overview.stats.perTweet")} />
         <StatCard title={t("overview.stats.totalViews")} value={overview?.total_views ?? 0} icon={<Eye size={20} />} />
+        <StatCard title={t("overview.stats.totalBookmarks")} value={overview?.total_bookmarks ?? 0} icon={<Bookmark size={20} />} />
         <StatCard title={t("overview.stats.followers")} value={overview?.followersCount ?? 0} icon={<TrendingUp size={20} />} description={overview ? t("overview.stats.following", { count: overview.followingCount }) : t("overview.stats.dash")} />
       </div>
 
