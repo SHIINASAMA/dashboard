@@ -68,7 +68,8 @@
       "noTweetData": "No tweet activity data yet. Add an X account and fetch tweets to populate this chart.",
       "noEngagementData": "No engagement data yet. Add an X account and fetch tweets to populate this chart.",
       "noTweets": "No tweets yet. Add an X account and fetch tweets to see your top content here."
-    }
+    },
+    "pinnedRepos": "Pinned Repositories"
   },
   "x": {
     "heading": "X (Twitter)",

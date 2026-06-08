@@ -68,7 +68,8 @@
       "noTweetData": "暂无推文活跃度数据。添加 X 账户并获取推文以填充此图表。",
       "noEngagementData": "暂无互动数据。添加 X 账户并获取推文以填充此图表。",
       "noTweets": "暂无推文。添加 X 账户并获取推文即可在此查看您的热门内容。"
-    }
+    },
+    "pinnedRepos": "已置顶仓库"
   },
   "x": {
     "heading": "X (Twitter)",
