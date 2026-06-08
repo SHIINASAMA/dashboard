@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../co
 import { Badge } from "../components/ui/badge";
 import { StatCard } from "../components/StatCard";
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { ArrowLeft, Play, RefreshCw, Trash2, AlertCircle, Star, GitFork, Code, Users, BookOpen } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Play, RefreshCw, Trash2, AlertCircle, Star, GitFork, Code, Users, BookOpen } from "lucide-react";
 
 function GithubInline() {
   return (
@@ -168,6 +168,37 @@ export function GitHubDetail() {
             <StatCard title="Followers" value={overview.stats.followers} icon={<Users size={20} />} />
           </div>
 
+          {/* Repos list — moved up for easy access */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><BookOpen size={18} /> Repositories</CardTitle>
+              <CardDescription>Click any repo for detailed insights: star history, traffic, referrers, releases</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {overview.repos.map((repo: GithubRepo) => (
+                  <div key={repo.id} onClick={() => navigate(`/github/${accountId}/repos/${repo.repo_id}`)}
+                    className="flex items-center gap-3 p-3 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] cursor-pointer transition-colors"
+                  >
+                    <BookOpen size={16} className="text-[var(--muted-foreground)] shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium">{repo.full_name}</span>
+                        {repo.language && <Badge className="shrink-0">{repo.language}</Badge>}
+                      </div>
+                      {repo.description && <p className="text-xs text-[var(--muted-foreground)] mt-0.5 line-clamp-1">{repo.description}</p>}
+                      <div className="flex items-center gap-3 text-xs text-[var(--muted-foreground)] mt-1">
+                        <span className="flex items-center gap-1"><Star size={12} /> {repo.stars}</span>
+                        <span className="flex items-center gap-1"><GitFork size={12} /> {repo.forks}</span>
+                      </div>
+                    </div>
+                    <ArrowUpRight size={14} className="text-[var(--muted-foreground)]" />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* github-readme-stats card */}
           <Card>
             <CardHeader>
@@ -203,58 +234,26 @@ export function GitHubDetail() {
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Star size={18} /> Top Repositories</CardTitle>
-                <CardDescription>Your most starred repos</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {overview.topRepos.map((repo: GithubRepo, i: number) => (
-                    <div key={repo.id} className="flex items-center gap-3 p-2 rounded-lg bg-[var(--muted)]">
-                      <span className="text-xs font-bold text-[var(--muted-foreground)] w-5 shrink-0">#{i + 1}</span>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <a href={`https://github.com/${repo.full_name}`} target="_blank" rel="noopener noreferrer"
-                            className="text-sm font-medium hover:text-[var(--primary)] transition-colors truncate">
-                            {repo.full_name}
-                          </a>
-                          {repo.language && <Badge className="shrink-0">{repo.language}</Badge>}
-                        </div>
-                        {repo.description && <p className="text-xs text-[var(--muted-foreground)] mt-0.5 line-clamp-1">{repo.description}</p>}
-                        <div className="flex items-center gap-3 text-xs text-[var(--muted-foreground)] mt-1">
-                          <span className="flex items-center gap-1"><Star size={12} /> {repo.stars}</span>
-                          <span className="flex items-center gap-1"><GitFork size={12} /> {repo.forks}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Code size={18} /> Languages</CardTitle>
-                <CardDescription>Distribution across your repos</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {Object.keys(overview.languages).length > 0 ? (
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie data={Object.entries(overview.languages).map(([name, count]) => ({ name, count }))} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={100} label={({ name, percent = 0 }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                        {Object.keys(overview.languages).map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                      </Pie>
-                      <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <p className="text-sm text-[var(--muted-foreground)] text-center py-12">No language data.</p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Code size={18} /> Languages</CardTitle>
+              <CardDescription>Distribution across your repos</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {Object.keys(overview.languages).length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie data={Object.entries(overview.languages).map(([name, count]) => ({ name, count }))} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={100} label={({ name, percent = 0 }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                      {Object.keys(overview.languages).map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                    </Pie>
+                    <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-sm text-[var(--muted-foreground)] text-center py-12">No language data.</p>
+              )}
+            </CardContent>
+          </Card>
         </>
       ) : (
         <Card>

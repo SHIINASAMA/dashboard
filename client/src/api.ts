@@ -174,4 +174,18 @@ export const api = {
   getGithubTimeline: (accountId: number) => fetchJSON<{ date: string; public_repos: number; followers: number; following: number }[]>(`/github/timeline/${accountId}`),
   getGithubContributions: (accountId: number, year?: number) =>
     fetchJSON<GithubContribution[]>(`/github/contributions/${accountId}${year ? `?year=${year}` : ""}`),
+
+  // GitHub Repo Insights
+  getGithubRepoSnapshots: (accountId: number, repoId: number) =>
+    fetchJSON<{ stars: number; forks: number; open_issues: number; date: string }[]>(`/github/${accountId}/repos/${repoId}/snapshots`),
+  getGithubTrafficClones: (accountId: number, repoId: number) =>
+    fetchJSON<{ date: string; count: number; uniques: number }[]>(`/github/${accountId}/repos/${repoId}/clones`),
+  getGithubTrafficViews: (accountId: number, repoId: number) =>
+    fetchJSON<{ date: string; count: number; uniques: number }[]>(`/github/${accountId}/repos/${repoId}/views`),
+  getGithubReferrers: (accountId: number, repoId: number) =>
+    fetchJSON<{ referrer: string; count: number; uniques: number }[]>(`/github/${accountId}/repos/${repoId}/referrers`),
+  getGithubPaths: (accountId: number, repoId: number) =>
+    fetchJSON<{ path: string; title: string | null; count: number; uniques: number }[]>(`/github/${accountId}/repos/${repoId}/paths`),
+  getGithubReleases: (accountId: number, repoId: number) =>
+    fetchJSON<any[]>(`/github/${accountId}/repos/${repoId}/releases`),
 };

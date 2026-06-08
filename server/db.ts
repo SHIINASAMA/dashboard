@@ -161,6 +161,13 @@ export function deleteAccount(id: number) {
   db.query("DELETE FROM github_repos WHERE account_id = ?").run(id);
   db.query("DELETE FROM github_stats WHERE account_id = ?").run(id);
   db.query("DELETE FROM github_contributions WHERE account_id = ?").run(id);
+  db.query("DELETE FROM github_repo_snapshots WHERE account_id = ?").run(id);
+  db.query("DELETE FROM github_traffic_clones WHERE account_id = ?").run(id);
+  db.query("DELETE FROM github_traffic_views WHERE account_id = ?").run(id);
+  db.query("DELETE FROM github_referrers WHERE account_id = ?").run(id);
+  db.query("DELETE FROM github_paths WHERE account_id = ?").run(id);
+  db.query("DELETE FROM github_release_assets WHERE release_id IN (SELECT id FROM github_releases WHERE account_id = ?)").run(id);
+  db.query("DELETE FROM github_releases WHERE account_id = ?").run(id);
   db.query("DELETE FROM accounts WHERE id = ?").run(id);
 }
 
@@ -314,4 +321,61 @@ export function insertGithubStats(stats: Omit<GithubStatsRow, "recorded_at">) {
 
 export function upsertGithubContribution(c: { account_id: number; date: string; count: number; level: number }) {
   getDb().query("INSERT INTO github_contributions (account_id, date, count, level) VALUES(?,?,?,?) ON CONFLICT(account_id,date) DO UPDATE SET count=excluded.count, level=excluded.level").run(c.account_id, c.date, c.count, c.level);
+}
+
+// ─── GitHub Repo Insights ──────────────────────────────────────────
+
+export function upsertGithubRepoSnapshot(s: { account_id: number; repo_id: number; stars: number; forks: number; open_issues: number; snapshot_date: string }) {
+  getDb().query(`INSERT INTO github_repo_snapshots (account_id,repo_id,stars,forks,open_issues,snapshot_date) VALUES(?,?,?,?,?,?) ON CONFLICT(account_id,repo_id,snapshot_date) DO UPDATE SET stars=excluded.stars,forks=excluded.forks,open_issues=excluded.open_issues`).run(
+    s.account_id, s.repo_id, s.stars, s.forks, s.open_issues, s.snapshot_date);
+}
+
+export function getGithubRepoSnapshots(accountId: number, repoId: number) {
+  return getDb().query("SELECT stars, forks, open_issues, snapshot_date as date FROM github_repo_snapshots WHERE account_id = ? AND repo_id = ? ORDER BY snapshot_date ASC").all(accountId, repoId) as { stars: number; forks: number; open_issues: number; date: string }[];
+}
+
+export function upsertGithubTrafficClones(t: { account_id: number; repo_id: number; date: string; count: number; uniques: number }) {
+  getDb().query(`INSERT INTO github_traffic_clones (account_id,repo_id,date,count,uniques) VALUES(?,?,?,?,?) ON CONFLICT(account_id,repo_id,date) DO UPDATE SET count=excluded.count,uniques=excluded.uniques`).run(t.account_id, t.repo_id, t.date, t.count, t.uniques);
+}
+
+export function getGithubTrafficClones(accountId: number, repoId: number) {
+  return getDb().query("SELECT date, count, uniques FROM github_traffic_clones WHERE account_id = ? AND repo_id = ? ORDER BY date ASC").all(accountId, repoId) as { date: string; count: number; uniques: number }[];
+}
+
+export function upsertGithubTrafficViews(t: { account_id: number; repo_id: number; date: string; count: number; uniques: number }) {
+  getDb().query(`INSERT INTO github_traffic_views (account_id,repo_id,date,count,uniques) VALUES(?,?,?,?,?) ON CONFLICT(account_id,repo_id,date) DO UPDATE SET count=excluded.count,uniques=excluded.uniques`).run(t.account_id, t.repo_id, t.date, t.count, t.uniques);
+}
+
+export function getGithubTrafficViews(accountId: number, repoId: number) {
+  return getDb().query("SELECT date, count, uniques FROM github_traffic_views WHERE account_id = ? AND repo_id = ? ORDER BY date ASC").all(accountId, repoId) as { date: string; count: number; uniques: number }[];
+}
+
+export function upsertGithubReferrer(t: { account_id: number; repo_id: number; referrer: string; count: number; uniques: number }) {
+  getDb().query(`INSERT INTO github_referrers (account_id,repo_id,referrer,count,uniques) VALUES(?,?,?,?,?) ON CONFLICT(account_id,repo_id,referrer) DO UPDATE SET count=excluded.count,uniques=excluded.uniques`).run(t.account_id, t.repo_id, t.referrer, t.count, t.uniques);
+}
+
+export function getGithubReferrers(accountId: number, repoId: number) {
+  return getDb().query("SELECT referrer, count, uniques FROM github_referrers WHERE account_id = ? AND repo_id = ? ORDER BY count DESC").all(accountId, repoId) as { referrer: string; count: number; uniques: number }[];
+}
+
+export function upsertGithubPath(t: { account_id: number; repo_id: number; path: string; title: string | null; count: number; uniques: number }) {
+  getDb().query(`INSERT INTO github_paths (account_id,repo_id,path,title,count,uniques) VALUES(?,?,?,?,?,?) ON CONFLICT(account_id,repo_id,path) DO UPDATE SET count=excluded.count,uniques=excluded.uniques,title=excluded.title`).run(t.account_id, t.repo_id, t.path, t.title, t.count, t.uniques);
+}
+
+export function getGithubPaths(accountId: number, repoId: number) {
+  return getDb().query("SELECT path, title, count, uniques FROM github_paths WHERE account_id = ? AND repo_id = ? ORDER BY count DESC").all(accountId, repoId) as { path: string; title: string | null; count: number; uniques: number }[];
+}
+
+export function upsertGithubRelease(r: { account_id: number; repo_id: number; release_id: number; tag_name: string | null; name: string | null; body: string | null; prerelease: number; published_at: string | null; html_url: string | null; total_downloads: number }) {
+  getDb().query(`INSERT INTO github_releases (account_id,repo_id,release_id,tag_name,name,body,prerelease,published_at,html_url,total_downloads) VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(account_id,repo_id,release_id) DO UPDATE SET tag_name=excluded.tag_name,name=excluded.name,body=excluded.body,prerelease=excluded.prerelease,published_at=excluded.published_at,html_url=excluded.html_url,total_downloads=excluded.total_downloads`).run(
+    r.account_id, r.repo_id, r.release_id, r.tag_name, r.name, r.body, r.prerelease, r.published_at, r.html_url, r.total_downloads);
+}
+
+export function getGithubReleases(accountId: number, repoId: number) {
+  return getDb().query("SELECT * FROM github_releases WHERE account_id = ? AND repo_id = ? ORDER BY published_at DESC").all(accountId, repoId) as any[];
+}
+
+export function insertGithubReleaseAsset(a: { release_db_id: number; name: string; download_count: number; size: number; content_type: string | null; browser_download_url: string | null }) {
+  getDb().query("DELETE FROM github_release_assets WHERE release_id = ?").run(a.release_db_id);
+  getDb().query("INSERT INTO github_release_assets (release_id,name,download_count,size,content_type,browser_download_url) VALUES(?,?,?,?,?,?)").run(a.release_db_id, a.name, a.download_count, a.size, a.content_type, a.browser_download_url);
 }

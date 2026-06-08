@@ -68,9 +68,17 @@ export default function AddAccountForm({ onClose, defaultPlatform = "twitter" }:
             />
             <p className="text-xs text-[var(--muted-foreground)] mt-1">
               {platform === "github"
-                ? "GitHub Personal Access Token (classic) with repo scope, or leave empty for public data only."
+                ? "GitHub Personal Access Token (classic) with repo scope. Fine-grained tokens don't support traffic data."
                 : "From X.com cookies → auth_token. Keep this private."}
             </p>
+            {platform === "github" && (
+              <p className="text-xs mt-1.5">
+                <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer"
+                  className="text-[var(--primary)] hover:underline">
+                  How to create a GitHub token →
+                </a>
+              </p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium mb-1 text-[var(--muted-foreground)]">Fetch Interval (minutes)</label>

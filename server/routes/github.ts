@@ -1,5 +1,9 @@
 import { Hono } from "hono";
-import { getGithubOverview, getGithubStatsTimeline, getGithubContributions } from "../db";
+import {
+  getGithubOverview, getGithubStatsTimeline, getGithubContributions,
+  getGithubRepoSnapshots, getGithubTrafficClones, getGithubTrafficViews,
+  getGithubReferrers, getGithubPaths, getGithubReleases,
+} from "../db";
 
 const githubRouter = new Hono();
 
@@ -23,6 +27,44 @@ githubRouter.get("/contributions/:accountId", (c) => {
   const year = c.req.query("year") ? Number(c.req.query("year")) : undefined;
   const data = getGithubContributions(accountId, year);
   return c.json(data);
+});
+
+// ─── Repo Insights ──────────────────────────────────────────────
+
+githubRouter.get("/:accountId/repos/:repoId/snapshots", (c) => {
+  const accountId = Number(c.req.param("accountId"));
+  const repoId = Number(c.req.param("repoId"));
+  return c.json(getGithubRepoSnapshots(accountId, repoId));
+});
+
+githubRouter.get("/:accountId/repos/:repoId/clones", (c) => {
+  const accountId = Number(c.req.param("accountId"));
+  const repoId = Number(c.req.param("repoId"));
+  return c.json(getGithubTrafficClones(accountId, repoId));
+});
+
+githubRouter.get("/:accountId/repos/:repoId/views", (c) => {
+  const accountId = Number(c.req.param("accountId"));
+  const repoId = Number(c.req.param("repoId"));
+  return c.json(getGithubTrafficViews(accountId, repoId));
+});
+
+githubRouter.get("/:accountId/repos/:repoId/referrers", (c) => {
+  const accountId = Number(c.req.param("accountId"));
+  const repoId = Number(c.req.param("repoId"));
+  return c.json(getGithubReferrers(accountId, repoId));
+});
+
+githubRouter.get("/:accountId/repos/:repoId/paths", (c) => {
+  const accountId = Number(c.req.param("accountId"));
+  const repoId = Number(c.req.param("repoId"));
+  return c.json(getGithubPaths(accountId, repoId));
+});
+
+githubRouter.get("/:accountId/repos/:repoId/releases", (c) => {
+  const accountId = Number(c.req.param("accountId"));
+  const repoId = Number(c.req.param("repoId"));
+  return c.json(getGithubReleases(accountId, repoId));
 });
 
 export default githubRouter;
