@@ -22,7 +22,6 @@ async function getRedditAccessToken(refreshToken: string): Promise<string> {
       "User-Agent": "dashboard/1.0",
     },
     body: `grant_type=refresh_token&refresh_token=${encodeURIComponent(refreshToken)}`,
-    tls: { rejectUnauthorized: false },
     proxy,
   });
 
@@ -42,7 +41,6 @@ async function redditFetch(path: string, token: string): Promise<any> {
       Authorization: `Bearer ${token}`,
       "User-Agent": "dashboard/1.0",
     },
-    tls: { rejectUnauthorized: false },
     proxy,
   });
   if (!res.ok) {
@@ -183,7 +181,6 @@ async function redditPublicFetch(path: string, loid: string): Promise<any> {
       "Accept": "application/json",
       "Cookie": `loid=${loid}`,
     },
-    tls: { rejectUnauthorized: false },
     proxy,
   });
   if (!res.ok) {

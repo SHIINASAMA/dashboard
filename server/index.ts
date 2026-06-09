@@ -73,11 +73,21 @@ function validateSession(token: string): { username: string; role: string } | nu
 
 const app = new Hono();
 
-// CORS
-app.use("/*", cors({
-  origin: (origin) => origin, // reflect the origin
-  credentials: true,
-}));
+// CORS — controlled by config.allowedOrigins.
+// Default empty = no cross-origin access. Set to ["*"] to allow all,
+// or specific origins like ["https://my-dashboard.example.com"].
+const allowed = cfg.allowedOrigins || [];
+if (allowed.length > 0) {
+  const allowAll = allowed.includes("*");
+  app.use("/*", cors({
+    origin: allowAll ? "*" : (origin) => {
+      if (!origin) return "*";
+      if (allowed.includes(origin)) return origin;
+      return allowed[0]; // return first allowed origin for non-matching origins (browser will reject)
+    },
+    credentials: true,
+  }));
+}
 
 // ── Auth middleware ───────────────────────────────────────────────
 

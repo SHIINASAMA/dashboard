@@ -8,11 +8,21 @@ import { Database } from "bun:sqlite";
 import { dbPath } from "../../config";
 
 function encToken(plain: string): string {
-  try { return encrypt(plain); } catch { return plain; }
+  try { return encrypt(plain); } catch (e) {
+    console.error("encToken: encryption failed — crypto may not be initialized", e);
+    throw new Error("Encryption unavailable — cannot store credentials securely");
+  }
 }
 
+// decToken decrypts if the value is encrypted, or returns as-is for
+// legacy plaintext tokens stored before encryption was introduced.
+// New tokens are always encrypted via encToken(); old plaintext values
+// are transparently readable until the account is next updated.
 function decToken(cipher: string): string {
-  try { return decrypt(cipher); } catch { return cipher; }
+  try { return decrypt(cipher); } catch {
+    // Legacy plaintext token — not hex-encoded ciphertext
+    return cipher;
+  }
 }
 
 export interface AccountRow {
@@ -126,8 +136,16 @@ export function deleteAccount(id: number): void {
     "DELETE FROM reddit_stats WHERE account_id = ?",
     "DELETE FROM accounts WHERE id = ?",
   ];
-  for (const sql of deletions) {
-    raw.query(sql).run(id);
+  raw.exec("BEGIN");
+  try {
+    for (const sql of deletions) {
+      raw.query(sql).run(id);
+    }
+    raw.exec("COMMIT");
+  } catch (e) {
+    raw.exec("ROLLBACK");
+    raw.close();
+    throw e;
   }
   raw.close();
 }

@@ -37,16 +37,18 @@ function getProxyAgent(): any {
 async function glFetch<T>(apiBase: string, path: string, token: string): Promise<GlApiResponse<T>> {
   const url = `${apiBase}${path}`;
   const proxy = getProxyAgent();
-  const res = await fetch(url, {
+  const fetchOpts: any = {
     headers: {
       "PRIVATE-TOKEN": token,
       "User-Agent": "dashboard",
     },
-    tls: {
-      rejectUnauthorized: false,
-    },
     proxy: proxy,
-  }).catch((e: any) => {
+  };
+  // Only disable TLS verification for self-hosted instances (non-gitlab.com)
+  if (!apiBase.includes("gitlab.com")) {
+    fetchOpts.tls = { rejectUnauthorized: false };
+  }
+  const res = await fetch(url, fetchOpts).catch((e: any) => {
     throw new Error(`GitLab network error: ${e.message || e}`);
   });
 

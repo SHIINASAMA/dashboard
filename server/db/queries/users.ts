@@ -45,22 +45,32 @@ export function deleteUser(id: number): void {
 
   const accountIds = raw.query("SELECT id FROM accounts WHERE owner_id = ?").all(id) as { id: number }[];
   const ids = accountIds.map(a => a.id);
-  if (ids.length > 0) {
-    const tables = [
-      "tweets", "user_stats", "github_releases", "github_referrers",
-      "github_paths", "github_traffic_clones", "github_traffic_views",
-      "github_repo_snapshots", "github_repos", "github_contributions",
-      "github_stats", "gitlab_releases", "gitlab_project_snapshots",
-      "gitlab_projects", "gitlab_stats", "gitlab_contributions",
-      "reddit_comments", "reddit_posts", "reddit_stats",
-    ];
-    for (const table of tables) {
-      raw.query(`DELETE FROM ${table} WHERE account_id IN (${ids.map(() => "?").join(",")})`).run(...ids);
+  raw.exec("BEGIN");
+  try {
+    if (ids.length > 0) {
+      const tables = [
+        "tweets", "user_stats",
+        "github_release_assets", "github_releases", "github_referrers",
+        "github_paths", "github_traffic_clones", "github_traffic_views",
+        "github_repo_snapshots", "github_repos", "github_contributions",
+        "github_stats",
+        "gitlab_release_assets", "gitlab_releases", "gitlab_project_snapshots",
+        "gitlab_projects", "gitlab_stats", "gitlab_contributions",
+        "reddit_comments", "reddit_posts", "reddit_stats",
+      ];
+      for (const table of tables) {
+        raw.query(`DELETE FROM ${table} WHERE account_id IN (${ids.map(() => "?").join(",")})`).run(...ids);
+      }
+      raw.query("DELETE FROM accounts WHERE owner_id = ?").run(id);
     }
-    raw.query("DELETE FROM accounts WHERE owner_id = ?").run(id);
-  }
 
-  raw.query("DELETE FROM users WHERE id = ?").run(id);
+    raw.query("DELETE FROM users WHERE id = ?").run(id);
+    raw.exec("COMMIT");
+  } catch (e) {
+    raw.exec("ROLLBACK");
+    raw.close();
+    throw e;
+  }
   raw.close();
 }
 

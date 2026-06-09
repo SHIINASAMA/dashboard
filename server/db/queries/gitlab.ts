@@ -6,6 +6,7 @@ import { dbPath } from "../../config";
 function rawDb(): Database {
   const db = new Database(dbPath());
   db.exec("PRAGMA journal_mode = WAL");
+  db.exec("PRAGMA foreign_keys = ON");
   return db;
 }
 
@@ -94,7 +95,15 @@ export function getGitlabReleases(accountId: number, projectId: number) {
 
 export function insertGitlabReleaseAsset(a: { release_db_id: number; name: string; download_count: number; size: number; file_type: string | null; url: string | null }) {
   const db = rawDb();
-  db.query("DELETE FROM gitlab_release_assets WHERE release_id = ?").run(a.release_db_id);
-  db.query("INSERT INTO gitlab_release_assets (release_id,name,download_count,size,file_type,url) VALUES(?,?,?,?,?,?)").run(a.release_db_id, a.name, a.download_count, a.size, a.file_type, a.url);
+  db.exec("BEGIN");
+  try {
+    db.query("DELETE FROM gitlab_release_assets WHERE release_id = ?").run(a.release_db_id);
+    db.query("INSERT INTO gitlab_release_assets (release_id,name,download_count,size,file_type,url) VALUES(?,?,?,?,?,?)").run(a.release_db_id, a.name, a.download_count, a.size, a.file_type, a.url);
+    db.exec("COMMIT");
+  } catch (e) {
+    db.exec("ROLLBACK");
+    db.close();
+    throw e;
+  }
   db.close();
 }

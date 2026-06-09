@@ -8,6 +8,7 @@ import { dbPath } from "../../config";
 function rawDb(): Database {
   const db = new Database(dbPath());
   db.exec("PRAGMA journal_mode = WAL");
+  db.exec("PRAGMA foreign_keys = ON");
   return db;
 }
 
@@ -161,7 +162,15 @@ export function getGithubReleases(accountId: number, repoId: number) {
 
 export function insertGithubReleaseAsset(a: { release_db_id: number; name: string; download_count: number; size: number; content_type: string | null; browser_download_url: string | null }) {
   const db = rawDb();
-  db.query("DELETE FROM github_release_assets WHERE release_id = ?").run(a.release_db_id);
-  db.query("INSERT INTO github_release_assets (release_id,name,download_count,size,content_type,browser_download_url) VALUES(?,?,?,?,?,?)").run(a.release_db_id, a.name, a.download_count, a.size, a.content_type, a.browser_download_url);
+  db.exec("BEGIN");
+  try {
+    db.query("DELETE FROM github_release_assets WHERE release_id = ?").run(a.release_db_id);
+    db.query("INSERT INTO github_release_assets (release_id,name,download_count,size,content_type,browser_download_url) VALUES(?,?,?,?,?,?)").run(a.release_db_id, a.name, a.download_count, a.size, a.content_type, a.browser_download_url);
+    db.exec("COMMIT");
+  } catch (e) {
+    db.exec("ROLLBACK");
+    db.close();
+    throw e;
+  }
   db.close();
 }

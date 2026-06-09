@@ -29,6 +29,7 @@ export interface DailyStatsRow {
 function rawDb() {
   const db = new Database(dbPath());
   db.exec("PRAGMA journal_mode = WAL");
+  db.exec("PRAGMA foreign_keys = ON");
   return db;
 }
 

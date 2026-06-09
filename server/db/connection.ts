@@ -12,11 +12,16 @@ export function getDb() {
     const cfg = loadConfig().database;
     const sqlitePath = cfg.sqlite.path || join(dataDir(), "db", "dashboard.db");
     const client = createClient({ url: `file:${sqlitePath}` });
+    client.execute("PRAGMA foreign_keys = ON");
     _db = drizzle(client, { schema });
   }
   return _db;
 }
 
 export function closeDb() {
+  if (_db) {
+    // libsql client doesn't expose close() directly; the singleton
+    // lives for the process lifetime anyway.
+  }
   _db = null;
 }

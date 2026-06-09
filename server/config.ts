@@ -52,6 +52,13 @@ export interface DashboardConfig {
   https: boolean;
 
   /**
+   * Allowed CORS origins for cross-origin requests.
+   * Default empty = no CORS (same-origin only, recommended for production).
+   * Set to ["*"] to allow all, or list specific origins e.g. ["https://example.com"].
+   */
+  allowedOrigins: string[];
+
+  /**
    * Argon2id password hash. If empty/absent, login is open.
    * DO NOT edit by hand — use the Settings UI or auth API.
    * DEPRECATED: password hash is migrating to the users table.
@@ -67,6 +74,7 @@ const DEFAULTS: DashboardConfig = {
   host: "localhost",
   port: 3001,
   https: false,
+  allowedOrigins: [],
   passwordHash: "",
   database: {
     driver: "sqlite",
@@ -123,6 +131,7 @@ export function loadConfig(): DashboardConfig {
     host: process.env.HOST || "localhost",
     port: Number(process.env.PORT) || 3001,
     https: process.env.HTTPS === "true",
+    allowedOrigins: [],
     passwordHash: "",
     database: {
       driver: "sqlite",
