@@ -1,9 +1,6 @@
-// Twitter query stubs — delegates to raw SQL for full query compatibility
-// Drizzle schemas defined; full Drizzle query migration in next iteration
-
-import { encrypt } from "../../crypto";
-import { Database } from "bun:sqlite";
-import { dbPath } from "../../config";
+import { eq, desc, sql, and, count, inArray, gte, like } from "drizzle-orm";
+import { getDb } from "../connection";
+import { tweets, user_stats } from "../../../db/schema";
 
 export interface TweetRow {
   id: string; account_id: number; full_text: string; created_at: string;
@@ -24,18 +21,6 @@ export interface DailyStatsRow {
   total_bookmarks: number;
 }
 
-// Raw DB fallback for complex queries — Drizzle's SQL builder can express these,
-// but for stability during migration we keep the raw SQL patterns
-function rawDb() {
-  const db = new Database(dbPath());
-  db.exec("PRAGMA journal_mode = WAL");
-  db.exec("PRAGMA foreign_keys = ON");
-  return db;
-}
-
-// When accountIds is [] (user has no accounts), bypass the DB entirely.
-// The ?.length check alone is ambiguous: [] is truthy but length 0 is falsy,
-// which would produce an empty WHERE clause that leaks all rows.
 function hasIds(ids?: number[]): ids is number[] {
   return Array.isArray(ids) && ids.length > 0;
 }
@@ -50,121 +35,180 @@ const EMPTY_OVERVIEW = {
   todayLikes: 0, todayRetweets: 0, todayTweets: 0,
 };
 
-export function getOverviewStats(accountIds?: number[]) {
+export async function getOverviewStats(accountIds?: number[]) {
   if (isExplicitEmpty(accountIds)) return { ...EMPTY_OVERVIEW };
-  const db = rawDb();
-  const whereClause = hasIds(accountIds) ? `WHERE account_id IN (${accountIds.join(",")})` : "";
-  const tweetStats = db.query(`
-    SELECT COUNT(*) as total_tweets, COALESCE(SUM(favorite_count), 0) as total_likes,
-    COALESCE(SUM(retweet_count), 0) as total_retweets, COALESCE(SUM(reply_count), 0) as total_replies,
-    COALESCE(SUM(view_count), 0) as total_views, COALESCE(SUM(bookmark_count), 0) as total_bookmarks
-    FROM tweets ${whereClause}`).get() as any;
+  const db = getDb();
+  const tweetFilter = hasIds(accountIds) ? inArray(tweets.account_id, accountIds) : undefined;
+
+  const [ts] = await db.select({
+    total_tweets: count(),
+    total_likes: sql<number>`COALESCE(SUM(${tweets.favorite_count}), 0)`,
+    total_retweets: sql<number>`COALESCE(SUM(${tweets.retweet_count}), 0)`,
+    total_replies: sql<number>`COALESCE(SUM(${tweets.reply_count}), 0)`,
+    total_views: sql<number>`COALESCE(SUM(${tweets.view_count}), 0)`,
+    total_bookmarks: sql<number>`COALESCE(SUM(${tweets.bookmark_count}), 0)`,
+  }).from(tweets).where(tweetFilter);
+
   const today = new Date().toISOString().slice(0, 10);
-  const todayStats = db.query(`SELECT COALESCE(SUM(favorite_count), 0) as today_likes,
-    COALESCE(SUM(retweet_count), 0) as today_retweets, COUNT(*) as today_tweets
-    FROM tweets WHERE date(created_at) = ? ${hasIds(accountIds) ? `AND account_id IN (${accountIds!.join(",")})` : ""}`).get(today) as any;
-  const latestStatsRows = db.query(`SELECT u1.account_id, u1.followers_count, u1.following_count, u1.tweet_count
-    FROM user_stats u1 INNER JOIN (SELECT account_id, MAX(recorded_at) as max_recorded FROM user_stats GROUP BY account_id) u2
-    ON u1.account_id = u2.account_id AND u1.recorded_at = u2.max_recorded
-    ${hasIds(accountIds) ? `WHERE u1.account_id IN (${accountIds!.join(",")})` : ""}`).all() as UserStatsRow[];
+  const todayConditions = [gte(tweets.created_at, today)];
+  if (tweetFilter) todayConditions.push(tweetFilter);
+  const [td] = await db.select({
+    today_likes: sql<number>`COALESCE(SUM(${tweets.favorite_count}), 0)`,
+    today_retweets: sql<number>`COALESCE(SUM(${tweets.retweet_count}), 0)`,
+    today_tweets: count(),
+  }).from(tweets).where(and(...todayConditions));
+
+  const allStats = await db.select({
+    account_id: user_stats.account_id,
+    followers_count: user_stats.followers_count,
+    following_count: user_stats.following_count,
+    tweet_count: user_stats.tweet_count,
+  }).from(user_stats)
+    .where(hasIds(accountIds) ? inArray(user_stats.account_id, accountIds) : undefined)
+    .orderBy(desc(user_stats.recorded_at));
+
+  const latestMap = new Map<number, typeof allStats[0]>();
+  for (const s of allStats) {
+    if (!latestMap.has(s.account_id)) {
+      latestMap.set(s.account_id, s);
+    }
+  }
+  const latestStatsRows = [...latestMap.values()];
   const followersCount = latestStatsRows.reduce((s, r) => s + r.followers_count, 0);
   const followingCount = latestStatsRows.reduce((s, r) => s + r.following_count, 0);
   const userTweetCount = latestStatsRows.reduce((s, r) => s + r.tweet_count, 0);
-  db.close();
-  return { ...tweetStats, avgEngagement: tweetStats.total_tweets > 0
-    ? ((tweetStats.total_likes + tweetStats.total_retweets + tweetStats.total_replies) / tweetStats.total_tweets).toFixed(1) : "0",
+
+  return {
+    ...ts, avgEngagement: ts.total_tweets > 0
+      ? ((ts.total_likes + ts.total_retweets + ts.total_replies) / ts.total_tweets).toFixed(1) : "0",
     followersCount, followingCount, userTweetCount,
-    todayLikes: todayStats?.today_likes ?? 0, todayRetweets: todayStats?.today_retweets ?? 0, todayTweets: todayStats?.today_tweets ?? 0 };
+    todayLikes: Number(td?.today_likes ?? 0), todayRetweets: Number(td?.today_retweets ?? 0), todayTweets: Number(td?.today_tweets ?? 0),
+  };
 }
 
-export function getTweets(page: number, limit: number, sort: string, order: string, search?: string, accountIds?: number[]) {
+export async function getTweets(page: number, limit: number, sort: string, order: string, search?: string, accountIds?: number[]) {
   if (isExplicitEmpty(accountIds)) return { data: [], total: 0, page, limit, totalPages: 0 };
-  const db = rawDb();
+  const db = getDb();
   const offset = (page - 1) * limit;
-  const conditions: string[] = []; const params: any[] = [];
-  if (search) { conditions.push("full_text LIKE ?"); params.push(`%${search}%`); }
-  if (hasIds(accountIds)) conditions.push(`account_id IN (${accountIds!.join(",")})`);
-  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
-  const allowedSorts = ["created_at", "favorite_count", "retweet_count", "reply_count", "view_count"];
-  const sortCol = allowedSorts.includes(sort) ? sort : "created_at";
-  const sortOrder = order === "asc" ? "ASC" : "DESC";
-  const total = db.query(`SELECT COUNT(*) as count FROM tweets ${whereClause}`).get(...params) as any;
-  const rows = db.query(`SELECT * FROM tweets ${whereClause} ORDER BY ${sortCol} ${sortOrder} LIMIT ? OFFSET ?`).all(...params, limit, offset) as TweetRow[];
-  db.close();
-  return { data: rows, total: total.count, page, limit, totalPages: Math.ceil(total.count / limit) };
+  const conditions: any[] = [];
+  if (search) conditions.push(like(tweets.full_text, `%${search}%`));
+  if (hasIds(accountIds)) conditions.push(inArray(tweets.account_id, accountIds));
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+  const allowedSorts: Record<string, any> = {
+    created_at: tweets.created_at, favorite_count: tweets.favorite_count,
+    retweet_count: tweets.retweet_count, reply_count: tweets.reply_count,
+    view_count: tweets.view_count,
+  };
+  const sortCol = allowedSorts[sort] || tweets.created_at;
+  const sortOrder = order === "asc" ? sortCol : desc(sortCol);
+  const [total] = await db.select({ count: count() }).from(tweets).where(whereClause);
+  const data = await db.select().from(tweets)
+    .where(whereClause)
+    .orderBy(sortOrder)
+    .limit(limit).offset(offset) as TweetRow[];
+  return { data, total: total.count, page, limit, totalPages: Math.ceil(total.count / limit) };
 }
 
-export function getTweetById(id: string) {
-  const db = rawDb();
-  const r = db.query("SELECT * FROM tweets WHERE id = ?").get(id) as TweetRow | undefined;
-  db.close();
-  return r;
+export async function getTweetById(id: string) {
+  return getDb().select().from(tweets).where(eq(tweets.id, id)).get() as Promise<TweetRow | undefined>;
 }
 
-export function getTimelineStats(months: number, accountIds?: number[]) {
+export async function getTimelineStats(months: number, accountIds?: number[]) {
   if (isExplicitEmpty(accountIds)) return { dailyTweets: [], followerGrowth: [] };
-  const db = rawDb();
+  const db = getDb();
   const since = new Date(); since.setMonth(since.getMonth() - months);
-  const w = hasIds(accountIds) ? `WHERE created_at >= ? AND account_id IN (${accountIds!.join(",")})` : "WHERE created_at >= ?";
-  const dailyTweets = db.query(`SELECT date(created_at) as date, COUNT(*) as tweets_count, COALESCE(SUM(favorite_count),0) as total_likes, COALESCE(SUM(retweet_count),0) as total_retweets, COALESCE(SUM(reply_count),0) as total_replies, COALESCE(SUM(view_count),0) as total_views FROM tweets ${w} GROUP BY date(created_at) ORDER BY date ASC`).all(since.toISOString()) as DailyStatsRow[];
-  const fw = hasIds(accountIds) ? `WHERE recorded_at >= ? AND account_id IN (${accountIds!.join(",")})` : "WHERE recorded_at >= ?";
-  const followerGrowth = db.query(`SELECT recorded_at as date, followers_count, following_count, tweet_count FROM user_stats ${fw} ORDER BY recorded_at ASC`).all(since.toISOString()) as UserStatsRow[];
-  db.close();
+  const sinceStr = since.toISOString();
+  const tweetFilter = hasIds(accountIds) ? inArray(tweets.account_id, accountIds) : undefined;
+  const statsFilter = hasIds(accountIds) ? inArray(user_stats.account_id, accountIds) : undefined;
+
+  const dailyTweets = await db.select({
+    date: sql`date(${tweets.created_at})`.as<string>(),
+    tweets_count: count(),
+    total_likes: sql<number>`COALESCE(SUM(${tweets.favorite_count}), 0)`,
+    total_retweets: sql<number>`COALESCE(SUM(${tweets.retweet_count}), 0)`,
+    total_replies: sql<number>`COALESCE(SUM(${tweets.reply_count}), 0)`,
+    total_views: sql<number>`COALESCE(SUM(${tweets.view_count}), 0)`,
+  }).from(tweets)
+    .where(and(gte(tweets.created_at, sinceStr), tweetFilter))
+    .groupBy(sql`date(${tweets.created_at})`)
+    .orderBy(sql`date(${tweets.created_at})`);
+
+  const followerGrowth = await db.select({
+    date: user_stats.recorded_at,
+    followers_count: user_stats.followers_count,
+    following_count: user_stats.following_count,
+    tweet_count: user_stats.tweet_count,
+  }).from(user_stats)
+    .where(and(gte(user_stats.recorded_at, sinceStr), statsFilter))
+    .orderBy(user_stats.recorded_at) as UserStatsRow[];
+
   return { dailyTweets, followerGrowth };
 }
 
-export function getTopTweets(metric: string, limit: number, accountIds?: number[]) {
+export async function getTopTweets(metric: string, limit: number, accountIds?: number[]) {
   if (isExplicitEmpty(accountIds)) return [];
-  const db = rawDb();
-  const allowed = ["favorite_count", "retweet_count", "reply_count", "view_count", "bookmark_count"];
-  const col = allowed.includes(metric) ? metric : "favorite_count";
-  const w = hasIds(accountIds) ? `WHERE account_id IN (${accountIds!.join(",")})` : "";
-  const rows = db.query(`SELECT * FROM tweets ${w} ORDER BY ${col} DESC LIMIT ?`).all(limit) as TweetRow[];
-  db.close();
-  return rows;
+  const allowed: Record<string, any> = {
+    favorite_count: tweets.favorite_count, retweet_count: tweets.retweet_count,
+    reply_count: tweets.reply_count, view_count: tweets.view_count,
+    bookmark_count: tweets.bookmark_count,
+  };
+  const col = allowed[metric] || tweets.favorite_count;
+  const whereClause = hasIds(accountIds) ? inArray(tweets.account_id, accountIds) : undefined;
+  return getDb().select().from(tweets)
+    .where(whereClause)
+    .orderBy(desc(col))
+    .limit(limit) as Promise<TweetRow[]>;
 }
 
-export function getCalendarData(year: number, accountIds?: number[]) {
+export async function getCalendarData(year: number, accountIds?: number[]) {
   if (isExplicitEmpty(accountIds)) return [];
-  const db = rawDb();
-  const w = hasIds(accountIds) ? `WHERE strftime('%Y', created_at) = ? AND account_id IN (${accountIds!.join(",")})` : "WHERE strftime('%Y', created_at) = ?";
-  const rows = db.query(`SELECT date(created_at) as date, COUNT(*) as count FROM tweets ${w} GROUP BY date(created_at) ORDER BY date ASC`).all(String(year)) as { date: string; count: number }[];
-  db.close();
-  return rows;
+  const conditions: any[] = [sql`strftime('%Y', ${tweets.created_at}) = ${String(year)}`];
+  if (hasIds(accountIds)) conditions.push(inArray(tweets.account_id, accountIds));
+  return getDb().select({
+    date: sql`date(${tweets.created_at})`.as<string>(),
+    count: count(),
+  }).from(tweets)
+    .where(and(...conditions))
+    .groupBy(sql`date(${tweets.created_at})`)
+    .orderBy(sql`date(${tweets.created_at})`) as Promise<{ date: string; count: number }[]>;
 }
 
-export function upsertTweet(tweet: Omit<TweetRow, "fetched_at">) {
-  const db = rawDb();
-  db.query(`INSERT INTO tweets (id,account_id,full_text,created_at,favorite_count,retweet_count,reply_count,view_count,bookmark_count,is_quote,is_reply,is_retweet,media_urls,urls,hashtags,mentions,lang) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET favorite_count=MAX(favorite_count, excluded.favorite_count),retweet_count=MAX(retweet_count, excluded.retweet_count),reply_count=MAX(reply_count, excluded.reply_count),view_count=MAX(view_count, excluded.view_count),bookmark_count=MAX(bookmark_count, excluded.bookmark_count)`).run(tweet.id, tweet.account_id, tweet.full_text, tweet.created_at, tweet.favorite_count, tweet.retweet_count, tweet.reply_count, tweet.view_count, tweet.bookmark_count, tweet.is_quote, tweet.is_reply, tweet.is_retweet, tweet.media_urls, tweet.urls, tweet.hashtags, tweet.mentions, tweet.lang);
-  db.close();
+export async function upsertTweet(tweet: Omit<TweetRow, "fetched_at">) {
+  await getDb().insert(tweets).values(tweet).onConflictDoUpdate({
+    target: tweets.id,
+    set: {
+      favorite_count: tweet.favorite_count,
+      retweet_count: tweet.retweet_count,
+      reply_count: tweet.reply_count,
+      view_count: tweet.view_count,
+      bookmark_count: tweet.bookmark_count,
+    },
+  });
 }
 
-export function insertUserStats(stats: Omit<UserStatsRow, "recorded_at">) {
-  const db = rawDb();
-  db.query(`INSERT INTO user_stats (account_id, followers_count, following_count, tweet_count, listed_count) VALUES(?,?,?,?,?)`).run(stats.account_id, stats.followers_count, stats.following_count, stats.tweet_count, stats.listed_count);
-  db.close();
+export async function insertUserStats(stats: Omit<UserStatsRow, "recorded_at">) {
+  await getDb().insert(user_stats).values(stats);
 }
 
-export function getLatestUserStats(accountId: number) {
-  const db = rawDb();
-  const r = db.query("SELECT * FROM user_stats WHERE account_id = ? ORDER BY recorded_at DESC LIMIT 1").get(accountId) as UserStatsRow | undefined;
-  db.close();
-  return r;
+export async function getLatestUserStats(accountId: number) {
+  return getDb().select().from(user_stats)
+    .where(eq(user_stats.account_id, accountId))
+    .orderBy(desc(user_stats.recorded_at))
+    .limit(1)
+    .then(rows => rows[0]) as Promise<UserStatsRow | undefined>;
 }
 
-export function updateTweetEngagement(
+export async function updateTweetEngagement(
   tweetId: string,
   eng: { favorite_count: number; retweet_count: number; reply_count: number; view_count: number; bookmark_count: number }
 ) {
-  const db = rawDb();
-  db.query(
-    `UPDATE tweets SET
-      favorite_count = MAX(favorite_count, ?),
-      retweet_count  = MAX(retweet_count, ?),
-      reply_count    = MAX(reply_count, ?),
-      view_count     = MAX(view_count, ?),
-      bookmark_count = MAX(bookmark_count, ?)
-    WHERE id = ?`
-  ).run(eng.favorite_count, eng.retweet_count, eng.reply_count, eng.view_count, eng.bookmark_count, tweetId);
-  db.close();
+  await getDb().update(tweets)
+    .set({
+      favorite_count: eng.favorite_count,
+      retweet_count: eng.retweet_count,
+      reply_count: eng.reply_count,
+      view_count: eng.view_count,
+      bookmark_count: eng.bookmark_count,
+    })
+    .where(eq(tweets.id, tweetId));
 }

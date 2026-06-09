@@ -1,16 +1,28 @@
 import { Database } from "bun:sqlite";
 import { dbPath, loadConfig } from "../server/config";
 
+function ensureColumn(db: Database, table: string, column: string, def: string) {
+  const cols = db.query(`PRAGMA table_info(${table})`).all() as { name: string }[];
+  if (!cols.some(c => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${def}`);
+    console.log(`[Migration] Added ${column} to ${table}`);
+  }
+}
+
 export function runMigrations() {
   const db = new Database(dbPath());
   db.exec("PRAGMA foreign_keys = ON");
   db.exec("PRAGMA journal_mode = WAL");
 
+  // Run these every time (idempotent)
+  ensureColumn(db, "accounts", "owner_id", "INTEGER REFERENCES users(id)");
+  ensureColumn(db, "accounts", "deleted_at", "TEXT");
+  ensureColumn(db, "users", "deleted_at", "TEXT");
+  db.exec("UPDATE accounts SET owner_id = 1 WHERE owner_id IS NULL");
+
   const hasUsers = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").get();
   if (hasUsers) {
-    console.log("[Migration] users table already exists, skipping");
-    // Still fix up NULL owner_ids even when users table already exists
-    db.exec("UPDATE accounts SET owner_id = 1 WHERE owner_id IS NULL");
+    console.log("[Migration] users table already exists, skipping create");
     db.close();
     return;
   }
@@ -25,14 +37,6 @@ export function runMigrations() {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `);
-
-  // Add owner_id to accounts if missing
-  const cols = db.query("PRAGMA table_info(accounts)").all() as { name: string }[];
-  if (!cols.some(c => c.name === "owner_id")) {
-    db.exec("ALTER TABLE accounts ADD COLUMN owner_id INTEGER REFERENCES users(id)");
-  }
-  // Update NULL owner_ids to 1 (bootstrap admin)
-  db.exec("UPDATE accounts SET owner_id = 1 WHERE owner_id IS NULL");
 
   // Settings table (v11 migration)
   db.exec(`

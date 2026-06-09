@@ -7,6 +7,8 @@ import {
   upsertGithubRelease, insertGithubReleaseAsset,
 } from "../db";
 import { getDb } from "../db/connection";
+import { eq, and } from "drizzle-orm";
+import { github_releases } from "../../db/schema";
 
 const GITHUB_API = "https://api.github.com";
 
@@ -44,7 +46,7 @@ export async function fetchGithubAccount(account: AccountRow) {
     const userData: any = await ghFetch(`/users/${username}`, token);
     await sleep(500);
 
-    insertGithubStats({
+    await insertGithubStats({
       account_id: account.id,
       public_repos: userData.public_repos || 0,
       public_gists: userData.public_gists || 0,
@@ -54,7 +56,7 @@ export async function fetchGithubAccount(account: AccountRow) {
 
     const ghId = String(userData.id);
     if (ghId && ghId !== account.user_id) {
-      updateAccount(account.id, { user_id: ghId });
+      await updateAccount(account.id, { user_id: ghId });
     }
 
     console.log(`[GitHub Fetcher] @${username}: stats recorded (${userData.followers} followers, ${userData.public_repos} repos)`);
@@ -67,7 +69,7 @@ export async function fetchGithubAccount(account: AccountRow) {
     let trafficError: string | null = null;
 
     for (const repo of repos) {
-      upsertGithubRepo({
+      await upsertGithubRepo({
         account_id: account.id,
         repo_id: repo.id,
         name: repo.name,
@@ -85,7 +87,7 @@ export async function fetchGithubAccount(account: AccountRow) {
         pushed_at: repo.pushed_at,
       });
 
-      upsertGithubRepoSnapshot({
+      await upsertGithubRepoSnapshot({
         account_id: account.id,
         repo_id: repo.id,
         stars: repo.stargazers_count || 0,
@@ -121,14 +123,14 @@ export async function fetchGithubAccount(account: AccountRow) {
       const year = new Date().getFullYear();
       const contributions = await fetchContributions(username, token, year);
       for (const c of contributions) {
-        upsertGithubContribution({ account_id: account.id, ...c });
+        await upsertGithubContribution({ account_id: account.id, ...c });
       }
       console.log(`[GitHub Fetcher] @${username}: ${contributions.length} contributions saved`);
     } catch (e: any) {
       console.warn(`[GitHub Fetcher] @${username}: contributions fetch skipped (${e.message})`);
     }
 
-    updateAccount(account.id, {
+    await updateAccount(account.id, {
       last_fetched_at: new Date().toISOString(),
       error_message: trafficError || null,
     });
@@ -138,7 +140,7 @@ export async function fetchGithubAccount(account: AccountRow) {
   } catch (err: any) {
     const msg = err.message || String(err);
     console.error(`[GitHub Fetcher] @${account.screen_name} error:`, msg);
-    updateAccount(account.id, { error_message: msg });
+    await updateAccount(account.id, { error_message: msg });
     return false;
   }
 }
@@ -151,7 +153,7 @@ async function fetchRepoTraffic(accountId: number, repoId: number, fullName: str
     const clones: any = await ghFetch(`/repos/${owner}/${repo}/traffic/clones`, token);
     if (clones?.clones) {
       for (const day of clones.clones) {
-        upsertGithubTrafficClones({
+        await upsertGithubTrafficClones({
           account_id: accountId,
           repo_id: repoId,
           date: day.timestamp?.slice(0, 10) || day.date,
@@ -175,7 +177,7 @@ async function fetchRepoTraffic(accountId: number, repoId: number, fullName: str
     const views: any = await ghFetch(`/repos/${owner}/${repo}/traffic/views`, token);
     if (views?.views) {
       for (const day of views.views) {
-        upsertGithubTrafficViews({
+        await upsertGithubTrafficViews({
           account_id: accountId,
           repo_id: repoId,
           date: day.timestamp?.slice(0, 10) || day.date,
@@ -192,7 +194,7 @@ async function fetchRepoTraffic(accountId: number, repoId: number, fullName: str
     const today = new Date().toISOString().slice(0, 10);
     if (referrers) {
       for (const r of referrers) {
-        upsertGithubReferrer({
+        await upsertGithubReferrer({
           account_id: accountId,
           repo_id: repoId,
           referrer: r.referrer || "unknown",
@@ -210,7 +212,7 @@ async function fetchRepoTraffic(accountId: number, repoId: number, fullName: str
     const today = new Date().toISOString().slice(0, 10);
     if (paths) {
       for (const p of paths) {
-        upsertGithubPath({
+        await upsertGithubPath({
           account_id: accountId,
           repo_id: repoId,
           path: p.path || "/",
@@ -231,34 +233,34 @@ async function fetchRepoReleases(accountId: number, repoId: number, fullName: st
     const releases: any[] = await ghFetch(`/repos/${fullName}/releases?per_page=30`, token);
     if (!releases) return;
 
-    const db = getDb();
-    const upsertStmt = db.prepare(`
-      INSERT INTO github_releases (account_id,repo_id,release_id,tag_name,name,body,prerelease,published_at,html_url,total_downloads)
-      VALUES(?,?,?,?,?,?,?,?,?,?)
-      ON CONFLICT(account_id,repo_id,release_id) DO UPDATE SET
-        tag_name=excluded.tag_name,name=excluded.name,body=excluded.body,
-        prerelease=excluded.prerelease,published_at=excluded.published_at,
-        html_url=excluded.html_url,total_downloads=excluded.total_downloads
-    `);
-
     for (const release of releases) {
       const totalDownloads = (release.assets || []).reduce((s: number, a: any) => s + (a.download_count || 0), 0);
 
-      const result = upsertStmt.run(
-        accountId, repoId, release.id, release.tag_name || null,
-        release.name || null, release.body || null,
-        release.prerelease ? 1 : 0,
-        release.published_at || null, release.html_url || null, totalDownloads,
-      );
+      await upsertGithubRelease({
+        account_id: accountId,
+        repo_id: repoId,
+        release_id: release.id,
+        tag_name: release.tag_name || null,
+        name: release.name || null,
+        body: release.body || null,
+        prerelease: release.prerelease ? 1 : 0,
+        published_at: release.published_at || null,
+        html_url: release.html_url || null,
+        total_downloads: totalDownloads,
+      });
 
       // Get the local DB id of the inserted/updated release
-      const releaseRow = db.query(
-        "SELECT id FROM github_releases WHERE account_id = ? AND repo_id = ? AND release_id = ?"
-      ).get(accountId, repoId, release.id) as any;
+      const [releaseRow] = await getDb().select({ id: github_releases.id })
+        .from(github_releases)
+        .where(and(
+          eq(github_releases.account_id, accountId),
+          eq(github_releases.repo_id, repoId),
+          eq(github_releases.release_id, release.id),
+        ));
 
       if (releaseRow) {
         for (const asset of release.assets || []) {
-          insertGithubReleaseAsset({
+          await insertGithubReleaseAsset({
             release_db_id: releaseRow.id,
             name: asset.name,
             download_count: asset.download_count || 0,

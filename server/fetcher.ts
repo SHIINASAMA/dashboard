@@ -51,13 +51,13 @@ export async function fetchAccount(account: AccountRow) {
       legacy = userData.user?.legacy || {};
       userId = userData.user?.restId || userData.raw?.restId || "";
       if (userId) {
-        updateAccount(account.id, { user_id: userId });
+        await await updateAccount(account.id, { user_id: userId });
       }
     }
 
     // Record stats
     if (legacy && Object.keys(legacy).length > 0) {
-      insertUserStats({
+      await insertUserStats({
         account_id: account.id,
         followers_count: legacy.followersCount || 0,
         following_count: legacy.friendsCount || 0,
@@ -94,7 +94,7 @@ export async function fetchAccount(account: AccountRow) {
               const tlegacy = tweetResult?.legacy;
               if (tlegacy?.idStr === pid) {
                 const views = tweetResult?.views || entry?.views;
-                upsertTweet({
+                await upsertTweet({
                   id: pid,
                   account_id: account.id,
                   full_text: tlegacy.fullText || "",
@@ -173,7 +173,7 @@ export async function fetchAccount(account: AccountRow) {
           const mentions = (get(legacyTweet, "entities.user_mentions", []) as any[])
             .map((m: any) => m.screenName);
 
-          upsertTweet({
+          await upsertTweet({
             id: tweetId,
             account_id: account.id,
             full_text: legacyTweet.fullText || "",
@@ -233,7 +233,7 @@ export async function fetchAccount(account: AccountRow) {
             const legacy = tweetResult?.legacy;
             if (legacy?.idStr === tid) {
               const views = tweetResult?.views || entry?.views;
-              updateTweetEngagement(tid, {
+              await updateTweetEngagement(tid, {
                 favorite_count: legacy.favoriteCount || 0,
                 retweet_count: (legacy.retweetCount || 0) + (legacy.quoteCount || 0),
                 reply_count: legacy.replyCount || 0,
@@ -250,7 +250,7 @@ export async function fetchAccount(account: AccountRow) {
       console.log(`[Fetcher] @${account.screen_name}: engagement merge done`);
     }
 
-    updateAccount(account.id, {
+    await updateAccount(account.id, {
       last_fetched_at: new Date().toISOString(),
       error_message: null,
     });
@@ -269,7 +269,7 @@ export async function fetchAccount(account: AccountRow) {
       } catch (_) {}
     }
 
-    updateAccount(account.id, { error_message: msg });
+    await updateAccount(account.id, { error_message: msg });
     return 0;
   }
 }

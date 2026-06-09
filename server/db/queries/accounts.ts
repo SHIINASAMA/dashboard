@@ -1,11 +1,9 @@
 // ─── Account CRUD (Drizzle) — all queries are async ─────────────────
 
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, isNull } from "drizzle-orm";
 import { getDb } from "../connection";
 import { accounts } from "../../../db/schema";
 import { encrypt, decrypt } from "../../crypto";
-import { Database } from "bun:sqlite";
-import { dbPath } from "../../config";
 
 function encToken(plain: string): string {
   try { return encrypt(plain); } catch (e) {
@@ -46,7 +44,11 @@ export type AccountPublic = Omit<AccountRow, "auth_token">;
 
 export async function getAccounts(ownerId?: number): Promise<AccountPublic[]> {
   const db = getDb();
-  const query = db.select({
+  const conditions = [isNull(accounts.deleted_at)];
+  if (ownerId !== undefined) {
+    conditions.push(eq(accounts.owner_id, ownerId));
+  }
+  return db.select({
     id: accounts.id,
     owner_id: accounts.owner_id,
     screen_name: accounts.screen_name,
@@ -60,16 +62,14 @@ export async function getAccounts(ownerId?: number): Promise<AccountPublic[]> {
     auth_type: accounts.auth_type,
     created_at: accounts.created_at,
     updated_at: accounts.updated_at,
-  }).from(accounts).orderBy(desc(accounts.created_at));
-
-  if (ownerId !== undefined) {
-    return query.where(eq(accounts.owner_id, ownerId));
-  }
-  return query;
+  }).from(accounts)
+    .where(and(...conditions))
+    .orderBy(desc(accounts.created_at));
 }
 
 export async function getActiveAccounts(): Promise<AccountRow[]> {
-  const rows = await getDb().select().from(accounts).where(eq(accounts.is_active, 1));
+  const rows = await getDb().select().from(accounts)
+    .where(and(eq(accounts.is_active, 1), isNull(accounts.deleted_at)));
   return rows.map(r => ({ ...r, auth_token: decToken(r.auth_token) })) as AccountRow[];
 }
 
@@ -109,43 +109,8 @@ export async function updateAccount(id: number, updates: Partial<AccountRow>): P
   await getDb().update(accounts).set({ ...safe, updated_at: sql`datetime('now')` } as any).where(eq(accounts.id, id));
 }
 
-export function deleteAccount(id: number): void {
-  const raw = new Database(dbPath());
-  raw.exec("PRAGMA foreign_keys = ON");
-  const deletions = [
-    "DELETE FROM tweets WHERE account_id = ?",
-    "DELETE FROM user_stats WHERE account_id = ?",
-    "DELETE FROM github_release_assets WHERE release_id IN (SELECT id FROM github_releases WHERE account_id = ?)",
-    "DELETE FROM github_releases WHERE account_id = ?",
-    "DELETE FROM github_referrers WHERE account_id = ?",
-    "DELETE FROM github_paths WHERE account_id = ?",
-    "DELETE FROM github_traffic_clones WHERE account_id = ?",
-    "DELETE FROM github_traffic_views WHERE account_id = ?",
-    "DELETE FROM github_repo_snapshots WHERE account_id = ?",
-    "DELETE FROM github_repos WHERE account_id = ?",
-    "DELETE FROM github_contributions WHERE account_id = ?",
-    "DELETE FROM github_stats WHERE account_id = ?",
-    "DELETE FROM gitlab_release_assets WHERE release_id IN (SELECT id FROM gitlab_releases WHERE account_id = ?)",
-    "DELETE FROM gitlab_releases WHERE account_id = ?",
-    "DELETE FROM gitlab_project_snapshots WHERE account_id = ?",
-    "DELETE FROM gitlab_projects WHERE account_id = ?",
-    "DELETE FROM gitlab_stats WHERE account_id = ?",
-    "DELETE FROM gitlab_contributions WHERE account_id = ?",
-    "DELETE FROM reddit_comments WHERE account_id = ?",
-    "DELETE FROM reddit_posts WHERE account_id = ?",
-    "DELETE FROM reddit_stats WHERE account_id = ?",
-    "DELETE FROM accounts WHERE id = ?",
-  ];
-  raw.exec("BEGIN");
-  try {
-    for (const sql of deletions) {
-      raw.query(sql).run(id);
-    }
-    raw.exec("COMMIT");
-  } catch (e) {
-    raw.exec("ROLLBACK");
-    raw.close();
-    throw e;
-  }
-  raw.close();
+export async function deleteAccount(id: number): Promise<void> {
+  await getDb().update(accounts)
+    .set({ deleted_at: sql`datetime('now')` })
+    .where(eq(accounts.id, id));
 }

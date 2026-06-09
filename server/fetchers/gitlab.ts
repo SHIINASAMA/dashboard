@@ -6,6 +6,7 @@ import {
   upsertGitlabContribution,
   upsertGitlabRelease,
   insertGitlabReleaseAsset,
+  updateAccount,
 } from "../db";
 
 function getApiBase(account: AccountRow): string {
@@ -120,7 +121,7 @@ export async function fetchGitlabAccount(account: AccountRow) {
     }
 
     // Insert stats snapshot
-    insertGitlabStats({
+    await insertGitlabStats({
       account_id: account.id,
       public_projects: 0, // will be updated after fetching projects
       followers: user.followers ?? 0,
@@ -146,7 +147,7 @@ export async function fetchGitlabAccount(account: AccountRow) {
       const topics = JSON.stringify(p.topics || []);
       const snapDate = new Date().toISOString().slice(0, 10);
 
-      upsertGitlabProject({
+      await upsertGitlabProject({
         account_id: account.id,
         project_id: p.id,
         name: p.name,
@@ -165,7 +166,7 @@ export async function fetchGitlabAccount(account: AccountRow) {
         last_activity_at: p.last_activity_at || null,
       });
 
-      upsertGitlabProjectSnapshot({
+      await upsertGitlabProjectSnapshot({
         account_id: account.id,
         project_id: p.id,
         stars: p.star_count ?? 0,
@@ -196,7 +197,7 @@ export async function fetchGitlabAccount(account: AccountRow) {
             0,
           );
 
-          upsertGitlabRelease({
+          await upsertGitlabRelease({
             account_id: account.id,
             project_id: p.id,
             release_tag: rel.tag_name,
@@ -217,7 +218,7 @@ export async function fetchGitlabAccount(account: AccountRow) {
     }
 
     // Update stats with accurate project count
-    insertGitlabStats({
+    await insertGitlabStats({
       account_id: account.id,
       public_projects: projects.length,
       followers: user.followers ?? 0,
@@ -244,7 +245,7 @@ export async function fetchGitlabAccount(account: AccountRow) {
       }
 
       for (const [date, count] of countByDate) {
-        upsertGitlabContribution({
+        await upsertGitlabContribution({
           account_id: account.id,
           date,
           count,
@@ -257,8 +258,7 @@ export async function fetchGitlabAccount(account: AccountRow) {
     }
 
     // Update account with success
-    const { updateAccount } = await import("../db");
-    updateAccount(account.id, {
+    await updateAccount(account.id, {
       last_fetched_at: new Date().toISOString(),
       user_id: String(user.id),
       error_message: errorMessages.length > 0 ? errorMessages.join("; ") : null,
@@ -267,8 +267,7 @@ export async function fetchGitlabAccount(account: AccountRow) {
     console.log(`[GitLab] Fetch complete for ${account.screen_name}: ${projects.length} projects`);
     return projects.length;
   } catch (e: any) {
-    const { updateAccount } = await import("../db");
-    updateAccount(account.id, {
+    await updateAccount(account.id, {
       last_fetched_at: new Date().toISOString(),
       error_message: e.message || "GitLab fetch failed",
     });

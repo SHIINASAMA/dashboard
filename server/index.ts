@@ -252,7 +252,7 @@ app.delete(`${BASE}/api/users/:id`, async (c) => {
   if (!confirmToken || !validateConfirmToken(confirmToken)) {
     return c.json({ error: "Invalid or expired confirmation token" }, 400);
   }
-  deleteUser(id);
+  await deleteUser(id);
   return c.json({ ok: true });
 });
 

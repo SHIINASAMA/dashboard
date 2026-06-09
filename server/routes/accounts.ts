@@ -80,7 +80,7 @@ accountsRouter.delete("/:id", async (c) => {
   if (!confirmToken || !validateConfirmToken(confirmToken)) {
     return c.json({ error: "Invalid or expired confirmation token" }, 400);
   }
-  deleteAccount(id);
+  await deleteAccount(id);
   return c.json({ success: true });
 });
 

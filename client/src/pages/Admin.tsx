@@ -26,7 +26,8 @@ export function Admin() {
   const handleCreateUser = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setCreateError("");
-    const form = new FormData(e.currentTarget);
+    const formElement = e.currentTarget;
+    const form = new FormData(formElement);
     const username = (form.get("username") as string)?.trim();
     const password = (form.get("password") as string) || "";
     const role = (form.get("role") as string) || "user";
@@ -36,7 +37,7 @@ export function Admin() {
 
     try {
       await api.createUser({ username, password, role });
-      e.currentTarget.reset();
+      formElement.reset();
       refetchUsers();
     } catch (err: unknown) {
       setCreateError(err instanceof Error ? err.message : String(err));

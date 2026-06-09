@@ -32,7 +32,7 @@ const statsRouter = new Hono();
 statsRouter.get("/overview", async (c) => {
   const accountIds = parseAccountIds(c);
   const ids = accountIds?.length ? accountIds : await getFilteredTwitterIds(c);
-  const stats = getOverviewStats(ids);
+  const stats = await getOverviewStats(ids);
   return c.json(stats);
 });
 
@@ -40,7 +40,7 @@ statsRouter.get("/timeline", async (c) => {
   const months = Number(c.req.query("months")) || 6;
   let accountIds = parseAccountIds(c);
   if (!accountIds?.length) accountIds = await getFilteredTwitterIds(c);
-  const data = getTimelineStats(months, accountIds);
+  const data = await getTimelineStats(months, accountIds);
   return c.json(data);
 });
 
@@ -49,7 +49,7 @@ statsRouter.get("/top", async (c) => {
   const limit = Number(c.req.query("limit")) || 10;
   let accountIds = parseAccountIds(c);
   if (!accountIds?.length) accountIds = await getFilteredTwitterIds(c);
-  const data = getTopTweets(metric, limit, accountIds);
+  const data = await getTopTweets(metric, limit, accountIds);
   return c.json(data);
 });
 
@@ -57,7 +57,7 @@ statsRouter.get("/calendar", async (c) => {
   const year = Number(c.req.query("year")) || new Date().getFullYear();
   let accountIds = parseAccountIds(c);
   if (!accountIds?.length) accountIds = await getFilteredTwitterIds(c);
-  const data = getCalendarData(year, accountIds);
+  const data = await getCalendarData(year, accountIds);
   return c.json(data);
 });
 

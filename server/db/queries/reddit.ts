@@ -1,88 +1,122 @@
-// Reddit queries — raw SQLite stubs (Drizzle migration pending)
-
-import { Database } from "bun:sqlite";
-import { dbPath } from "../../config";
-
-function rawDb(): Database {
-  const db = new Database(dbPath());
-  db.exec("PRAGMA journal_mode = WAL");
-  db.exec("PRAGMA foreign_keys = ON");
-  return db;
-}
+import { eq, desc, sql, count } from "drizzle-orm";
+import { getDb } from "../connection";
+import { reddit_stats, reddit_posts, reddit_comments } from "../../../db/schema";
 
 export interface RedditStatsRow { account_id: number; post_karma: number; comment_karma: number; recorded_at: string; }
 export interface RedditPostRow { id: string; account_id: number; title: string; selftext: string; subreddit: string; score: number; upvote_ratio: number; num_comments: number; permalink: string; url: string; is_self: number; created_utc: number; }
 export interface RedditCommentRow { id: string; account_id: number; body: string; subreddit: string; score: number; link_id: string; parent_id: string | null; depth: number; permalink: string; created_utc: number; is_submitter: number; }
 
-export function insertRedditStats(stats: Omit<RedditStatsRow, "recorded_at">) {
-  const db = rawDb();
-  db.query("INSERT INTO reddit_stats (account_id, post_karma, comment_karma) VALUES(?,?,?)").run(stats.account_id, stats.post_karma, stats.comment_karma);
-  db.close();
+export async function insertRedditStats(stats: Omit<RedditStatsRow, "recorded_at">) {
+  await getDb().insert(reddit_stats).values(stats);
 }
 
-export function getRedditStatsTimeline(accountId: number) {
-  const db = rawDb();
-  const r = db.query("SELECT recorded_at as date, post_karma, comment_karma FROM reddit_stats WHERE account_id = ? ORDER BY recorded_at ASC").all(accountId) as { date: string; post_karma: number; comment_karma: number }[];
-  db.close(); return r;
+export async function getRedditStatsTimeline(accountId: number) {
+  return getDb().select({
+    date: reddit_stats.recorded_at,
+    post_karma: reddit_stats.post_karma,
+    comment_karma: reddit_stats.comment_karma,
+  }).from(reddit_stats)
+    .where(eq(reddit_stats.account_id, accountId))
+    .orderBy(reddit_stats.recorded_at) as Promise<{ date: string; post_karma: number; comment_karma: number }[]>;
 }
 
-export function upsertRedditPost(post: Omit<RedditPostRow, "fetched_at">) {
-  const db = rawDb();
-  db.query(`INSERT INTO reddit_posts (id,account_id,title,selftext,subreddit,score,upvote_ratio,num_comments,permalink,url,is_self,created_utc) VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET score=excluded.score,upvote_ratio=excluded.upvote_ratio,num_comments=excluded.num_comments`).run(post.id, post.account_id, post.title, post.selftext, post.subreddit, post.score, post.upvote_ratio, post.num_comments, post.permalink, post.url, post.is_self, post.created_utc);
-  db.close();
+export async function upsertRedditPost(post: Omit<RedditPostRow, "fetched_at">) {
+  await getDb().insert(reddit_posts).values(post).onConflictDoUpdate({
+    target: reddit_posts.id,
+    set: { score: post.score, upvote_ratio: post.upvote_ratio, num_comments: post.num_comments },
+  });
 }
 
-export function upsertRedditComment(comment: Omit<RedditCommentRow, "fetched_at">) {
-  const db = rawDb();
-  db.query(`INSERT INTO reddit_comments (id,account_id,body,subreddit,score,link_id,parent_id,depth,permalink,created_utc,is_submitter) VALUES(?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET score=excluded.score`).run(comment.id, comment.account_id, comment.body, comment.subreddit, comment.score, comment.link_id, comment.parent_id, comment.depth, comment.permalink, comment.created_utc, comment.is_submitter);
-  db.close();
+export async function upsertRedditComment(comment: Omit<RedditCommentRow, "fetched_at">) {
+  await getDb().insert(reddit_comments).values(comment).onConflictDoUpdate({
+    target: reddit_comments.id,
+    set: { score: comment.score },
+  });
 }
 
-export function getRedditPosts(accountId: number, page: number, limit: number, sort: string = "score") {
-  const db = rawDb();
+export async function getRedditPosts(accountId: number, page: number, limit: number, sort: string = "score") {
   const offset = (page - 1) * limit;
-  const allowed = ["score", "num_comments", "created_utc"];
-  const col = allowed.includes(sort) ? sort : "score";
-  const total = db.query("SELECT count(*) as count FROM reddit_posts WHERE account_id = ?").get(accountId) as any;
-  const rows = db.query(`SELECT * FROM reddit_posts WHERE account_id = ? ORDER BY ${col} DESC LIMIT ? OFFSET ?`).all(accountId, limit, offset) as RedditPostRow[];
-  db.close();
-  return { data: rows, total: total.count, page, limit, totalPages: Math.ceil(total.count / limit) };
+  const allowed: Record<string, any> = { score: reddit_posts.score, num_comments: reddit_posts.num_comments, created_utc: reddit_posts.created_utc };
+  const sortCol = allowed[sort] || reddit_posts.score;
+  const [total] = await getDb().select({ count: count() }).from(reddit_posts).where(eq(reddit_posts.account_id, accountId));
+  const data = await getDb().select().from(reddit_posts)
+    .where(eq(reddit_posts.account_id, accountId))
+    .orderBy(desc(sortCol))
+    .limit(limit).offset(offset) as RedditPostRow[];
+  return { data, total: total.count, page, limit, totalPages: Math.ceil(total.count / limit) };
 }
 
-export function getRedditComments(accountId: number, page: number, limit: number) {
-  const db = rawDb();
+export async function getRedditComments(accountId: number, page: number, limit: number) {
   const offset = (page - 1) * limit;
-  const total = db.query("SELECT count(*) as count FROM reddit_comments WHERE account_id = ?").get(accountId) as any;
-  const rows = db.query("SELECT * FROM reddit_comments WHERE account_id = ? ORDER BY created_utc DESC LIMIT ? OFFSET ?").all(accountId, limit, offset) as RedditCommentRow[];
-  db.close();
-  return { data: rows, total: total.count, page, limit, totalPages: Math.ceil(total.count / limit) };
+  const [total] = await getDb().select({ count: count() }).from(reddit_comments).where(eq(reddit_comments.account_id, accountId));
+  const data = await getDb().select().from(reddit_comments)
+    .where(eq(reddit_comments.account_id, accountId))
+    .orderBy(desc(reddit_comments.created_utc))
+    .limit(limit).offset(offset) as RedditCommentRow[];
+  return { data, total: total.count, page, limit, totalPages: Math.ceil(total.count / limit) };
 }
 
-export function getRedditOverview(accountId: number) {
-  const db = rawDb();
-  const latest = db.query("SELECT * FROM reddit_stats WHERE account_id = ? ORDER BY recorded_at DESC LIMIT 1").get(accountId) as RedditStatsRow | undefined;
-  const totalPosts = (db.query("SELECT count(*) as c FROM reddit_posts WHERE account_id = ?").get(accountId) as any)?.c ?? 0;
-  const totalComments = (db.query("SELECT count(*) as c FROM reddit_comments WHERE account_id = ?").get(accountId) as any)?.c ?? 0;
-  const totalScore = (db.query("SELECT COALESCE(SUM(score), 0) as s FROM reddit_posts WHERE account_id = ?").get(accountId) as any)?.s ?? 0;
-  const topPosts = db.query("SELECT id, title, subreddit, score, num_comments, upvote_ratio, permalink, created_utc FROM reddit_posts WHERE account_id = ? ORDER BY score DESC LIMIT 10").all(accountId) as RedditPostRow[];
-  db.close();
-  return { stats: latest, totalPosts, totalComments, totalScore, topPosts };
+export async function getRedditOverview(accountId: number) {
+  const [latest] = await getDb().select().from(reddit_stats)
+    .where(eq(reddit_stats.account_id, accountId))
+    .orderBy(desc(reddit_stats.recorded_at))
+    .limit(1) as RedditStatsRow[];
+  const [postCount] = await getDb().select({ count: count() }).from(reddit_posts).where(eq(reddit_posts.account_id, accountId));
+  const [commentCount] = await getDb().select({ count: count() }).from(reddit_comments).where(eq(reddit_comments.account_id, accountId));
+  const [scoreSum] = await getDb().select({ s: sql<number>`COALESCE(SUM(${reddit_posts.score}), 0)` }).from(reddit_posts).where(eq(reddit_posts.account_id, accountId));
+  const topPosts = await getDb().select({
+    id: reddit_posts.id, title: reddit_posts.title, subreddit: reddit_posts.subreddit,
+    score: reddit_posts.score, num_comments: reddit_posts.num_comments,
+    upvote_ratio: reddit_posts.upvote_ratio, permalink: reddit_posts.permalink,
+    created_utc: reddit_posts.created_utc,
+  }).from(reddit_posts)
+    .where(eq(reddit_posts.account_id, accountId))
+    .orderBy(desc(reddit_posts.score))
+    .limit(10) as RedditPostRow[];
+  return { stats: latest || undefined, totalPosts: postCount.count, totalComments: commentCount.count, totalScore: scoreSum.s, topPosts };
 }
 
-export function getRedditDailyActivity(accountId: number) {
-  const db = rawDb();
-  const r = db.query("SELECT date(created_utc, 'unixepoch') as date, COUNT(*) as count FROM reddit_posts WHERE account_id = ? GROUP BY date ORDER BY date ASC").all(accountId) as { date: string; count: number }[];
-  db.close(); return r;
+export async function getRedditDailyActivity(accountId: number) {
+  return getDb().select({
+    date: sql`date(created_utc, 'unixepoch')`.as<string>(),
+    count: count(),
+  }).from(reddit_posts)
+    .where(eq(reddit_posts.account_id, accountId))
+    .groupBy(sql`date(created_utc, 'unixepoch')`)
+    .orderBy(sql`date(created_utc, 'unixepoch')`) as Promise<{ date: string; count: number }[]>;
 }
 
-export function getRedditSubredditDistribution(accountId: number) {
-  const db = rawDb();
-  const r = db.query("SELECT subreddit, COUNT(*) as count FROM (SELECT subreddit FROM reddit_posts WHERE account_id = ? UNION ALL SELECT subreddit FROM reddit_comments WHERE account_id = ?) GROUP BY subreddit ORDER BY count DESC LIMIT 10").all(accountId, accountId) as { subreddit: string; count: number }[];
-  db.close(); return r;
+export async function getRedditSubredditDistribution(accountId: number) {
+  const posts = await getDb().select({
+    subreddit: reddit_posts.subreddit,
+    count: count(),
+  }).from(reddit_posts)
+    .where(eq(reddit_posts.account_id, accountId))
+    .groupBy(reddit_posts.subreddit);
+
+  const comments = await getDb().select({
+    subreddit: reddit_comments.subreddit,
+    count: count(),
+  }).from(reddit_comments)
+    .where(eq(reddit_comments.account_id, accountId))
+    .groupBy(reddit_comments.subreddit);
+
+  const combined = new Map<string, number>();
+  for (const p of posts) combined.set(p.subreddit, (combined.get(p.subreddit) || 0) + p.count);
+  for (const c of comments) combined.set(c.subreddit, (combined.get(c.subreddit) || 0) + c.count);
+
+  return [...combined.entries()]
+    .map(([subreddit, count]) => ({ subreddit, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
 }
 
-export function getRedditDailyCommentActivity(accountId: number) {
-  const db = rawDb();
-  const r = db.query("SELECT date(created_utc, 'unixepoch') as date, COUNT(*) as count FROM reddit_comments WHERE account_id = ? GROUP BY date ORDER BY date ASC").all(accountId) as { date: string; count: number }[];
-  db.close(); return r;
+export async function getRedditDailyCommentActivity(accountId: number) {
+  return getDb().select({
+    date: sql`date(created_utc, 'unixepoch')`.as<string>(),
+    count: count(),
+  }).from(reddit_comments)
+    .where(eq(reddit_comments.account_id, accountId))
+    .groupBy(sql`date(created_utc, 'unixepoch')`)
+    .orderBy(sql`date(created_utc, 'unixepoch')`) as Promise<{ date: string; count: number }[]>;
 }

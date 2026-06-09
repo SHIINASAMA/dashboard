@@ -28,7 +28,8 @@ export function Settings() {
     e.preventDefault();
     setPwError("");
     setPwSuccess("");
-    const form = new FormData(e.currentTarget);
+    const formElement = e.currentTarget;
+    const form = new FormData(formElement);
     const currentPassword = (form.get("currentPassword") as string) || "";
     const newPassword = (form.get("newPassword") as string) || "";
     const confirm = (form.get("confirmPassword") as string) || "";
@@ -46,7 +47,7 @@ export function Settings() {
     try {
       await api.changePassword(currentPassword, newPassword);
       setPwSuccess(t("settings.passwordChanged"));
-      (e.target as HTMLFormElement).reset();
+      formElement.reset();
     } catch (err: unknown) {
       setPwError(err instanceof Error ? err.message : String(err));
     } finally {

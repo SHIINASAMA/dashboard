@@ -1,5 +1,5 @@
 import type { AccountRow } from "../db";
-import { insertRedditStats, upsertRedditPost, upsertRedditComment } from "../db";
+import { insertRedditStats, upsertRedditPost, upsertRedditComment, updateAccount } from "../db";
 
 function getProxyUrl(): string | undefined {
   return process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.https_proxy || process.env.http_proxy;
@@ -79,7 +79,7 @@ export async function fetchRedditAccount(account: AccountRow) {
     }
 
     const pdata = profile.data;
-    insertRedditStats({
+    await insertRedditStats({
       account_id: account.id,
       post_karma: pdata.link_karma ?? 0,
       comment_karma: pdata.comment_karma ?? 0,
@@ -98,7 +98,7 @@ export async function fetchRedditAccount(account: AccountRow) {
       for (const child of children) {
         const p = child.data;
         if (!p?.id) continue;
-        upsertRedditPost({
+        await upsertRedditPost({
           id: p.id,
           account_id: account.id,
           title: p.title || "",
@@ -133,7 +133,7 @@ export async function fetchRedditAccount(account: AccountRow) {
       for (const child of children) {
         const c = child.data;
         if (!c?.id) continue;
-        upsertRedditComment({
+        await upsertRedditComment({
           id: c.id,
           account_id: account.id,
           body: c.body || "",
@@ -156,8 +156,7 @@ export async function fetchRedditAccount(account: AccountRow) {
     console.log(`[Reddit] @${username}: ${commentCount} comments fetched`);
 
     // Success
-    const { updateAccount } = await import("../db");
-    updateAccount(account.id, {
+    await updateAccount(account.id, {
       last_fetched_at: new Date().toISOString(),
       user_id: pdata.id || username,
       error_message: null,
@@ -166,8 +165,7 @@ export async function fetchRedditAccount(account: AccountRow) {
     console.log(`[Reddit] Fetch complete for @${username}`);
     return { posts: postCount, comments: commentCount };
   } catch (e: any) {
-    const { updateAccount } = await import("../db");
-    updateAccount(account.id, {
+    await updateAccount(account.id, {
       last_fetched_at: new Date().toISOString(),
       error_message: e.message || "Reddit fetch failed",
     });
@@ -217,7 +215,7 @@ export async function fetchRedditPublicAccount(account: AccountRow) {
     }
 
     const pdata = profile.data;
-    insertRedditStats({
+    await insertRedditStats({
       account_id: account.id,
       post_karma: pdata.link_karma ?? 0,
       comment_karma: pdata.comment_karma ?? 0,
@@ -236,7 +234,7 @@ export async function fetchRedditPublicAccount(account: AccountRow) {
       for (const child of children) {
         const p = child.data;
         if (!p?.id) continue;
-        upsertRedditPost({
+        await upsertRedditPost({
           id: p.id,
           account_id: account.id,
           title: p.title || "",
@@ -271,7 +269,7 @@ export async function fetchRedditPublicAccount(account: AccountRow) {
       for (const child of children) {
         const c = child.data;
         if (!c?.id) continue;
-        upsertRedditComment({
+        await upsertRedditComment({
           id: c.id,
           account_id: account.id,
           body: c.body || "",
@@ -293,8 +291,7 @@ export async function fetchRedditPublicAccount(account: AccountRow) {
     }
     console.log(`[Reddit Public] @${username}: ${commentCount} comments fetched`);
 
-    const { updateAccount } = await import("../db");
-    updateAccount(account.id, {
+    await updateAccount(account.id, {
       last_fetched_at: new Date().toISOString(),
       user_id: pdata.id || username,
       error_message: null,
@@ -303,8 +300,7 @@ export async function fetchRedditPublicAccount(account: AccountRow) {
     console.log(`[Reddit Public] Fetch complete for @${username}`);
     return { posts: postCount, comments: commentCount };
   } catch (e: any) {
-    const { updateAccount } = await import("../db");
-    updateAccount(account.id, {
+    await updateAccount(account.id, {
       last_fetched_at: new Date().toISOString(),
       error_message: e.message || "Reddit public fetch failed",
     });

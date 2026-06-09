@@ -16,6 +16,7 @@ export const accounts = sqliteTable("accounts", {
   auth_type: text("auth_type"),
   created_at: text("created_at").notNull().default("(datetime('now'))"),
   updated_at: text("updated_at").notNull().default("(datetime('now'))"),
+  deleted_at: text("deleted_at"),
 },
 (table) => ({
   uniq: uniqueIndex("idx_accounts_screen_name_platform").on(table.owner_id, table.screen_name, table.platform),

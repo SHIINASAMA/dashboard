@@ -9,7 +9,7 @@ function parseAccountIds(c: any): number[] | undefined {
 
 const tweetsRouter = new Hono();
 
-tweetsRouter.get("/", (c) => {
+tweetsRouter.get("/", async (c) => {
   const page = Number(c.req.query("page")) || 1;
   const limit = Number(c.req.query("limit")) || 20;
   const sort = c.req.query("sort") || "created_at";
@@ -17,13 +17,13 @@ tweetsRouter.get("/", (c) => {
   const search = c.req.query("search");
   const accountIds = parseAccountIds(c);
 
-  const data = getTweets(page, limit, sort, order, search, accountIds);
+  const data = await getTweets(page, limit, sort, order, search, accountIds);
   return c.json(data);
 });
 
-tweetsRouter.get("/:id", (c) => {
+tweetsRouter.get("/:id", async (c) => {
   const id = c.req.param("id");
-  const tweet = getTweetById(id);
+  const tweet = await getTweetById(id);
   if (!tweet) return c.json({ error: "Not found" }, 404);
   return c.json(tweet);
 });
