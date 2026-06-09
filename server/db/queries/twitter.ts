@@ -130,3 +130,23 @@ export function getLatestUserStats(accountId: number) {
   db.close();
   return r;
 }
+
+/** Update engagement fields for a tweet using MAX(existing, new).
+ *  Used after getTweetDetail which returns real engagement counts
+ *  (unlike getUserTweetsAndReplies which returns 0 for author's own tweets). */
+export function updateTweetEngagement(
+  tweetId: string,
+  eng: { favorite_count: number; retweet_count: number; reply_count: number; view_count: number; bookmark_count: number }
+) {
+  const db = rawDb();
+  db.query(
+    `UPDATE tweets SET
+      favorite_count = MAX(favorite_count, ?),
+      retweet_count  = MAX(retweet_count, ?),
+      reply_count    = MAX(reply_count, ?),
+      view_count     = MAX(view_count, ?),
+      bookmark_count = MAX(bookmark_count, ?)
+    WHERE id = ?`
+  ).run(eng.favorite_count, eng.retweet_count, eng.reply_count, eng.view_count, eng.bookmark_count, tweetId);
+  db.close();
+}

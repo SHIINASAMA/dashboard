@@ -1,5 +1,5 @@
 import type { AccountRow } from "./db";
-import { upsertTweet, insertUserStats, updateAccount } from "./db";
+import { upsertTweet, insertUserStats, updateAccount, updateTweetEngagement } from "./db";
 import { _xClient } from "../scripts/utils";
 import { get } from "lodash";
 
@@ -78,6 +78,7 @@ export async function fetchAccount(account: AccountRow) {
     let totalFetched = 0;
     const maxTweets = 800;
     const batchSize = 50;
+    const kaoruTweetIds = [];
 
     while (totalFetched < maxTweets) {
       const params: Record<string, unknown> = { userId, count: batchSize };
@@ -101,12 +102,11 @@ export async function fetchAccount(account: AccountRow) {
         const tweetAuthorId = legacyTweet.userIdStr || "";
         if (tweetAuthorId && tweetAuthorId !== userId) continue;
 
-        // Also skip native retweets (text starts with "RT @") — edge case
-        // where the API server-side includes retweeted tweets with correct userId.
-        if ((legacyTweet.fullText || "").startsWith("RT @")) continue;
 
         const tweetId = String(legacyTweet.idStr || "");
         if (!tweetId) continue;
+
+        kaoruTweetIds.push(tweetId);
 
         const views = t.views;
 
@@ -132,7 +132,7 @@ export async function fetchAccount(account: AccountRow) {
           bookmark_count: legacyTweet.bookmarkCount || 0,
           is_quote: Boolean(legacyTweet.isQuoteStatus) ? 1 : 0,
           is_reply: Boolean(legacyTweet.inReplyToStatusIdStr) ? 1 : 0,
-          is_retweet: 0,
+          is_retweet: (legacyTweet.fullText || "").startsWith("RT @") ? 1 : 0,
           media_urls: JSON.stringify(mediaUrls),
           urls: JSON.stringify(urls),
           hashtags: JSON.stringify(hashtags),
@@ -153,6 +153,42 @@ export async function fetchAccount(account: AccountRow) {
 
       console.log(`[Fetcher] @${account.screen_name}: ${totalFetched} tweets...`);
       await sleep(2000);
+    }
+
+    // 3. Merge real engagement via getTweetDetail (best-effort).
+    //    getUserTweetsAndReplies returns 0 for engagement on author's own
+    //    tweets, but getTweetDetail returns real counts. Process up to 30
+    //    tweets per fetch to avoid excessive API calls.
+    if (kaoruTweetIds.length > 0) {
+      const maxDetail = kaoruTweetIds.length;
+      const toProcess = kaoruTweetIds.slice(0, maxDetail);
+      console.log(`[Fetcher] @${account.screen_name}: fetching engagement for ${toProcess.length}/${kaoruTweetIds.length} tweets...`);
+      for (const tid of toProcess) {
+        try {
+          await sleep(1000);
+          const detailResp = await client.getTweetApi().getTweetDetail({ focalTweetId: tid });
+          const entries = ((detailResp.data as any).data || {});
+          for (const key of Object.keys(entries)) {
+            const entry = entries[key];
+            const tweetResult = entry?.tweet || entry;
+            const legacy = tweetResult?.legacy;
+            if (legacy?.idStr === tid) {
+              const views = tweetResult?.views || entry?.views;
+              updateTweetEngagement(tid, {
+                favorite_count: legacy.favoriteCount || 0,
+                retweet_count: legacy.retweetCount || 0,
+                reply_count: legacy.replyCount || 0,
+                view_count: views?.count ? parseInt(String(views.count), 10) || 0 : 0,
+                bookmark_count: legacy.bookmarkCount || 0,
+              });
+              break;
+            }
+          }
+        } catch (e) {
+          // Non-fatal
+        }
+      }
+      console.log(`[Fetcher] @${account.screen_name}: engagement merge done`);
     }
 
     updateAccount(account.id, {
