@@ -22,7 +22,7 @@ accountsRouter.get("/", async (c) => {
   }
   const accounts = await getAccounts(ownerId);
   const twitterIds = accounts.filter((a: any) => a.platform === "twitter").map((a: any) => a.id);
-  const overview = getOverviewStats(twitterIds.length > 0 ? twitterIds : []);
+  const overview = getOverviewStats(twitterIds.length > 0 ? twitterIds : [-1]);
   return c.json({ accounts, overview });
 });
 

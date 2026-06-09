@@ -76,7 +76,6 @@ export function Admin() {
               />
               <select name="role" className="px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent text-sm">
                 <option value="user">{t("admin.roleUser")}</option>
-                <option value="admin">{t("admin.roleAdmin")}</option>
               </select>
             </div>
             {createError && <p className="text-xs text-red-500">{createError}</p>}

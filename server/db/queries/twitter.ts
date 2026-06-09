@@ -32,9 +32,27 @@ function rawDb() {
   return db;
 }
 
+// When accountIds is [] (user has no accounts), bypass the DB entirely.
+// The ?.length check alone is ambiguous: [] is truthy but length 0 is falsy,
+// which would produce an empty WHERE clause that leaks all rows.
+function hasIds(ids?: number[]): ids is number[] {
+  return Array.isArray(ids) && ids.length > 0;
+}
+function isExplicitEmpty(ids?: number[]): boolean {
+  return Array.isArray(ids) && ids.length === 0;
+}
+
+const EMPTY_OVERVIEW = {
+  total_tweets: 0, total_likes: 0, total_retweets: 0, total_replies: 0,
+  total_views: 0, total_bookmarks: 0, avgEngagement: "0",
+  followersCount: 0, followingCount: 0, userTweetCount: 0,
+  todayLikes: 0, todayRetweets: 0, todayTweets: 0,
+};
+
 export function getOverviewStats(accountIds?: number[]) {
+  if (isExplicitEmpty(accountIds)) return { ...EMPTY_OVERVIEW };
   const db = rawDb();
-  const whereClause = accountIds && accountIds.length > 0 ? `WHERE account_id IN (${accountIds.join(",")})` : "";
+  const whereClause = hasIds(accountIds) ? `WHERE account_id IN (${accountIds.join(",")})` : "";
   const tweetStats = db.query(`
     SELECT COUNT(*) as total_tweets, COALESCE(SUM(favorite_count), 0) as total_likes,
     COALESCE(SUM(retweet_count), 0) as total_retweets, COALESCE(SUM(reply_count), 0) as total_replies,
@@ -43,11 +61,11 @@ export function getOverviewStats(accountIds?: number[]) {
   const today = new Date().toISOString().slice(0, 10);
   const todayStats = db.query(`SELECT COALESCE(SUM(favorite_count), 0) as today_likes,
     COALESCE(SUM(retweet_count), 0) as today_retweets, COUNT(*) as today_tweets
-    FROM tweets WHERE date(created_at) = ? ${accountIds?.length ? `AND account_id IN (${accountIds.join(",")})` : ""}`).get(today) as any;
+    FROM tweets WHERE date(created_at) = ? ${hasIds(accountIds) ? `AND account_id IN (${accountIds!.join(",")})` : ""}`).get(today) as any;
   const latestStatsRows = db.query(`SELECT u1.account_id, u1.followers_count, u1.following_count, u1.tweet_count
     FROM user_stats u1 INNER JOIN (SELECT account_id, MAX(recorded_at) as max_recorded FROM user_stats GROUP BY account_id) u2
     ON u1.account_id = u2.account_id AND u1.recorded_at = u2.max_recorded
-    ${accountIds?.length ? `WHERE u1.account_id IN (${accountIds.join(",")})` : ""}`).all() as UserStatsRow[];
+    ${hasIds(accountIds) ? `WHERE u1.account_id IN (${accountIds!.join(",")})` : ""}`).all() as UserStatsRow[];
   const followersCount = latestStatsRows.reduce((s, r) => s + r.followers_count, 0);
   const followingCount = latestStatsRows.reduce((s, r) => s + r.following_count, 0);
   const userTweetCount = latestStatsRows.reduce((s, r) => s + r.tweet_count, 0);
@@ -59,11 +77,12 @@ export function getOverviewStats(accountIds?: number[]) {
 }
 
 export function getTweets(page: number, limit: number, sort: string, order: string, search?: string, accountIds?: number[]) {
+  if (isExplicitEmpty(accountIds)) return { data: [], total: 0, page, limit, totalPages: 0 };
   const db = rawDb();
   const offset = (page - 1) * limit;
   const conditions: string[] = []; const params: any[] = [];
   if (search) { conditions.push("full_text LIKE ?"); params.push(`%${search}%`); }
-  if (accountIds?.length) conditions.push(`account_id IN (${accountIds.join(",")})`);
+  if (hasIds(accountIds)) conditions.push(`account_id IN (${accountIds!.join(",")})`);
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
   const allowedSorts = ["created_at", "favorite_count", "retweet_count", "reply_count", "view_count"];
   const sortCol = allowedSorts.includes(sort) ? sort : "created_at";
@@ -82,29 +101,32 @@ export function getTweetById(id: string) {
 }
 
 export function getTimelineStats(months: number, accountIds?: number[]) {
+  if (isExplicitEmpty(accountIds)) return { dailyTweets: [], followerGrowth: [] };
   const db = rawDb();
   const since = new Date(); since.setMonth(since.getMonth() - months);
-  const w = accountIds?.length ? `WHERE created_at >= ? AND account_id IN (${accountIds.join(",")})` : "WHERE created_at >= ?";
+  const w = hasIds(accountIds) ? `WHERE created_at >= ? AND account_id IN (${accountIds!.join(",")})` : "WHERE created_at >= ?";
   const dailyTweets = db.query(`SELECT date(created_at) as date, COUNT(*) as tweets_count, COALESCE(SUM(favorite_count),0) as total_likes, COALESCE(SUM(retweet_count),0) as total_retweets, COALESCE(SUM(reply_count),0) as total_replies, COALESCE(SUM(view_count),0) as total_views FROM tweets ${w} GROUP BY date(created_at) ORDER BY date ASC`).all(since.toISOString()) as DailyStatsRow[];
-  const fw = accountIds?.length ? `WHERE recorded_at >= ? AND account_id IN (${accountIds.join(",")})` : "WHERE recorded_at >= ?";
+  const fw = hasIds(accountIds) ? `WHERE recorded_at >= ? AND account_id IN (${accountIds!.join(",")})` : "WHERE recorded_at >= ?";
   const followerGrowth = db.query(`SELECT recorded_at as date, followers_count, following_count, tweet_count FROM user_stats ${fw} ORDER BY recorded_at ASC`).all(since.toISOString()) as UserStatsRow[];
   db.close();
   return { dailyTweets, followerGrowth };
 }
 
 export function getTopTweets(metric: string, limit: number, accountIds?: number[]) {
+  if (isExplicitEmpty(accountIds)) return [];
   const db = rawDb();
   const allowed = ["favorite_count", "retweet_count", "reply_count", "view_count", "bookmark_count"];
   const col = allowed.includes(metric) ? metric : "favorite_count";
-  const w = accountIds?.length ? `WHERE account_id IN (${accountIds.join(",")})` : "";
+  const w = hasIds(accountIds) ? `WHERE account_id IN (${accountIds!.join(",")})` : "";
   const rows = db.query(`SELECT * FROM tweets ${w} ORDER BY ${col} DESC LIMIT ?`).all(limit) as TweetRow[];
   db.close();
   return rows;
 }
 
 export function getCalendarData(year: number, accountIds?: number[]) {
+  if (isExplicitEmpty(accountIds)) return [];
   const db = rawDb();
-  const w = accountIds?.length ? `WHERE strftime('%Y', created_at) = ? AND account_id IN (${accountIds.join(",")})` : "WHERE strftime('%Y', created_at) = ?";
+  const w = hasIds(accountIds) ? `WHERE strftime('%Y', created_at) = ? AND account_id IN (${accountIds!.join(",")})` : "WHERE strftime('%Y', created_at) = ?";
   const rows = db.query(`SELECT date(created_at) as date, COUNT(*) as count FROM tweets ${w} GROUP BY date(created_at) ORDER BY date ASC`).all(String(year)) as { date: string; count: number }[];
   db.close();
   return rows;
@@ -112,8 +134,6 @@ export function getCalendarData(year: number, accountIds?: number[]) {
 
 export function upsertTweet(tweet: Omit<TweetRow, "fetched_at">) {
   const db = rawDb();
-  // `getUserTweetsAndReplies` always returns 0 for engagement fields. Use
-  // MAX(existing, incoming) so a zero-valued update doesn't clobber real data.
   db.query(`INSERT INTO tweets (id,account_id,full_text,created_at,favorite_count,retweet_count,reply_count,view_count,bookmark_count,is_quote,is_reply,is_retweet,media_urls,urls,hashtags,mentions,lang) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET favorite_count=MAX(favorite_count, excluded.favorite_count),retweet_count=MAX(retweet_count, excluded.retweet_count),reply_count=MAX(reply_count, excluded.reply_count),view_count=MAX(view_count, excluded.view_count),bookmark_count=MAX(bookmark_count, excluded.bookmark_count)`).run(tweet.id, tweet.account_id, tweet.full_text, tweet.created_at, tweet.favorite_count, tweet.retweet_count, tweet.reply_count, tweet.view_count, tweet.bookmark_count, tweet.is_quote, tweet.is_reply, tweet.is_retweet, tweet.media_urls, tweet.urls, tweet.hashtags, tweet.mentions, tweet.lang);
   db.close();
 }
@@ -131,9 +151,6 @@ export function getLatestUserStats(accountId: number) {
   return r;
 }
 
-/** Update engagement fields for a tweet using MAX(existing, new).
- *  Used after getTweetDetail which returns real engagement counts
- *  (unlike getUserTweetsAndReplies which returns 0 for author's own tweets). */
 export function updateTweetEngagement(
   tweetId: string,
   eng: { favorite_count: number; retweet_count: number; reply_count: number; view_count: number; bookmark_count: number }
