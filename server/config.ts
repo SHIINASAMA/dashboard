@@ -31,6 +31,13 @@ const CONFIG_PATH = join(dataDir(), "config.json");
 
 // ── Config schema ─────────────────────────────────────────────────
 
+export interface DatabaseConfig {
+  /** Database driver: "sqlite" (tested) or "postgresql" (future) */
+  driver: "sqlite" | "postgresql";
+  sqlite: { path: string };
+  postgresql?: { host: string; port: number; database: string; user: string; password: string };
+}
+
 export interface DashboardConfig {
   /** URL prefix for all routes, e.g. "/my-dashboard" */
   urlPrefix: string;
@@ -47,8 +54,12 @@ export interface DashboardConfig {
   /**
    * Argon2id password hash. If empty/absent, login is open.
    * DO NOT edit by hand — use the Settings UI or auth API.
+   * DEPRECATED: password hash is migrating to the users table.
    */
   passwordHash: string;
+
+  /** Database configuration */
+  database: DatabaseConfig;
 }
 
 const DEFAULTS: DashboardConfig = {
@@ -57,6 +68,10 @@ const DEFAULTS: DashboardConfig = {
   port: 3001,
   https: false,
   passwordHash: "",
+  database: {
+    driver: "sqlite",
+    sqlite: { path: "" }, // set after dataDir() is initialized
+  },
 };
 
 function generatePrefix(): string {
@@ -109,6 +124,10 @@ export function loadConfig(): DashboardConfig {
     port: Number(process.env.PORT) || 3001,
     https: process.env.HTTPS === "true",
     passwordHash: "",
+    database: {
+      driver: "sqlite",
+      sqlite: { path: join(dataDir(), "db", "dashboard.db") },
+    },
   };
   writeFileSync(CONFIG_PATH, JSON.stringify(_config, null, 2) + "\n", { mode: 0o600 });
   console.log("📄 config.json created at", CONFIG_PATH);
@@ -123,6 +142,10 @@ export function saveConfig(updates: Partial<DashboardConfig>): DashboardConfig {
   // Normalise urlPrefix on save
   if (_config.urlPrefix) {
     _config.urlPrefix = _config.urlPrefix.replace(/^\/+|\/+$/g, "");
+  }
+  // Set default sqlite path if not configured
+  if (!_config.database.sqlite.path) {
+    _config.database.sqlite.path = join(dataDir(), "db", "dashboard.db");
   }
   writeFileSync(CONFIG_PATH, JSON.stringify(_config, null, 2) + "\n", { mode: 0o600 });
   return _config;

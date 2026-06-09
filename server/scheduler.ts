@@ -30,7 +30,7 @@ export function stopScheduler() {
 
 async function runCycle() {
   try {
-    const accounts = getActiveAccounts();
+    const accounts = await getActiveAccounts();
     if (accounts.length === 0) return;
     const now = Date.now();
 

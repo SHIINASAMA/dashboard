@@ -1,6 +1,7 @@
 {
-  "name": "x-kit",
+  "name": "dashboard",
   "type": "module",
+  "license": "Apache-2.0",
   "scripts": {
     "server": "bun run server/index.ts",
     "client": "bun run --cwd client dev",
@@ -14,6 +15,9 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "@libsql/client": "^0.17.3",
+    "drizzle-kit": "^0.31.10",
+    "drizzle-orm": "^0.45.2",
     "hono": "^4.7.6",
     "lodash": "^4.17.21",
     "lucide-react": "^1.17.0",

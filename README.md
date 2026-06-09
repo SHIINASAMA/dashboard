@@ -1,82 +1,38 @@
-# x-kit
+# Dashboard
 
-一个用于抓取和分析 X (Twitter) 用户数据和推文的工具。
+Multi-platform social & code dashboard with web UI. Track activity and stats across X (Twitter), GitHub, GitLab, and Reddit — all in one place.
 
-![x-kit](./images/action-stats.png)
-## 功能特点
+## Features
 
-- 自动抓取指定用户的基本信息和推文
-- 定时更新用户时间线数据
-- 支持数据本地化存储
-- GitHub Actions 自动化部署
+- **Multi-platform**: X (Twitter), GitHub, GitLab, Reddit
+- **Web dashboard** with charts, stats, and activity timelines for each platform
+- **Auto-fetching** on configurable intervals per account
+- **Multi-user**: admin and regular users with data isolation
+- **Password-protected** with session-based auth
+- **OAuth support** for Reddit; personal access token support for GitHub/GitLab
+- **Local-first**: all data stored in SQLite (Drizzle ORM), no cloud dependencies
 
-## 更新日志
-
-- 2024-12-24 添加每日发布推文功能 `post-twitter-daily.yml` `post-tweet.ts`
-- 2025-01-02 添加获取用户推文功能 `fetch-user-tweets.ts`
-
-## 安装
+## Quick Start
 
 ```bash
 bun install
+bun run dev
 ```
 
-## 使用方法
+The server starts on port 3001, client dev server on a random port. Open the URL printed in the console.
 
-### 1. 配置环境变量
+On first run, no password is set — log in as `admin` with empty password, then go to Settings to set a password.
 
-在项目根目录创建 `.env` 文件,添加以下配置:
+## Tech Stack
 
-```bash
-AUTH_TOKEN=你的X认证Token
-GET_ID_X_TOKEN=用于获取用户ID的Token
-```
-
-### 2. 添加需要追踪的用户
-
-在 `dev-accounts.json` 中添加用户信息:
-
-```json
-{
-  "username": "用户名",
-  "twitter_url": "用户主页链接", 
-  "description": "用户描述",
-  "tags": ["标签1", "标签2"]
-}
-```
-
-### 3. 运行脚本
-
-```bash
-# 获取用户信息
-bun run scripts/index.ts
-
-# 获取最新推文
-bun run scripts/fetch-tweets.ts
-
-# 批量关注用户
-bun run scripts/batch-follow.ts
-```
-
-## 自动化部署
-
-项目使用 GitHub Actions 实现自动化:
-
-- `get-home-latest-timeline.yml`: 每30分钟获取一次最新推文
-- `daily-get-tweet-id.yml`: 每天获取一次用户信息
-
-## 数据存储
-
-- 用户信息保存在 `accounts/` 目录
-- 推文数据保存在 `tweets/` 目录,按日期命名
-
-## 技术栈
-
-- Bun
-- TypeScript 
-- Twitter API
-- GitHub Actions
+- **Runtime**: Bun
+- **Frontend**: Vite + React 19 + TypeScript, Tailwind CSS v4, shadcn/ui, Recharts
+- **Backend**: Hono REST API
+- **Database**: SQLite via Drizzle ORM (PostgreSQL support reserved)
+- **Auth**: Argon2id password hashing, signed session cookies
 
 ## License
 
-MIT
+[Apache License 2.0](LICENSE)
+
+This work is a derivative of software originally released under the MIT License (Copyright 2024 xiaoxiunique).

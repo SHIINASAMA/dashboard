@@ -8,49 +8,54 @@ import {
   getOverviewStats,
   getLatestUserStats,
 } from "../db";
+import { getUserByUsername } from "../db/queries/users";
+import { validateConfirmToken } from "./confirm";
 
 const accountsRouter = new Hono();
 
-accountsRouter.get("/", (c) => {
-  const accounts = getAccounts();
-  const twitterIds = accounts.filter((a) => a.platform === "twitter").map((a) => a.id);
+accountsRouter.get("/", async (c) => {
+  let ownerId: number | undefined;
+  if (c.get("sessionRole") !== "admin") {
+    const username = c.get("sessionUser") as string;
+    const user = await getUserByUsername(username);
+    ownerId = user?.id;
+  }
+  const accounts = await getAccounts(ownerId);
+  const twitterIds = accounts.filter((a: any) => a.platform === "twitter").map((a: any) => a.id);
   const overview = getOverviewStats(twitterIds.length > 0 ? twitterIds : []);
   return c.json({ accounts, overview });
 });
 
-accountsRouter.get("/:id", (c) => {
+accountsRouter.get("/:id", async (c) => {
   const id = Number(c.req.param("id"));
-  const account = getAccountById(id);
+  const account = await getAccountById(id);
   if (!account) return c.json({ error: "Not found" }, 404);
   const { auth_token, ...pub } = account;
   const stats = getLatestUserStats(id);
   return c.json({ ...pub, stats });
 });
 
-accountsRouter.post("/", (c) => c.req.json().then((body) => {
+accountsRouter.post("/", async (c) => {
+  const body = await c.req.json();
   const { screenName, authToken, fetchInterval, platform, instanceUrl, authType } = body;
-  if (!screenName) {
-    return c.json({ error: "screenName is required" }, 400);
-  }
-  if (!authToken && authType !== "reddit_public") {
-    return c.json({ error: "authToken is required" }, 400);
-  }
+  if (!screenName) return c.json({ error: "screenName is required" }, 400);
+  if (!authToken && authType !== "reddit_public") return c.json({ error: "authToken is required" }, 400);
   const token = authToken || "reddit_public";
   try {
-    const account = createAccount(screenName, token, fetchInterval || 30, platform || "twitter", instanceUrl || null, authType || null);
+    const ownerId = c.get("sessionRole") === "admin" ? 1 : ((await getUserByUsername(c.get("sessionUser") as string))?.id ?? 1);
+    const account = await createAccount(screenName, token, fetchInterval || 30, platform || "twitter", instanceUrl || null, authType || null, ownerId);
     const { auth_token, ...pub } = account;
     return c.json(pub, 201);
   } catch (e: any) {
-    if (e.message?.includes?.("UNIQUE")) {
-      return c.json({ error: "Account with this screen name already exists on this platform" }, 409);
-    }
+    if (e.message?.includes?.("UNIQUE")) return c.json({ error: "Account with this screen name already exists on this platform" }, 409);
     return c.json({ error: e.message }, 500);
   }
-}));
+});
 
-accountsRouter.put("/:id", (c) => c.req.json().then((body) => {
+accountsRouter.put("/:id", async (c) => {
   const id = Number(c.req.param("id"));
-  const account = getAccountById(id);
+  const body = await c.req.json();
+  const account = await getAccountById(id);
   if (!account) return c.json({ error: "Not found" }, 404);
 
   const updates: Record<string, any> = {};
@@ -61,14 +66,20 @@ accountsRouter.put("/:id", (c) => c.req.json().then((body) => {
   if (body.instanceUrl !== undefined) updates.instance_url = body.instanceUrl;
   if (body.authType !== undefined) updates.auth_type = body.authType;
 
-  updateAccount(id, updates);
-  const updated = getAccountById(id)!;
+  await updateAccount(id, updates);
+  const updated = await getAccountById(id);
+  if (!updated) return c.json({ error: "Not found" }, 404);
   const { auth_token, ...pub } = updated;
   return c.json(pub);
-}));
+});
 
-accountsRouter.delete("/:id", (c) => {
+accountsRouter.delete("/:id", async (c) => {
   const id = Number(c.req.param("id"));
+  const body = await c.req.json().catch(() => ({}));
+  const { confirmToken } = body as any;
+  if (!confirmToken || !validateConfirmToken(confirmToken)) {
+    return c.json({ error: "Invalid or expired confirmation token" }, 400);
+  }
   deleteAccount(id);
   return c.json({ success: true });
 });

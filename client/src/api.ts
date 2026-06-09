@@ -328,9 +328,23 @@ export const api = {
   getRedditSubreddits: (accountId: number) =>
     fetchJSON<{ subreddit: string; count: number }[]>(`/reddit/subreddits/${accountId}`),
 
-  login: (password: string) => fetchJSON<{ ok: boolean; user?: string }>("/auth/login", { method: "POST", body: JSON.stringify({ password }) }),
-  checkAuth: () => fetchJSON<{ authenticated: boolean; user?: string; hasPassword?: boolean }>("/auth/me"),
+  login: (username: string, password: string) =>
+    fetchJSON<{ ok: boolean; user?: string; role?: string }>("/auth/login", { method: "POST", body: JSON.stringify({ username, password }) }),
+  checkAuth: () =>
+    fetchJSON<{ authenticated: boolean; username?: string; role?: string }>("/auth/me"),
   logout: () => fetchJSON<{ ok: boolean }>("/auth/logout", { method: "POST" }),
   changePassword: (currentPassword: string, newPassword: string) =>
     fetchJSON<{ ok: boolean }>("/auth/change-password", { method: "POST", body: JSON.stringify({ currentPassword, newPassword }) }),
+
+  // Users (admin only)
+  getUsers: () => fetchJSON<{ users: { id: number; username: string; role: string; created_at: string }[] }>("/users"),
+  createUser: (data: { username: string; password: string; role?: string }) =>
+    fetchJSON("/users", { method: "POST", body: JSON.stringify(data) }),
+  deleteUser: (id: number, confirmToken: string) =>
+    fetchJSON<{ ok: boolean }>(`/users/${id}`, { method: "DELETE", body: JSON.stringify({ confirmToken }) }),
+
+  // Confirmation tokens
+  getConfirmToken: () => fetchJSON<{ token: string }>("/confirm/token", { method: "POST" }),
+  deleteAccount: (id: number, confirmToken: string) =>
+    fetchJSON<{ success: boolean }>(`/accounts/${id}`, { method: "DELETE", body: JSON.stringify({ confirmToken }) }),
 };

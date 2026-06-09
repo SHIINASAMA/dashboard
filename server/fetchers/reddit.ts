@@ -19,7 +19,7 @@ async function getRedditAccessToken(refreshToken: string): Promise<string> {
     headers: {
       Authorization: `Basic ${auth}`,
       "Content-Type": "application/x-www-form-urlencoded",
-      "User-Agent": "x-kit-dashboard/1.0",
+      "User-Agent": "dashboard/1.0",
     },
     body: `grant_type=refresh_token&refresh_token=${encodeURIComponent(refreshToken)}`,
     tls: { rejectUnauthorized: false },
@@ -40,7 +40,7 @@ async function redditFetch(path: string, token: string): Promise<any> {
   const res = await fetch(`https://oauth.reddit.com${path}`, {
     headers: {
       Authorization: `Bearer ${token}`,
-      "User-Agent": "x-kit-dashboard/1.0",
+      "User-Agent": "dashboard/1.0",
     },
     tls: { rejectUnauthorized: false },
     proxy,

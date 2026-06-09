@@ -40,7 +40,7 @@ async function glFetch<T>(apiBase: string, path: string, token: string): Promise
   const res = await fetch(url, {
     headers: {
       "PRIVATE-TOKEN": token,
-      "User-Agent": "x-kit-dashboard",
+      "User-Agent": "dashboard",
     },
     tls: {
       rejectUnauthorized: false,

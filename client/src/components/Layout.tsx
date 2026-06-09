@@ -3,8 +3,8 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { Allotment } from "allotment";
 import "allotment/dist/style.css";
 import { useTranslation } from "react-i18next";
-import { useQueryClient } from "@tanstack/react-query";
-import { LayoutDashboard, PanelLeft, Settings, LogOut } from "lucide-react";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { LayoutDashboard, PanelLeft, Settings, LogOut, Shield } from "lucide-react";
 import { XIcon, GithubIcon, GitlabIcon, RedditIcon } from "./BrandIcons";
 import { api } from "../api";
 
@@ -24,6 +24,14 @@ export default function Layout() {
   const queryClient = useQueryClient();
   const [visible, setVisible] = useState(loadVisible);
   const [loggingOut, setLoggingOut] = useState(false);
+
+  const { data: authData } = useQuery({
+    queryKey: ["auth", "me"],
+    queryFn: () => api.checkAuth(),
+    staleTime: 2 * 60_000,
+  });
+
+  const isAdmin = authData?.role === "admin";
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -111,6 +119,21 @@ export default function Layout() {
               ))}
             </nav>
             <div className="mt-auto p-3 border-t border-[var(--border)] space-y-3">
+              {isAdmin && (
+                <NavLink
+                  to="/admin"
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isActive
+                        ? "bg-[var(--primary)]/10 text-[var(--primary)]"
+                        : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+                    }`
+                  }
+                >
+                  <Shield size={18} />
+                  {t("nav.admin")}
+                </NavLink>
+              )}
               <NavLink
                 to="/settings"
                 className={({ isActive }) =>

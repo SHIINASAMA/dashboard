@@ -4,8 +4,9 @@ import {
   getTimelineStats,
   getTopTweets,
   getCalendarData,
-  getDb,
 } from "../db";
+
+import { getAccounts } from "../db";
 
 function parseAccountIds(c: any): number[] | undefined {
   const raw = c.req.query("accountIds");
@@ -13,16 +14,16 @@ function parseAccountIds(c: any): number[] | undefined {
   return raw.split(",").map(Number).filter(Boolean);
 }
 
-function getTwitterAccountIds(): number[] {
-  const rows = getDb().query("SELECT id FROM accounts WHERE platform = 'twitter'").all() as { id: number }[];
-  return rows.map(r => r.id);
+async function getTwitterAccountIds(): Promise<number[]> {
+  const accounts = await getAccounts();
+  return accounts.filter((a: any) => a.platform === "twitter").map((r: any) => r.id);
 }
 
 const statsRouter = new Hono();
 
-statsRouter.get("/overview", (c) => {
+statsRouter.get("/overview", async (c) => {
   const accountIds = parseAccountIds(c);
-  const ids = accountIds?.length ? accountIds : getTwitterAccountIds();
+  const ids = accountIds?.length ? accountIds : await getTwitterAccountIds();
   const stats = getOverviewStats(ids);
   return c.json(stats);
 });

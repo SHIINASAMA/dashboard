@@ -1,27 +1,51 @@
 import { password } from "bun";
 import { loadConfig, saveConfig } from "./config";
+import { getUserByUsername, getUserById, updateUserPassword } from "./db/queries/users";
+
+// ── Multi-user auth ──────────────────────────────────────────────
+
+export async function verifyCredentials(inputUsername: string, pw: string): Promise<{ ok: boolean; userId?: number; role?: string }> {
+  const user = await getUserByUsername(inputUsername);
+  if (!user) return { ok: false };
+  try {
+    const valid = await password.verify(pw, user.password_hash);
+    if (!valid) return { ok: false };
+    return { ok: true, userId: user.id, role: user.role };
+  } catch {
+    return { ok: false };
+  }
+}
+
+export async function setUserPassword(userId: number, pw: string): Promise<void> {
+  await updateUserPassword(userId, pw);
+}
+
+// ── Legacy single-password compat ─────────────────────────────────
 
 export async function verifyPassword(input: string): Promise<boolean> {
-  const hash = loadConfig().passwordHash;
-  if (!hash) return true;
+  const user = await getUserByUsername("admin");
+  if (!user || !user.password_hash) return true;
   try {
-    return password.verify(input, hash);
+    return password.verify(input, user.password_hash);
   } catch {
     return false;
   }
 }
 
 export async function setNewPassword(pw: string): Promise<void> {
-  const hash = await password.hash(pw, { algorithm: "argon2id" });
-  saveConfig({ passwordHash: hash });
+  const user = await getUserByUsername("admin");
+  if (user) {
+    await updateUserPassword(user.id, pw);
+  }
 }
 
 export async function changePassword(oldPassword: string, newPassword: string): Promise<boolean> {
-  const hash = loadConfig().passwordHash;
-  if (hash) {
-    const ok = await verifyPassword(oldPassword);
+  const user = await getUserByUsername("admin");
+  if (!user) return false;
+  if (user.password_hash) {
+    const ok = await password.verify(oldPassword, user.password_hash);
     if (!ok) return false;
   }
-  await setNewPassword(newPassword);
+  await updateUserPassword(user.id, newPassword);
   return true;
 }

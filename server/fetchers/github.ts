@@ -4,15 +4,16 @@ import {
   upsertGithubRepoSnapshot,
   upsertGithubTrafficClones, upsertGithubTrafficViews,
   upsertGithubReferrer, upsertGithubPath,
-  upsertGithubRelease, insertGithubReleaseAsset, getDb,
+  upsertGithubRelease, insertGithubReleaseAsset,
 } from "../db";
+import { getDb } from "../db/connection";
 
 const GITHUB_API = "https://api.github.com";
 
 async function ghFetch(path: string, token?: string) {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github.v3+json",
-    "User-Agent": "x-kit-dashboard",
+    "User-Agent": "dashboard",
   };
   if (token) headers.Authorization = `Bearer ${token}`;
 
@@ -293,7 +294,7 @@ async function fetchContributions(username: string, token: string | undefined, y
   const headers: Record<string, string> = {
     Accept: "application/json",
     "Content-Type": "application/json",
-    "User-Agent": "x-kit-dashboard",
+    "User-Agent": "dashboard",
   };
   if (token) headers.Authorization = `bearer ${token}`;
 

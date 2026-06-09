@@ -7,7 +7,7 @@ import { Card, CardContent } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import EditAccountForm from "../components/EditAccountForm";
 import { formatDateTime } from "../lib/i18n";
-import { Pencil, Plus, Play, Trash2, AlertCircle, ArrowUpRight, Star, GitFork, Users, BookOpen } from "lucide-react";
+import { Pencil, Plus, PlayCircle, PauseCircle, Trash2, AlertCircle, ArrowUpRight, Star, GitFork, Users, BookOpen } from "lucide-react";
 import { GithubIcon } from "../components/BrandIcons";
 
 export function GitHub() {
@@ -32,6 +32,12 @@ export function GitHub() {
 
   const triggerMutation = useMutation({
     mutationFn: (id: number) => api.triggerFetch(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["accounts"] }),
+  });
+
+  const toggleActiveMutation = useMutation({
+    mutationFn: ({ id, isActive }: { id: number; isActive: boolean }) => api.updateAccount(id, { isActive }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["accounts"] }),
   });
 
   if (isLoading) {
@@ -128,12 +134,12 @@ export function GitHub() {
                           <Pencil size={16} />
                         </button>
                         <button
-                          onClick={(e) => { e.stopPropagation(); triggerMutation.mutate(account.id); }}
-                          disabled={triggerMutation.isPending}
+                          onClick={(e) => { e.stopPropagation(); toggleActiveMutation.mutate({ id: account.id, isActive: !account.is_active }); }}
+                          disabled={toggleActiveMutation.isPending}
                           className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors disabled:opacity-40"
                           title={t("github.accountCard.fetchNow")}
                         >
-                          <Play size={16} />
+                          {account.is_active ? <PauseCircle size={16} /> : <PlayCircle size={16} />}
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(account.id); }}

@@ -12,6 +12,7 @@ import { GitLabDetail } from "./pages/GitLabDetail";
 import { ProjectDetail } from "./pages/ProjectDetail";
 import { Reddit } from "./pages/Reddit";
 import { RedditDetail } from "./pages/RedditDetail";
+import { Admin } from "./pages/Admin";
 import { Settings } from "./pages/Settings";
 import { Login } from "./pages/Login";
 import { api } from "./api";
@@ -82,6 +83,7 @@ export default function App() {
               <Route path="gitlab/:accountId/projects/:projectId" element={<ProjectDetail />} />
               <Route path="reddit" element={<Reddit />} />
               <Route path="reddit/:id" element={<RedditDetail />} />
+              <Route path="admin" element={<Admin />} />
               <Route path="settings" element={<Settings />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>

@@ -12,10 +12,14 @@
     "copyright": "© 2026 Dashboard"
   },
   "login": {
+    "username": "Username",
     "password": "Password",
     "login": "Log in",
     "loggingIn": "Logging in…",
     "invalidPassword": "Invalid password"
+  },
+  "confirm": {
+    "enterCode": "Enter the code above"
   },
   "nav": {
     "overview": "Overview",
@@ -23,6 +27,7 @@
     "github": "GitHub",
     "gitlab": "GitLab",
     "reddit": "Reddit",
+    "admin": "Admin",
     "settings": "Settings",
     "logout": "Log out"
   },
@@ -481,5 +486,19 @@
     "dailyActivityDesc": "Posts and comments per day",
     "topSubreddits": "Top Subreddits",
     "topSubredditsDesc": "Where you post most"
+  },
+  "admin": {
+    "heading": "User Management",
+    "description": "Create and manage user accounts",
+    "createUser": "Create User",
+    "username": "Username",
+    "password": "Password",
+    "roleUser": "User",
+    "roleAdmin": "Admin",
+    "userList": "User List",
+    "noUsers": "No users yet",
+    "deleteUser": "Delete User",
+    "deleteUserDesc": "This action cannot be undone. All associated data will be deleted.",
+    "forbidden": "Access denied"
   }
 }

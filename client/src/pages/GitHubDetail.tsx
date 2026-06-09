@@ -121,6 +121,7 @@ export function GitHubDetail() {
 
   const triggerMutation = useMutation({
     mutationFn: () => api.triggerFetch(accountId),
+    onSuccess: () => queryClient.invalidateQueries(),
   });
 
   if (accountLoading) {

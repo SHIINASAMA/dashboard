@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { api, type OverviewStats, type TimelineData, type Account } from "../api";
 import { StatCard } from "../components/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Separator } from "../components/ui/separator";
 import { Badge } from "../components/ui/badge";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -277,6 +278,8 @@ export function Overview() {
         </section>
       )}
 
+      {xAccounts.length > 0 && ghAccounts.length > 0 && <Separator className="my-6" />}
+
       {/* ── GitHub ── */}
       {ghAccounts.length > 0 && (
         <section className="space-y-3">
@@ -306,6 +309,8 @@ export function Overview() {
         </section>
       )}
 
+      {(xAccounts.length > 0 || ghAccounts.length > 0) && glAccounts.length > 0 && <Separator className="my-6" />}
+
       {/* ── GitLab ── */}
       {glAccounts.length > 0 && (
         <section className="space-y-3">
@@ -334,6 +339,8 @@ export function Overview() {
           )}
         </section>
       )}
+
+      {(xAccounts.length > 0 || ghAccounts.length > 0 || glAccounts.length > 0) && redditAccounts.length > 0 && <Separator className="my-6" />}
 
       {/* ── Reddit ── */}
       {redditAccounts.length > 0 && (

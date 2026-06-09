@@ -8,6 +8,7 @@ export function Login() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -17,7 +18,7 @@ export function Login() {
     setError("");
     setLoading(true);
     try {
-      const res = await api.login(password);
+      const res = await api.login(username || "admin", password);
       if (res.ok) {
         queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
         navigate("/", { replace: true });
@@ -36,6 +37,16 @@ export function Login() {
       <div className="bg-[var(--card)] rounded-xl p-8 w-full max-w-sm mx-4 shadow-lg border border-[var(--border)]">
         <h1 className="text-xl font-semibold text-center mb-6">{t("common.dashboard")}</h1>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
+            <label className="block text-xs font-medium mb-1 text-[var(--muted-foreground)]">{t("login.username")}</label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="admin"
+              className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] text-sm"
+            />
+          </div>
           <div>
             <label className="block text-xs font-medium mb-1 text-[var(--muted-foreground)]">{t("login.password")}</label>
             <input

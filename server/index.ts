@@ -8,14 +8,17 @@ import accountsRouter from "./routes/accounts";
 import githubRouter from "./routes/github";
 import gitlabRouter from "./routes/gitlab";
 import redditRouter from "./routes/reddit";
+import confirmRouter from "./routes/confirm";
+import { validateConfirmToken } from "./routes/confirm";
 import { startScheduler } from "./scheduler";
-import { getAccountById } from "./db";
+import { getAccountById, updateAccount } from "./db";
 import { fetchAccount } from "./fetcher";
 import { fetchGithubAccount } from "./fetchers/github";
 import { fetchGitlabAccount } from "./fetchers/gitlab";
 import { fetchRedditAccount, fetchRedditPublicAccount } from "./fetchers/reddit";
 import { sign, verifySignature } from "./crypto";
-import { verifyPassword, setPassword, changePassword } from "./auth";
+import { verifyPassword, verifyCredentials, setNewPassword, changePassword } from "./auth";
+import { getUsers, createUser, deleteUser } from "./db/queries/users";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { readFileSync, existsSync } from "fs";
@@ -49,21 +52,21 @@ const isProd = existsSync(join(CLIENT_DIST, "index.html"));
 const SESSION_COOKIE = "dash_session";
 const SESSION_MAX_AGE = 7 * 24 * 60 * 60; // 7 days
 
-function createSessionToken(username: string): string {
+function createSessionToken(username: string, role: string): string {
   const expires = Date.now() + SESSION_MAX_AGE * 1000;
-  const payload = `${username}:${expires}`;
+  const payload = `${username}:${role}:${expires}`;
   const sig = sign(payload);
   return `${payload}:${sig}`;
 }
 
-function validateSession(token: string): string | null {
+function validateSession(token: string): { username: string; role: string } | null {
   const parts = token.split(":");
-  if (parts.length !== 3) return null;
-  const [username, expiresStr, sig] = parts;
-  const payload = `${username}:${expiresStr}`;
+  if (parts.length !== 4) return null;
+  const [username, role, expiresStr, sig] = parts;
+  const payload = `${username}:${role}:${expiresStr}`;
   if (!verifySignature(payload, sig)) return null;
   if (parseInt(expiresStr) < Date.now()) return null;
-  return username;
+  return { username, role };
 }
 
 // ── App setup ────────────────────────────────────────────────────
@@ -92,13 +95,14 @@ app.use(`${BASE}/api/*`, async (c, next) => {
   if (!token) {
     return c.json({ error: "Unauthorized" }, 401);
   }
-  const username = validateSession(token);
-  if (!username) {
+  const session = validateSession(token);
+  if (!session) {
     return c.json({ error: "Session expired or invalid" }, 401);
   }
 
   // Attach user info for potential use
-  c.set("sessionUser", username);
+  c.set("sessionUser", session.username);
+  c.set("sessionRole", session.role);
   return next();
 });
 
@@ -106,13 +110,31 @@ app.use(`${BASE}/api/*`, async (c, next) => {
 
 app.post(`${BASE}/api/auth/login`, async (c) => {
   try {
-    const { password } = await c.req.json();
+    const { username, password } = await c.req.json();
+    // Multi-user login
+    if (username && username !== "admin") {
+      const result = await verifyCredentials(username, password || "");
+      if (!result.ok) {
+        await new Promise(r => setTimeout(r, 800));
+        return c.json({ error: "Invalid credentials" }, 401);
+      }
+      const session = createSessionToken(username, result.role || "user");
+      setCookie(c, SESSION_COOKIE, session, {
+        path: `${BASE}/`,
+        httpOnly: true,
+        secure: protocol === "https",
+        sameSite: "Lax",
+        maxAge: SESSION_MAX_AGE,
+      });
+      return c.json({ ok: true, user: username, role: result.role });
+    }
+    // Legacy admin login
     const valid = await verifyPassword(password);
     if (!valid) {
       await new Promise(r => setTimeout(r, 800));
       return c.json({ error: "Invalid password" }, 401);
     }
-    const session = createSessionToken("admin");
+    const session = createSessionToken("admin", "admin");
     setCookie(c, SESSION_COOKIE, session, {
       path: `${BASE}/`,
       httpOnly: true,
@@ -120,7 +142,7 @@ app.post(`${BASE}/api/auth/login`, async (c) => {
       sameSite: "Lax",
       maxAge: SESSION_MAX_AGE,
     });
-    return c.json({ ok: true, user: "admin" });
+    return c.json({ ok: true, user: "admin", role: "admin" });
   } catch (e) {
     return c.json({ error: "Invalid request" }, 400);
   }
@@ -129,9 +151,9 @@ app.post(`${BASE}/api/auth/login`, async (c) => {
 app.get(`${BASE}/api/auth/me`, (c) => {
   const token = getCookie(c, SESSION_COOKIE);
   if (!token) return c.json({ authenticated: false });
-  const username = validateSession(token);
-  if (!username) return c.json({ authenticated: false });
-  return c.json({ authenticated: true, user: username, hasPassword: getUserHasPassword() });
+  const session = validateSession(token);
+  if (!session) return c.json({ authenticated: false });
+  return c.json({ authenticated: true, username: session.username, role: session.role });
 });
 
 app.post(`${BASE}/api/auth/logout`, (c) => {
@@ -157,11 +179,40 @@ app.post(`${BASE}/api/auth/change-password`, async (c) => {
   }
 });
 
-// Import here to avoid circular dependency
-import { loadConfig } from "./config";
-function getUserHasPassword(): boolean {
-  try { return !!loadConfig().passwordHash; } catch { return false; }
-}
+// ── User management (admin only) ──────────────────────────────────
+
+app.get(`${BASE}/api/users`, async (c) => {
+  if (c.get("sessionRole") !== "admin") return c.json({ error: "Forbidden" }, 403);
+  return c.json({ users: await getUsers() });
+});
+
+app.post(`${BASE}/api/users`, async (c) => {
+  if (c.get("sessionRole") !== "admin") return c.json({ error: "Forbidden" }, 403);
+  const { username, password, role } = await c.req.json();
+  if (!username || !password) return c.json({ error: "username and password required" }, 400);
+  if (password.length < 4) return c.json({ error: "Password must be at least 4 characters" }, 400);
+  try {
+    const user = await createUser(username, password, role || "user");
+    const { password_hash, ...pub } = user;
+    return c.json(pub, 201);
+  } catch (e: any) {
+    if (e.message?.includes?.("UNIQUE")) return c.json({ error: "Username already exists" }, 409);
+    return c.json({ error: e.message }, 500);
+  }
+});
+
+app.delete(`${BASE}/api/users/:id`, async (c) => {
+  if (c.get("sessionRole") !== "admin") return c.json({ error: "Forbidden" }, 403);
+  const id = Number(c.req.param("id"));
+  if (id === 1) return c.json({ error: "Cannot delete the bootstrap admin" }, 400);
+  const body = await c.req.json().catch(() => ({}));
+  const { confirmToken } = body as any;
+  if (!confirmToken || !validateConfirmToken(confirmToken)) {
+    return c.json({ error: "Invalid or expired confirmation token" }, 400);
+  }
+  deleteUser(id);
+  return c.json({ ok: true });
+});
 
 // ── API routes ────────────────────────────────────────────────────
 
@@ -171,25 +222,27 @@ app.route(`${BASE}/api/accounts`, accountsRouter);
 app.route(`${BASE}/api/github`, githubRouter);
 app.route(`${BASE}/api/gitlab`, gitlabRouter);
 app.route(`${BASE}/api/reddit`, redditRouter);
+app.route(`${BASE}/api/confirm`, confirmRouter);
 
 app.get(`${BASE}/api/health`, (c) => c.json({ status: "ok" }));
 
 // Manual trigger for any platform
 app.post(`${BASE}/api/fetch/:id`, async (c) => {
   const id = Number(c.req.param("id"));
-  const account = getAccountById(id);
-  if (!account || !account.is_active) return c.json({ error: "Account not found or inactive" }, 404);
+  const account = await getAccountById(id);
+  if (!account) return c.json({ error: "Account not found" }, 404);
+  if (!account.is_active) {
+    await updateAccount(id, { is_active: 1 } as any);
+    account.is_active = 1;
+  }
 
   const fn = account.platform === "github" ? fetchGithubAccount
     : account.platform === "gitlab" ? fetchGitlabAccount
     : account.platform === "reddit"
-      ? (account.auth_type === "reddit_public" ? fetchRedditPublicAccount : fetchRedditAccount)
+    ? (account.auth_type === "reddit_public" ? fetchRedditPublicAccount : fetchRedditAccount)
     : fetchAccount;
-  fn(account).then((count) => {
-    console.log(`[Manual] Fetch complete for @${account.screen_name} (${account.platform})`);
-  });
-
-  return c.json({ message: "Fetch started" });
+  await fn(account);
+  return c.json({ ok: true, message: `Fetch complete for @${account.screen_name}` });
 });
 
 // ── Serve client SPA (production) ─────────────────────────────────

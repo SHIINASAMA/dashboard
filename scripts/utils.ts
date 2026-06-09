@@ -9,7 +9,7 @@ export const _xClient = async (TOKEN: string) => {
   console.log("🚀 ~ const_xClient= ~ TOKEN:", TOKEN)
   const proxy = getProxyUrl();
   const resp = await fetch("https://x.com/manifest.json", {
-    headers: { cookie: `auth_token=${TOKEN}`, "User-Agent": "x-kit-dashboard" },
+    headers: { cookie: `auth_token=${TOKEN}`, "User-Agent": "dashboard" },
     tls: { rejectUnauthorized: false },
     proxy: proxy,
   });
@@ -36,7 +36,7 @@ export const XAuthClient = () => _xClient(process.env.AUTH_TOKEN!);
 export const login = async (AUTH_TOKEN: string) => {
   const proxy = getProxyUrl();
   const resp = await fetch("https://x.com/manifest.json", {
-    headers: { cookie: `auth_token=${AUTH_TOKEN}`, "User-Agent": "x-kit-dashboard" },
+    headers: { cookie: `auth_token=${AUTH_TOKEN}`, "User-Agent": "dashboard" },
     tls: { rejectUnauthorized: false },
     proxy: proxy,
   });
