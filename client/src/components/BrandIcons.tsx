@@ -1,18 +1,19 @@
 import { SiX, SiGithub, SiGitlab, SiReddit } from "react-icons/si";
 
-function BrandIcon({ Icon, className }: { Icon: React.ComponentType<{ className?: string }>; className?: string }) {
-  return <Icon className={className} />;
+function BrandIcon({ Icon, size }: { Icon: React.ComponentType<{ size?: number }>; size?: number }) {
+  const s = size ?? 16;
+  return <Icon size={s} style={{ width: s, height: s }} />;
 }
 
 export function XIcon({ size }: { size?: number }) {
-  return <BrandIcon Icon={SiX} className={`w-${size ?? 4} h-${size ?? 4}`} />;
+  return <BrandIcon Icon={SiX} size={size} />;
 }
 export function GithubIcon({ size }: { size?: number }) {
-  return <BrandIcon Icon={SiGithub} className={`w-${size ?? 4} h-${size ?? 4}`} />;
+  return <BrandIcon Icon={SiGithub} size={size} />;
 }
 export function GitlabIcon({ size }: { size?: number }) {
-  return <BrandIcon Icon={SiGitlab} className={`w-${size ?? 4} h-${size ?? 4}`} />;
+  return <BrandIcon Icon={SiGitlab} size={size} />;
 }
 export function RedditIcon({ size }: { size?: number }) {
-  return <BrandIcon Icon={SiReddit} className={`w-${size ?? 4} h-${size ?? 4}`} />;
+  return <BrandIcon Icon={SiReddit} size={size} />;
 }

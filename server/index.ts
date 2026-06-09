@@ -47,6 +47,32 @@ const serverUrl = `${protocol}://${host}${port === 443 || port === 80 ? "" : `:$
 const CLIENT_DIST = join(__dirname, "..", "client", "dist");
 const isProd = existsSync(join(CLIENT_DIST, "index.html"));
 
+// ── Rate limiter (in-memory, per IP) ──────────────────────────────
+
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_WINDOW_MS = 60_000;   // 1 minute
+const RATE_MAX_REQUESTS = 10;    // max attempts per window
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || entry.resetAt < now) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= RATE_MAX_REQUESTS) return false;
+  entry.count++;
+  return true;
+}
+
+// Clean expired entries every 2 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of rateLimitMap) {
+    if (entry.resetAt < now) rateLimitMap.delete(ip);
+  }
+}, 120_000);
+
 // ── Session helpers ──────────────────────────────────────────────
 
 const SESSION_COOKIE = "dash_session";
@@ -120,6 +146,12 @@ app.use(`${BASE}/api/*`, async (c, next) => {
 
 app.post(`${BASE}/api/auth/login`, async (c) => {
   try {
+    // Rate limit by IP
+    const ip = c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || "unknown";
+    if (!checkRateLimit(ip)) {
+      return c.json({ error: "Too many login attempts. Please try again later." }, 429);
+    }
+
     const { username, password } = await c.req.json();
     // Multi-user login
     if (username && username !== "admin") {

@@ -130,7 +130,7 @@ export function RepoDetail() {
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-semibold truncate">{repo.full_name}</h2>
             {repo.language && <Badge>{repo.language}</Badge>}
-            {repo.is_fork ? 1 : 0 ? <Badge>{t("badge.fork")}</Badge> : null}
+            {repo.is_fork ? <Badge>{t("badge.fork")}</Badge> : null}
           </div>
           {repo.description && <p className="text-sm text-[var(--muted-foreground)]">{repo.description}</p>}
         </div>
