@@ -71,89 +71,99 @@ export async function fetchAccount(account: AccountRow) {
       throw new Error(`Could not resolve user ID for @${account.screen_name}`);
     }
 
-    // 2. Fetch tweets
+    // 2. Fetch tweets from both endpoints.
+    //    getUserTweets returns the user's own tweets with real engagement;
+    //    getUserTweetsAndReplies additionally returns replies to others.
+    //    Both are needed for complete coverage.
     await sleep(2000);
 
-    let cursor: string | undefined;
-    let totalFetched = 0;
     const maxTweets = 800;
     const batchSize = 50;
     const kaoruTweetIds = [];
 
-    while (totalFetched < maxTweets) {
-      const params: Record<string, unknown> = { userId, count: batchSize };
-      if (cursor) params.cursor = cursor;
+    async function fetchFromEndpoint(
+      label: string,
+      apiFn: (params: any) => Promise<any>
+    ) {
+      let cursor: string | undefined;
+      let totalFetched = 0;
+      while (totalFetched < maxTweets) {
+        const params: Record<string, unknown> = { userId, count: batchSize };
+        if (cursor) params.cursor = cursor;
 
-      const resp = await apiCall(() => client.getTweetApi().getUserTweetsAndReplies(params as any));
-      const tweets = ((resp.data as any).data || []) as any[];
+        const resp = await apiCall(() => apiFn(params));
+        const tweets = ((resp.data as any).data || []) as any[];
 
-      if (tweets.length === 0) break;
+        if (tweets.length === 0) break;
 
-      for (const tweet of tweets) {
-        const t = tweet.tweet;
-        if (!t) continue;
+        for (const tweet of tweets) {
+          const t = tweet.tweet;
+          if (!t) continue;
 
-        const legacyTweet = t.legacy;
-        if (!legacyTweet) continue;
+          const legacyTweet = t.legacy;
+          if (!legacyTweet) continue;
 
-        // Skip retweets — they show up in getUserTweetsAndReplies but their
-        // author ID differs from the account. The library's tweet.retweeted flag
-        // doesn't always work for this endpoint, so we compare userId directly.
-        const tweetAuthorId = legacyTweet.userIdStr || "";
-        if (tweetAuthorId && tweetAuthorId !== userId) continue;
+          // Skip tweets whose author differs from the account
+          const tweetAuthorId = legacyTweet.userIdStr || "";
+          if (tweetAuthorId && tweetAuthorId !== userId) continue;
 
+          const tweetId = String(legacyTweet.idStr || "");
+          if (!tweetId) continue;
 
-        const tweetId = String(legacyTweet.idStr || "");
-        if (!tweetId) continue;
+          kaoruTweetIds.push(tweetId);
 
-        kaoruTweetIds.push(tweetId);
+          const views = t.views;
 
-        const views = t.views;
+          const mediaUrls = (get(legacyTweet, "extendedEntities.media", []) as any[])
+            .filter((m: any) => m.type === "photo")
+            .map((m: any) => m.mediaUrlHttps);
+          const urls = (get(legacyTweet, "entities.urls", []) as any[])
+            .map((u: any) => u.expandedUrl || u.url);
+          const hashtags = (get(legacyTweet, "entities.hashtags", []) as any[])
+            .map((h: any) => h.text);
+          const mentions = (get(legacyTweet, "entities.user_mentions", []) as any[])
+            .map((m: any) => m.screenName);
 
-        const mediaUrls = (get(legacyTweet, "extendedEntities.media", []) as any[])
-          .filter((m: any) => m.type === "photo")
-          .map((m: any) => m.mediaUrlHttps);
-        const urls = (get(legacyTweet, "entities.urls", []) as any[])
-          .map((u: any) => u.expandedUrl || u.url);
-        const hashtags = (get(legacyTweet, "entities.hashtags", []) as any[])
-          .map((h: any) => h.text);
-        const mentions = (get(legacyTweet, "entities.user_mentions", []) as any[])
-          .map((m: any) => m.screenName);
+          upsertTweet({
+            id: tweetId,
+            account_id: account.id,
+            full_text: legacyTweet.fullText || "",
+            created_at: toISO(legacyTweet.createdAt),
+            favorite_count: legacyTweet.favoriteCount || 0,
+            retweet_count: legacyTweet.retweetCount || 0,
+            reply_count: legacyTweet.replyCount || 0,
+            view_count: views?.count ? parseInt(String(views.count), 10) || 0 : 0,
+            bookmark_count: legacyTweet.bookmarkCount || 0,
+            is_quote: Boolean(legacyTweet.isQuoteStatus) ? 1 : 0,
+            is_reply: Boolean(legacyTweet.inReplyToStatusIdStr) ? 1 : 0,
+            is_retweet: (legacyTweet.fullText || "").startsWith("RT @") ? 1 : 0,
+            media_urls: JSON.stringify(mediaUrls),
+            urls: JSON.stringify(urls),
+            hashtags: JSON.stringify(hashtags),
+            mentions: JSON.stringify(mentions),
+            lang: legacyTweet.lang || "",
+          });
+        }
 
-        upsertTweet({
-          id: tweetId,
-          account_id: account.id,
-          full_text: legacyTweet.fullText || "",
-          created_at: toISO(legacyTweet.createdAt),
-          favorite_count: legacyTweet.favoriteCount || 0,
-          retweet_count: legacyTweet.retweetCount || 0,
-          reply_count: legacyTweet.replyCount || 0,
-          view_count: views?.count ? parseInt(String(views.count), 10) || 0 : 0,
-          bookmark_count: legacyTweet.bookmarkCount || 0,
-          is_quote: Boolean(legacyTweet.isQuoteStatus) ? 1 : 0,
-          is_reply: Boolean(legacyTweet.inReplyToStatusIdStr) ? 1 : 0,
-          is_retweet: (legacyTweet.fullText || "").startsWith("RT @") ? 1 : 0,
-          media_urls: JSON.stringify(mediaUrls),
-          urls: JSON.stringify(urls),
-          hashtags: JSON.stringify(hashtags),
-          mentions: JSON.stringify(mentions),
-          lang: legacyTweet.lang || "",
-        });
+        totalFetched += tweets.length;
+        const rawData = resp.data as any;
+        const cursorObj = rawData.cursor;
+        cursor = cursorObj?.bottom?.value || cursorObj?.top?.value;
+        if (!cursor) {
+          console.log(`[Fetcher] @${account.screen_name}: ${label} no cursor after ${totalFetched} tweets`);
+          break;
+        }
+
+        console.log(`[Fetcher] @${account.screen_name}: ${label} ${totalFetched} tweets...`);
+        await sleep(2000);
       }
-
-      totalFetched += tweets.length;
-      const rawData = resp.data as any;
-      // Handle both cursor shapes: bottom (user tweets) and top (user tweets + replies)
-      const cursorObj = rawData.cursor;
-      cursor = cursorObj?.bottom?.value || cursorObj?.top?.value;
-      if (!cursor) {
-        console.log(`[Fetcher] @${account.screen_name}: no cursor after ${totalFetched} tweets`);
-        break;
-      }
-
-      console.log(`[Fetcher] @${account.screen_name}: ${totalFetched} tweets...`);
-      await sleep(2000);
     }
+
+    await fetchFromEndpoint("getUserTweets",
+      (params: any) => client.getTweetApi().getUserTweets(params));
+    await sleep(2000);
+    await fetchFromEndpoint("getUserTweetsAndReplies",
+      (params: any) => client.getTweetApi().getUserTweetsAndReplies(params));
 
     // 3. Merge real engagement via getTweetDetail (best-effort).
     //    getUserTweetsAndReplies returns 0 for engagement on author's own
