@@ -14,7 +14,7 @@ setInterval(() => {
 const confirmRouter = new Hono();
 
 confirmRouter.post("/token", (c) => {
-  const token = randomBytes(16).toString("hex"); // 32 hex chars, 128 bits entropy
+  const token = randomBytes(6).toString("hex"); // 12 hex chars, 48 bits entropy
   tokens.set(token, Date.now() + 5 * 60_000);
   return c.json({ token });
 });

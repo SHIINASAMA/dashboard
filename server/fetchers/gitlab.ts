@@ -44,8 +44,8 @@ async function glFetch<T>(apiBase: string, path: string, token: string): Promise
     },
     proxy: proxy,
   };
-  // Only disable TLS verification for self-hosted instances (non-gitlab.com)
-  if (!apiBase.includes("gitlab.com")) {
+  // Disable TLS verification for self-hosted instances or when using a local proxy
+  if (!apiBase.includes("gitlab.com") || proxy) {
     fetchOpts.tls = { rejectUnauthorized: false };
   }
   const res = await fetch(url, fetchOpts).catch((e: any) => {
