@@ -206,7 +206,14 @@ Run automatically during `bootstrap()` in `server/setup.ts`.
 
 ### X (Twitter)
 `server/fetcher.ts`:
-- Uses `twitter-openapi-typescript-generated` library
+- Uses `twitter-openapi-typescript` library (wraps `twitter-openapi-typescript-generated`)
+- Rate-limits: batchSize=50, maxTweets=800, 2s delay between batches, 5s retry wait
+- Combined stats+tweet fetching in single `fetchAccount()` call
+- auth_token from X.com cookies stored in SQLite
+- **Pinned tweets**: not returned by `getUserTweets` or `getUserTweetsAndReplies`.
+  Discovered via `legacy.pinnedTweetIdsStr` from `getUserByScreenName`, then fetched with `getTweetDetail`.
+- **Repost counting**: X.com UI shows reposts as `retweetCount + quoteCount`.
+  The API separates these two fields; store their sum as `retweet_count` in `tweets` table.
 - Rate-limits: batchSize=50, maxTweets=800, 2s delay between batches, 5s retry wait
 - Combined stats+tweet fetching in single `fetchAccount()` call
 - auth_token from X.com cookies stored in SQLite
