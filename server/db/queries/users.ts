@@ -27,10 +27,17 @@ export async function getUsers(): Promise<UserPublic[]> {
 
 export async function createUser(username: string, pw: string, role: "admin" | "user" = "user"): Promise<UserRow> {
   const hash = await password.hash(pw, { algorithm: "argon2id" });
-  await getDb().insert(users).values({ username, password_hash: hash, role });
-  const row = await getDb().select().from(users).where(eq(users.username, username));
-  return row[0]!;
+  const raw = new Database(dbPath());
+  raw.query(
+    `INSERT INTO users (username, password_hash, role, created_at) VALUES (?, ?, ?, datetime('now'))`
+  ).run(username, hash, role);
+  const row = raw.query(
+    "SELECT * FROM users WHERE username = ?"
+  ).get(username) as UserRow | undefined;
+  raw.close();
+  return row!;
 }
+
 
 export function deleteUser(id: number): void {
   const raw = new Database(dbPath());
