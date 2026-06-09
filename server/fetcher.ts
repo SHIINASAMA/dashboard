@@ -71,6 +71,55 @@ export async function fetchAccount(account: AccountRow) {
       throw new Error(`Could not resolve user ID for @${account.screen_name}`);
     }
 
+    // 1.5. Fetch pinned tweets (not returned by timeline endpoints)
+    {
+      const pinnedIds: string[] =
+        (legacy.pinnedTweetIdsStr as string[]) || [];
+
+      if (pinnedIds.length > 0) {
+        console.log(
+          `[Fetcher] @${account.screen_name}: fetching ${pinnedIds.length} pinned tweet(s)...`
+        );
+        await sleep(1000);
+        for (const pid of pinnedIds) {
+          try {
+            await sleep(1000);
+            const detailResp = await client
+              .getTweetApi()
+              .getTweetDetail({ focalTweetId: pid });
+            const entries = ((detailResp.data as any).data || {}) as any;
+            for (const key of Object.keys(entries)) {
+              const entry = entries[key];
+              const tweetResult = entry?.tweet || entry;
+              const tlegacy = tweetResult?.legacy;
+              if (tlegacy?.idStr === pid) {
+                const views = tweetResult?.views || entry?.views;
+                upsertTweet({
+                  id: pid,
+                  account_id: account.id,
+                  full_text: tlegacy.fullText || "",
+                  created_at: toISO(tlegacy.createdAt),
+                  favorite_count: tlegacy.favoriteCount || 0,
+                  retweet_count:
+                    (tlegacy.retweetCount || 0) + (tlegacy.quoteCount || 0),
+                  reply_count: tlegacy.replyCount || 0,
+                  view_count:
+                    views?.count
+                      ? parseInt(String(views.count), 10) || 0
+                      : 0,
+                  bookmark_count: tlegacy.bookmarkCount || 0,
+                  is_quote: Boolean(tlegacy.isQuoteStatus) ? 1 : 0,
+                  is_reply: Boolean(tlegacy.inReplyToStatusIdStr) ? 1 : 0,
+                  is_retweet: 0,
+                });
+                break;
+              }
+            }
+          } catch (_) { /* Non-fatal */ }
+        }
+      }
+    }
+
     // 2. Fetch tweets from both endpoints.
     //    getUserTweets returns the user's own tweets with real engagement;
     //    getUserTweetsAndReplies additionally returns replies to others.
@@ -130,7 +179,7 @@ export async function fetchAccount(account: AccountRow) {
             full_text: legacyTweet.fullText || "",
             created_at: toISO(legacyTweet.createdAt),
             favorite_count: legacyTweet.favoriteCount || 0,
-            retweet_count: legacyTweet.retweetCount || 0,
+            retweet_count: (legacyTweet.retweetCount || 0) + (legacyTweet.quoteCount || 0),
             reply_count: legacyTweet.replyCount || 0,
             view_count: views?.count ? parseInt(String(views.count), 10) || 0 : 0,
             bookmark_count: legacyTweet.bookmarkCount || 0,
@@ -186,7 +235,7 @@ export async function fetchAccount(account: AccountRow) {
               const views = tweetResult?.views || entry?.views;
               updateTweetEngagement(tid, {
                 favorite_count: legacy.favoriteCount || 0,
-                retweet_count: legacy.retweetCount || 0,
+                retweet_count: (legacy.retweetCount || 0) + (legacy.quoteCount || 0),
                 reply_count: legacy.replyCount || 0,
                 view_count: views?.count ? parseInt(String(views.count), 10) || 0 : 0,
                 bookmark_count: legacy.bookmarkCount || 0,
@@ -206,8 +255,8 @@ export async function fetchAccount(account: AccountRow) {
       error_message: null,
     });
 
-    console.log(`[Fetcher] @${account.screen_name}: done (${totalFetched} tweets)`);
-    return totalFetched;
+    console.log(`[Fetcher] @${account.screen_name}: done (${kaoruTweetIds.length} tweets processed)`);
+    return kaoruTweetIds.length;
   } catch (err: any) {
     const msg = err.message || String(err);
     console.error(`[Fetcher] @${account.screen_name} error:`, msg);
