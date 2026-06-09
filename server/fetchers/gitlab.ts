@@ -8,6 +8,7 @@ import {
   insertGitlabReleaseAsset,
   updateAccount,
 } from "../db";
+import { getLogger } from "../logger";
 
 function getApiBase(account: AccountRow): string {
   if (account.instance_url) {
@@ -113,7 +114,7 @@ export async function fetchGitlabAccount(account: AccountRow) {
 
   try {
     // 1. Fetch authenticated user profile
-    console.log(`[GitLab] Fetching user profile from ${apiBase}...`);
+    getLogger().info("GitLab", "Fetching user profile from %s...", apiBase);
     const { data: user } = await glFetch<any>(apiBase, "/user", token);
 
     if (!user || !user.id) {
@@ -129,14 +130,14 @@ export async function fetchGitlabAccount(account: AccountRow) {
     });
 
     // 2. Fetch all projects for this user (membership=true for owned+contributed projects)
-    console.log(`[GitLab] Fetching projects for ${account.screen_name}...`);
+    getLogger().info("GitLab", "Fetching projects for %s...", account.screen_name);
     const projects = await fetchAllPages<any>(
       apiBase,
       `/users/${user.id}/projects?membership=true&order_by=updated_at`,
       token,
     );
 
-    console.log(`[GitLab] Found ${projects.length} projects for ${account.screen_name}`);
+    getLogger().info("GitLab", "Found %d projects for %s", projects.length, account.screen_name);
     let totalStars = 0;
     let totalForks = 0;
     let totalIssues = 0;
@@ -227,7 +228,7 @@ export async function fetchGitlabAccount(account: AccountRow) {
 
     // 4. Fetch contribution data via events API
     try {
-      console.log(`[GitLab] Fetching contribution events for ${account.screen_name}...`);
+      getLogger().info("GitLab", "Fetching contribution events for %s...", account.screen_name);
       // We aggregate only push events (most likely to match GitHub-style contribution)
       const events = await fetchAllPages<any>(
         apiBase,
@@ -252,7 +253,7 @@ export async function fetchGitlabAccount(account: AccountRow) {
         });
       }
 
-      console.log(`[GitLab] Recorded ${countByDate.size} contribution days for ${account.screen_name}`);
+      getLogger().info("GitLab", "Recorded %d contribution days for %s", countByDate.size, account.screen_name);
     } catch (e: any) {
       errorMessages.push(`Contributions: ${e.message}`);
     }
@@ -264,14 +265,14 @@ export async function fetchGitlabAccount(account: AccountRow) {
       error_message: errorMessages.length > 0 ? errorMessages.join("; ") : null,
     });
 
-    console.log(`[GitLab] Fetch complete for ${account.screen_name}: ${projects.length} projects`);
+    getLogger().info("GitLab", "Fetch complete for %s: %d projects", account.screen_name, projects.length);
     return projects.length;
   } catch (e: any) {
     await updateAccount(account.id, {
       last_fetched_at: new Date().toISOString(),
       error_message: e.message || "GitLab fetch failed",
     });
-    console.error(`[GitLab] Fetch failed for ${account.screen_name}:`, e.message);
+    getLogger().error("GitLab", "Fetch failed for %s: %s", account.screen_name, e.message);
     throw e;
   }
 }

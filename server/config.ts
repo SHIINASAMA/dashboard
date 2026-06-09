@@ -8,6 +8,24 @@ const DATA_DIR = process.env.DATA_DIR
   ? (process.env.DATA_DIR.startsWith("/") ? process.env.DATA_DIR : join(process.cwd(), process.env.DATA_DIR))
   : join(process.cwd(), "data");
 
+export function logDir(): string {
+  return process.env.LOG_DIR
+    ? (process.env.LOG_DIR.startsWith("/") ? process.env.LOG_DIR : join(process.cwd(), process.env.LOG_DIR))
+    : join(dataDir(), "logs");
+}
+
+export function logLevel(): string {
+  return process.env.LOG_LEVEL || "info";
+}
+
+export function logMaxSize(): string {
+  return process.env.LOG_MAX_SIZE || "10m";
+}
+
+export function logMaxFiles(): number {
+  return Number(process.env.LOG_MAX_FILES) || 5;
+}
+
 export function dataDir(): string {
   mkdirSync(DATA_DIR, { recursive: true });
   return DATA_DIR;
@@ -30,6 +48,17 @@ export function secretPath(): string {
 const CONFIG_PATH = join(dataDir(), "config.json");
 
 // ── Config schema ─────────────────────────────────────────────────
+
+export interface LogConfig {
+  /** Log output directory */
+  dir: string;
+  /** Minimum log level: trace/debug/info/warn/error/fatal */
+  level: string;
+  /** Max file size before rotation (e.g. "10m", "100m") */
+  maxSize: string;
+  /** Number of rotated files to keep */
+  maxFiles: number;
+}
 
 export interface DatabaseConfig {
   /** Database driver: "sqlite" (tested) or "postgresql" (future) */
@@ -67,6 +96,9 @@ export interface DashboardConfig {
 
   /** Database configuration */
   database: DatabaseConfig;
+
+  /** Log configuration */
+  log: LogConfig;
 }
 
 const DEFAULTS: DashboardConfig = {
@@ -79,6 +111,12 @@ const DEFAULTS: DashboardConfig = {
   database: {
     driver: "sqlite",
     sqlite: { path: "" }, // set after dataDir() is initialized
+  },
+  log: {
+    dir: "",  // set after dataDir() is initialized
+    level: logLevel(),
+    maxSize: logMaxSize(),
+    maxFiles: logMaxFiles(),
   },
 };
 
@@ -106,6 +144,10 @@ export function loadConfig(): DashboardConfig {
     try {
       const raw = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
       _config = { ...DEFAULTS, ...raw };
+      // Ensure nested defaults for migrated config (log, database)
+      _config.log = { ...DEFAULTS.log, ...(_config.log || {}) };
+      _config.database = { ...DEFAULTS.database, ...(_config.database || {}) };
+      if (!_config.log.dir) _config.log.dir = logDir();
       // Normalise: strip leading/trailing slashes from any existing value
       const clean = (_config.urlPrefix || "").replace(/^\/+|\/+$/g, "");
       _config.urlPrefix = clean;
@@ -136,6 +178,12 @@ export function loadConfig(): DashboardConfig {
     database: {
       driver: "sqlite",
       sqlite: { path: join(dataDir(), "db", "dashboard.db") },
+    },
+    log: {
+      dir: logDir(),
+      level: logLevel(),
+      maxSize: logMaxSize(),
+      maxFiles: logMaxFiles(),
     },
   };
   writeFileSync(CONFIG_PATH, JSON.stringify(_config, null, 2) + "\n", { mode: 0o600 });

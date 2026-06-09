@@ -9,6 +9,7 @@ import {
 import { getDb } from "../db/connection";
 import { eq, and } from "drizzle-orm";
 import { github_releases } from "../../db/schema";
+import { getLogger } from "../logger";
 
 const GITHUB_API = "https://api.github.com";
 
@@ -36,7 +37,7 @@ function sleep(ms: number) {
 }
 
 export async function fetchGithubAccount(account: AccountRow) {
-  console.log(`[GitHub Fetcher] Fetching @${account.screen_name}...`);
+  getLogger().info("GitHub", "Fetching @%s...", account.screen_name);
 
   try {
     const token = account.auth_token;
@@ -59,7 +60,7 @@ export async function fetchGithubAccount(account: AccountRow) {
       await updateAccount(account.id, { user_id: ghId });
     }
 
-    console.log(`[GitHub Fetcher] @${username}: stats recorded (${userData.followers} followers, ${userData.public_repos} repos)`);
+    getLogger().info("GitHub", "@%s: stats recorded (%d followers, %d repos)", username, userData.followers, userData.public_repos);
 
     // 2. Fetch repos (up to 100)
     await sleep(1000);
@@ -97,7 +98,7 @@ export async function fetchGithubAccount(account: AccountRow) {
       });
     }
 
-    console.log(`[GitHub Fetcher] @${username}: ${repos.length} repos saved + snapshots recorded`);
+    getLogger().info("GitHub", "@%s: %d repos saved + snapshots recorded", username, repos.length);
 
     // 3. Fetch traffic & releases for each repo (requires classic PAT with repo scope)
     if (token) {
@@ -109,12 +110,12 @@ export async function fetchGithubAccount(account: AccountRow) {
         await fetchRepoReleases(account.id, repo.id, repo.full_name, token);
       }
       if (trafficError) {
-        console.warn(`[GitHub Fetcher] @${username}: traffic fetch issue — ${trafficError}`);
+        getLogger().warn("GitHub", "@%s: traffic fetch issue — %s", username, trafficError);
       } else {
-        console.log(`[GitHub Fetcher] @${username}: traffic & releases fetched`);
+        getLogger().info("GitHub", "@%s: traffic & releases fetched", username);
       }
     } else {
-      console.log(`[GitHub Fetcher] @${username}: no token — skipping traffic & releases`);
+      getLogger().info("GitHub", "@%s: no token — skipping traffic & releases", username);
     }
 
     // 4. Fetch contribution calendar
@@ -125,9 +126,9 @@ export async function fetchGithubAccount(account: AccountRow) {
       for (const c of contributions) {
         await upsertGithubContribution({ account_id: account.id, ...c });
       }
-      console.log(`[GitHub Fetcher] @${username}: ${contributions.length} contributions saved`);
+      getLogger().info("GitHub", "@%s: %d contributions saved", username, contributions.length);
     } catch (e: any) {
-      console.warn(`[GitHub Fetcher] @${username}: contributions fetch skipped (${e.message})`);
+      getLogger().warn("GitHub", "@%s: contributions fetch skipped (%s)", username, e.message);
     }
 
     await updateAccount(account.id, {
@@ -135,11 +136,11 @@ export async function fetchGithubAccount(account: AccountRow) {
       error_message: trafficError || null,
     });
 
-    console.log(`[GitHub Fetcher] @${username}: done`);
+    getLogger().info("GitHub", "@%s: done", username);
     return true;
   } catch (err: any) {
     const msg = err.message || String(err);
-    console.error(`[GitHub Fetcher] @${account.screen_name} error:`, msg);
+    getLogger().error("GitHub", "@%s error: %s", account.screen_name, msg);
     await updateAccount(account.id, { error_message: msg });
     return false;
   }

@@ -3,6 +3,7 @@ import { fetchAccount } from "./fetcher";
 import { fetchGithubAccount } from "./fetchers/github";
 import { fetchGitlabAccount } from "./fetchers/gitlab";
 import { fetchRedditAccount, fetchRedditPublicAccount } from "./fetchers/reddit";
+import { getLogger } from "./logger";
 
 let running = false;
 let intervalId: ReturnType<typeof setInterval> | null = null;
@@ -11,7 +12,7 @@ let timeoutId: ReturnType<typeof setTimeout> | null = null;
 export function startScheduler() {
   if (running) return;
   running = true;
-  console.log("[Scheduler] Started (checking every 60s)");
+  getLogger().info("Scheduler", "Started (checking every 60s)");
   // Don't run immediately on startup — wait for the first real interval tick.
   // This prevents hammering APIs with every restart when accounts are already
   // within their fetch interval.
@@ -54,6 +55,6 @@ async function runCycle() {
       }
     }
   } catch (err) {
-    console.error("[Scheduler] Cycle error:", err);
+    getLogger().error("Scheduler", "Cycle error: %s", err instanceof Error ? err.message : String(err));
   }
 }

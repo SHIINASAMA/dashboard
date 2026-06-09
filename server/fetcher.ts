@@ -2,6 +2,7 @@ import type { AccountRow } from "./db";
 import { upsertTweet, insertUserStats, updateAccount, updateTweetEngagement } from "./db";
 import { _xClient } from "../scripts/utils";
 import { get } from "lodash";
+import { getLogger } from "./logger";
 
 function toISO(createdAt: string | undefined): string {
   if (!createdAt) return "";
@@ -20,7 +21,7 @@ async function apiCall<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
       const is429 = err.name === "ResponseError" && err.response?.status === 429;
       if (is429 && i < retries - 1) {
         const wait = (i + 1) * 5_000;
-        console.log(`[Fetcher] Rate limited, retrying in ${wait / 1000}s...`);
+        getLogger().warn("Fetcher", "Rate limited, retrying in %ds...", wait / 1000);
         await sleep(wait);
         continue;
       }
@@ -31,7 +32,7 @@ async function apiCall<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
 }
 
 export async function fetchAccount(account: AccountRow) {
-  console.log(`[Fetcher] Fetching @${account.screen_name}...`);
+  getLogger().info("Fetcher", "Fetching @%s...", account.screen_name);
 
   try {
     const client = await _xClient(account.auth_token);
@@ -64,7 +65,7 @@ export async function fetchAccount(account: AccountRow) {
         tweet_count: legacy.statusesCount || 0,
         listed_count: legacy.listedCount || 0,
       });
-      console.log(`[Fetcher] @${account.screen_name}: stats recorded`);
+      getLogger().info("Fetcher", "@%s: stats recorded", account.screen_name);
     }
 
     if (!userId) {
@@ -77,9 +78,7 @@ export async function fetchAccount(account: AccountRow) {
         (legacy.pinnedTweetIdsStr as string[]) || [];
 
       if (pinnedIds.length > 0) {
-        console.log(
-          `[Fetcher] @${account.screen_name}: fetching ${pinnedIds.length} pinned tweet(s)...`
-        );
+        getLogger().info("Fetcher", "@%s: fetching %d pinned tweet(s)...", account.screen_name, pinnedIds.length);
         await sleep(1000);
         for (const pid of pinnedIds) {
           try {
@@ -199,11 +198,11 @@ export async function fetchAccount(account: AccountRow) {
         const cursorObj = rawData.cursor;
         cursor = cursorObj?.bottom?.value || cursorObj?.top?.value;
         if (!cursor) {
-          console.log(`[Fetcher] @${account.screen_name}: ${label} no cursor after ${totalFetched} tweets`);
+          getLogger().info("Fetcher", "@%s: %s no cursor after %d tweets", account.screen_name, label, totalFetched);
           break;
         }
 
-        console.log(`[Fetcher] @${account.screen_name}: ${label} ${totalFetched} tweets...`);
+        getLogger().info("Fetcher", "@%s: %s %d tweets...", account.screen_name, label, totalFetched);
         await sleep(2000);
       }
     }
@@ -221,7 +220,7 @@ export async function fetchAccount(account: AccountRow) {
     if (kaoruTweetIds.length > 0) {
       const maxDetail = kaoruTweetIds.length;
       const toProcess = kaoruTweetIds.slice(0, maxDetail);
-      console.log(`[Fetcher] @${account.screen_name}: fetching engagement for ${toProcess.length}/${kaoruTweetIds.length} tweets...`);
+      getLogger().info("Fetcher", "@%s: fetching engagement for %d/%d tweets...", account.screen_name, toProcess.length, kaoruTweetIds.length);
       for (const tid of toProcess) {
         try {
           await sleep(1000);
@@ -247,7 +246,7 @@ export async function fetchAccount(account: AccountRow) {
           // Non-fatal
         }
       }
-      console.log(`[Fetcher] @${account.screen_name}: engagement merge done`);
+      getLogger().info("Fetcher", "@%s: engagement merge done", account.screen_name);
     }
 
     await updateAccount(account.id, {
@@ -255,17 +254,17 @@ export async function fetchAccount(account: AccountRow) {
       error_message: null,
     });
 
-    console.log(`[Fetcher] @${account.screen_name}: done (${kaoruTweetIds.length} tweets processed)`);
+    getLogger().info("Fetcher", "@%s: done (%d tweets processed)", account.screen_name, kaoruTweetIds.length);
     return kaoruTweetIds.length;
   } catch (err: any) {
     const msg = err.message || String(err);
-    console.error(`[Fetcher] @${account.screen_name} error:`, msg);
+    getLogger().error("Fetcher", "@%s error: %s", account.screen_name, msg);
 
     if (err.name === "ResponseError" && err.response) {
       try {
         const status = err.response.status;
         const body = await err.response.text().catch(() => "");
-        console.error(`[Fetcher] HTTP ${status}:`, body.slice(0, 500));
+        getLogger().error("Fetcher", "HTTP %d: %s", status, body.slice(0, 500));
       } catch (_) {}
     }
 

@@ -25,6 +25,7 @@ import { readFileSync, existsSync } from "fs";
 import { bootstrap } from "./setup";
 
 import { loadConfig } from "./config";
+import { initLogger } from "./logger";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -35,6 +36,11 @@ await bootstrap();
 // ── Configuration ────────────────────────────────────────────────
 
 const cfg = loadConfig();
+
+// ── Logger ───────────────────────────────────────────────────────
+const logger = initLogger(cfg.log);
+logger.info("Server", "Logger initialized: dir=%s level=%s size=%s files=%d",
+  cfg.log.dir, cfg.log.level, cfg.log.maxSize, cfg.log.maxFiles);
 // urlPrefix is always set and does not contain slashes
 const PREFIX = cfg.urlPrefix;
 const BASE = PREFIX ? `/${PREFIX}` : "";
@@ -293,7 +299,7 @@ app.post(`${BASE}/api/fetch/:id`, async (c) => {
 
   // Run in background to avoid proxy timeout on long fetches
   fn(account).catch((e: any) =>
-    console.error(`[Fetch ${id}] Background error:`, e.message)
+    logger.error("Fetch", "Background error: %s", e.message)
   );
   return c.json({ ok: true, message: `Fetch started for @${account.screen_name}` });
 });
@@ -325,9 +331,9 @@ if (isProd) {
 
 startScheduler();
 
-console.log(`Server running on ${serverUrl}`);
-console.log(`URL prefix: ${BASE || "(none)"}`);
-if (isProd) console.log("Serving production client build");
+logger.info("Server", "Running on %s", serverUrl);
+logger.info("Server", "URL prefix: %s", BASE || "(none)");
+if (isProd) logger.info("Server", "Serving production client build");
 
 // Export the redirect URI so the fetcher can use it for OAuth callbacks
 export function getServerBaseUrl(): string {

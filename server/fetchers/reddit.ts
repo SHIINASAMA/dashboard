@@ -1,5 +1,6 @@
 import type { AccountRow } from "../db";
 import { insertRedditStats, upsertRedditPost, upsertRedditComment, updateAccount } from "../db";
+import { getLogger } from "../logger";
 
 function getProxyUrl(): string | undefined {
   return process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.https_proxy || process.env.http_proxy;
@@ -67,7 +68,7 @@ export async function fetchRedditAccount(account: AccountRow) {
   const username = account.screen_name;
 
   try {
-    console.log(`[Reddit] Fetching @${username}...`);
+    getLogger().info("Reddit", "Fetching @%s...", username);
 
     // 1. Get access token
     const accessToken = await getRedditAccessToken(refreshToken);
@@ -84,7 +85,7 @@ export async function fetchRedditAccount(account: AccountRow) {
       post_karma: pdata.link_karma ?? 0,
       comment_karma: pdata.comment_karma ?? 0,
     });
-    console.log(`[Reddit] @${username}: karma recorded (post=${pdata.link_karma}, comment=${pdata.comment_karma})`);
+    getLogger().info("Reddit", "@%s: karma recorded (post=%d, comment=%d)", username, pdata.link_karma, pdata.comment_karma);
 
     // 3. Fetch posts
     let postCount = 0;
@@ -119,7 +120,7 @@ export async function fetchRedditAccount(account: AccountRow) {
       if (!after) break;
       await sleep(1000);
     }
-    console.log(`[Reddit] @${username}: ${postCount} posts fetched`);
+    getLogger().info("Reddit", "@%s: %d posts fetched", username, postCount);
 
     // 4. Fetch comments
     let commentCount = 0;
@@ -153,7 +154,7 @@ export async function fetchRedditAccount(account: AccountRow) {
       if (!after) break;
       await sleep(1000);
     }
-    console.log(`[Reddit] @${username}: ${commentCount} comments fetched`);
+    getLogger().info("Reddit", "@%s: %d comments fetched", username, commentCount);
 
     // Success
     await updateAccount(account.id, {
@@ -162,14 +163,14 @@ export async function fetchRedditAccount(account: AccountRow) {
       error_message: null,
     });
 
-    console.log(`[Reddit] Fetch complete for @${username}`);
+    getLogger().info("Reddit", "Fetch complete for @%s", username);
     return { posts: postCount, comments: commentCount };
   } catch (e: any) {
     await updateAccount(account.id, {
       last_fetched_at: new Date().toISOString(),
       error_message: e.message || "Reddit fetch failed",
     });
-    console.error(`[Reddit] Fetch failed for @${username}:`, e.message);
+    getLogger().error("Reddit", "Fetch failed for @%s: %s", username, e.message);
     throw e;
   }
 }
@@ -206,7 +207,7 @@ export async function fetchRedditPublicAccount(account: AccountRow) {
   const username = account.screen_name;
 
   try {
-    console.log(`[Reddit Public] Fetching @${username}...`);
+    getLogger().info("Reddit", "Fetching @%s (public)...", username);
 
     // 1. Fetch public profile
     const profile = await redditPublicFetch(`/user/${username}/about.json`, loid);
@@ -220,7 +221,7 @@ export async function fetchRedditPublicAccount(account: AccountRow) {
       post_karma: pdata.link_karma ?? 0,
       comment_karma: pdata.comment_karma ?? 0,
     });
-    console.log(`[Reddit Public] @${username}: karma recorded (post=${pdata.link_karma}, comment=${pdata.comment_karma})`);
+    getLogger().info("Reddit", "@%s (public): karma recorded (post=%d, comment=%d)", username, pdata.link_karma, pdata.comment_karma);
 
     // 2. Fetch posts
     let postCount = 0;
@@ -255,7 +256,7 @@ export async function fetchRedditPublicAccount(account: AccountRow) {
       if (!after) break;
       await sleep(2000);
     }
-    console.log(`[Reddit Public] @${username}: ${postCount} posts fetched`);
+    getLogger().info("Reddit", "@%s (public): %d posts fetched", username, postCount);
 
     // 3. Fetch comments
     let commentCount = 0;
@@ -289,7 +290,7 @@ export async function fetchRedditPublicAccount(account: AccountRow) {
       if (!after) break;
       await sleep(2000);
     }
-    console.log(`[Reddit Public] @${username}: ${commentCount} comments fetched`);
+    getLogger().info("Reddit", "@%s (public): %d comments fetched", username, commentCount);
 
     await updateAccount(account.id, {
       last_fetched_at: new Date().toISOString(),
@@ -297,14 +298,14 @@ export async function fetchRedditPublicAccount(account: AccountRow) {
       error_message: null,
     });
 
-    console.log(`[Reddit Public] Fetch complete for @${username}`);
+    getLogger().info("Reddit", "Fetch complete for @%s (public)", username);
     return { posts: postCount, comments: commentCount };
   } catch (e: any) {
     await updateAccount(account.id, {
       last_fetched_at: new Date().toISOString(),
       error_message: e.message || "Reddit public fetch failed",
     });
-    console.error(`[Reddit Public] Fetch failed for @${username}:`, e.message);
+    getLogger().error("Reddit", "Fetch failed for @%s (public): %s", username, e.message);
     throw e;
   }
 }

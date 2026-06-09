@@ -4,10 +4,11 @@ import { eq, and, desc, sql, isNull } from "drizzle-orm";
 import { getDb } from "../connection";
 import { accounts } from "../../../db/schema";
 import { encrypt, decrypt } from "../../crypto";
+import { getLogger } from "../../logger";
 
 function encToken(plain: string): string {
   try { return encrypt(plain); } catch (e) {
-    console.error("encToken: encryption failed — crypto may not be initialized", e);
+    getLogger().error("DB", "encToken: encryption failed — crypto may not be initialized: %s", e instanceof Error ? e.message : String(e));
     throw new Error("Encryption unavailable — cannot store credentials securely");
   }
 }
