@@ -24,7 +24,7 @@ export default function EditAccountForm({ account, onClose }: Props) {
 
   const mutation = useMutation({
     mutationFn: () => {
-      const data: Record<string, any> = {};
+      const data: Record<string, string | number | boolean | null> = {};
       if (screenName !== account.screen_name) data.screenName = screenName;
       if (authToken) data.authToken = authToken;
       if (fetchInterval !== account.fetch_interval) data.fetchInterval = fetchInterval;
@@ -54,8 +54,9 @@ export default function EditAccountForm({ account, onClose }: Props) {
 
         <div className="flex flex-col gap-3">
           <div>
-            <label className="block text-xs font-medium mb-1 text-[var(--muted-foreground)]">{t("addAccountForm.username")}</label>
+            <label htmlFor="edit-account-username" className="block text-xs font-medium mb-1 text-[var(--muted-foreground)]">{t("addAccountForm.username")}</label>
             <input
+              id="edit-account-username"
               type="text" value={screenName}
               onChange={(e) => setScreenName(e.target.value)}
               className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] text-sm"
@@ -81,13 +82,14 @@ export default function EditAccountForm({ account, onClose }: Props) {
           )}
 
           <div>
-            <label className="block text-xs font-medium mb-1 text-[var(--muted-foreground)]">
+            <label htmlFor="edit-account-token" className="block text-xs font-medium mb-1 text-[var(--muted-foreground)]">
               {account.platform === "github" ? t("addAccountForm.personalAccessToken")
                 : account.platform === "gitlab" ? t("addAccountForm.personalAccessToken")
                 : account.platform === "reddit" ? (isRedditPublic ? t("addAccountForm.loidCookie") : t("addAccountForm.refreshToken"))
                 : t("addAccountForm.authToken")}
             </label>
             <input
+              id="edit-account-token"
               type="password" value={authToken}
               onChange={(e) => setAuthToken(e.target.value)}
               placeholder={account.platform === "github" ? t("addAccountForm.placeholderGithubToken")
@@ -103,8 +105,9 @@ export default function EditAccountForm({ account, onClose }: Props) {
 
           {account.platform === "gitlab" && (
             <div>
-              <label className="block text-xs font-medium mb-1 text-[var(--muted-foreground)]">{t("addAccountForm.instanceUrl")}</label>
+              <label htmlFor="edit-account-instance-url" className="block text-xs font-medium mb-1 text-[var(--muted-foreground)]">{t("addAccountForm.instanceUrl")}</label>
               <input
+                id="edit-account-instance-url"
                 type="text" value={instanceUrl}
                 onChange={(e) => setInstanceUrl(e.target.value)}
                 placeholder={t("addAccountForm.placeholderInstanceUrl")}
@@ -114,8 +117,9 @@ export default function EditAccountForm({ account, onClose }: Props) {
           )}
 
           <div>
-            <label className="block text-xs font-medium mb-1 text-[var(--muted-foreground)]">{t("addAccountForm.fetchInterval")}</label>
+            <label htmlFor="edit-account-interval" className="block text-xs font-medium mb-1 text-[var(--muted-foreground)]">{t("addAccountForm.fetchInterval")}</label>
             <input
+              id="edit-account-interval"
               type="number" value={fetchInterval}
               onChange={(e) => setFetchInterval(Number(e.target.value))}
               min={5} max={1440}

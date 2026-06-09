@@ -1,6 +1,6 @@
-import { Sun, Moon, Monitor, Key, Eye, EyeOff } from "lucide-react";
+import { Sun, Moon, Monitor, Key } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "../components/ThemeProvider";
+import { useTheme } from "../components/useTheme";
 import { themes, type ThemeCategory } from "../lib/themes";
 import { api } from "../api";
 import { useState } from "react";
@@ -47,8 +47,8 @@ export function Settings() {
       await api.changePassword(currentPassword, newPassword);
       setPwSuccess(t("settings.passwordChanged"));
       (e.target as HTMLFormElement).reset();
-    } catch (err: any) {
-      setPwError(err.message || t("settings.passwordChangeFailed"));
+    } catch (err: unknown) {
+      setPwError(err instanceof Error ? err.message : String(err));
     } finally {
       setPwLoading(false);
     }

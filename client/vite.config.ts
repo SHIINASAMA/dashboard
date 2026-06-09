@@ -14,7 +14,7 @@ try {
     const cfg = JSON.parse(readFileSync(cfgPath, 'utf-8'))
     prefix = cfg.urlPrefix || ''
   }
-} catch {}
+} catch { /* intentionally empty, defaults to prefix '' */ }
 
 const BASE = process.env.VITE_BASE || (prefix ? `/${prefix}/` : '/')
 

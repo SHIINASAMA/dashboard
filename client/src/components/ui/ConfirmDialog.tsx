@@ -20,11 +20,23 @@ export function ConfirmDialog({ open, onOpenChange, title, description, confirmL
 
   useEffect(() => {
     if (open) {
-      setInput("");
-      setLoading(false);
+      void (() => {
+        setInput("");
+        setLoading(false);
+      })();
       api.getConfirmToken().then(({ token }) => setToken(token)).catch(() => setToken("ERROR"));
     }
   }, [open]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && open) {
+        onOpenChange(false);
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, onOpenChange]);
 
   const match = input.toLowerCase() === token.toLowerCase();
 
@@ -44,7 +56,7 @@ export function ConfirmDialog({ open, onOpenChange, title, description, confirmL
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={() => onOpenChange(false)} />
-      <div className="relative bg-[var(--card)] rounded-xl border border-[var(--border)] p-6 max-w-sm w-full mx-4 shadow-lg">
+      <div className="relative bg-[var(--card)] rounded-xl border border-[var(--border)] p-6 max-w-sm w-full mx-4 shadow-lg" role="dialog" aria-modal="true">
         <h3 className="text-sm font-semibold mb-1">{title}</h3>
         <p className="text-xs text-[var(--muted-foreground)] mb-4">{description}</p>
         <div className="bg-[var(--muted)] rounded-lg px-3 py-2 text-center font-mono text-lg tracking-widest select-all mb-4">

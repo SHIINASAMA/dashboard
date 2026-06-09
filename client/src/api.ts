@@ -1,5 +1,12 @@
 const API_BASE = import.meta.env.BASE_URL + "api";
 
+export class ApiError extends Error {
+  constructor(message: string, public status: number) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 async function fetchJSON<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${url}`, {
     headers: { "Content-Type": "application/json" },
@@ -7,8 +14,9 @@ async function fetchJSON<T>(url: string, options?: RequestInit): Promise<T> {
     ...options,
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error || `API error: ${res.status}`);
+    const body = await res.json().catch(() => ({}));
+    const msg = body.error || `API error: ${res.status}`;
+    throw new ApiError(msg, res.status);
   }
   return res.json();
 }
@@ -104,6 +112,10 @@ export interface AccountsResponse {
   overview: OverviewStats;
 }
 
+export interface AccountWithStats extends Account {
+  stats: NonNullable<Account['stats']>;
+}
+
 // ─── GitHub types ───────────────────────────────────────────────
 
 export interface GithubOverview {
@@ -140,10 +152,19 @@ export interface GithubRepo {
   created_at: string;
 }
 
-export interface GithubContribution {
-  date: string;
-  count: number;
-  level: number;
+export interface GithubRelease {
+  id: number;
+  account_id: number;
+  repo_id: number;
+  release_id: number;
+  tag_name: string | null;
+  name: string | null;
+  body: string | null;
+  prerelease: number;
+  published_at: string | null;
+  html_url: string | null;
+  total_downloads: number;
+  fetched_at: string;
 }
 
 // ─── GitLab types ────────────────────────────────────────────────
@@ -182,6 +203,18 @@ export interface GitlabProject {
   created_at: string;
   updated_at: string;
   last_activity_at: string;
+}
+
+export interface GitlabRelease {
+  id: number;
+  account_id: number;
+  project_id: number;
+  release_tag: string;
+  name: string | null;
+  description: string | null;
+  released_at: string | null;
+  created_at: string | null;
+  fetched_at: string;
 }
 
 export interface GitlabContribution {
@@ -249,7 +282,7 @@ export interface PaginatedRedditComments {
 export const api = {
   // Accounts
   getAccounts: () => fetchJSON<AccountsResponse>("/accounts"),
-  getAccount: (id: number) => fetchJSON<Account & { stats: any }>(`/accounts/${id}`),
+  getAccount: (id: number) => fetchJSON<AccountWithStats>(`/accounts/${id}`),
   createAccount: (data: { screenName: string; authToken?: string; fetchInterval?: number; platform?: string; instanceUrl?: string; authType?: string }) =>
     fetchJSON<Account>("/accounts", { method: "POST", body: JSON.stringify(data) }),
   updateAccount: (id: number, data: { screenName?: string; authToken?: string; fetchInterval?: number; isActive?: boolean; instanceUrl?: string; authType?: string }) =>
@@ -298,7 +331,7 @@ export const api = {
   getGithubPathHistory: (accountId: number, repoId: number) =>
     fetchJSON<{ snapshot_date: string; path: string; title: string | null; count: number; uniques: number }[]>(`/github/${accountId}/repos/${repoId}/paths/history`),
   getGithubReleases: (accountId: number, repoId: number) =>
-    fetchJSON<any[]>(`/github/${accountId}/repos/${repoId}/releases`),
+    fetchJSON<GithubRelease[]>(`/github/${accountId}/repos/${repoId}/releases`),
   setPinnedRepos: (accountId: number, repoIds: number[]) =>
     fetchJSON<{ ok: boolean }>(`/github/repos/pin`, { method: "PUT", body: JSON.stringify({ accountId, repoIds }) }),
 
@@ -312,7 +345,7 @@ export const api = {
   getGitlabProjectSnapshots: (accountId: number, projectId: number) =>
     fetchJSON<{ stars: number; forks: number; open_issues: number; date: string }[]>(`/gitlab/${accountId}/projects/${projectId}/snapshots`),
   getGitlabReleases: (accountId: number, projectId: number) =>
-    fetchJSON<any[]>(`/gitlab/${accountId}/projects/${projectId}/releases`),
+    fetchJSON<GitlabRelease[]>(`/gitlab/${accountId}/projects/${projectId}/releases`),
   setPinnedGitlabProjects: (accountId: number, projectIds: number[]) =>
     fetchJSON<{ ok: boolean }>(`/gitlab/projects/pin`, { method: "PUT", body: JSON.stringify({ accountId, projectIds }) }),
 

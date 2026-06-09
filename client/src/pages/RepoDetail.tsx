@@ -12,6 +12,8 @@ import { ArrowLeft, Star, GitFork, Download, ExternalLink, Globe, TrendingUp, Ey
 
 const COLORS = ["#3b82f6", "#ec4899", "#f59e0b", "#10b981", "#8b5cf6"];
 
+type HistoryPoint = Record<string, string | number>;
+
 export function RepoDetail() {
   const { t } = useTranslation();
   const { accountId, repoId } = useParams<{ accountId: string; repoId: string }>();
@@ -84,17 +86,17 @@ export function RepoDetail() {
     );
   }
 
-  let referrerHistoryChart: any = null;
+  let referrerHistoryChart: HistoryPoint[] | null = null;
   const referrerHistoryData = referrerHistory;
   const referrersData = referrers;
   if (referrerHistoryData && referrerHistoryData.length > 0 && referrersData?.length) {
     const refs = referrersData.slice(0, 5).map(r => r.referrer);
     if (refs.length > 0) {
-      const dates = [...new Set(referrerHistoryData.map((r: any) => r.snapshot_date))].sort() as string[];
+      const dates = [...new Set(referrerHistoryData.map((r) => r.snapshot_date))].sort() as string[];
       referrerHistoryChart = dates.map((date: string) => {
-        const point: any = { date };
+        const point: HistoryPoint = { date };
         for (const ref of refs) {
-          const entry = referrerHistoryData.find((r: any) => r.referrer === ref && r.snapshot_date === date);
+          const entry = referrerHistoryData.find((r) => r.referrer === ref && r.snapshot_date === date);
           point[ref] = entry?.count || 0;
         }
         return point;
@@ -102,17 +104,17 @@ export function RepoDetail() {
     }
   }
 
-  let pathHistoryChart: any = null;
+  let pathHistoryChart: HistoryPoint[] | null = null;
   const pathHistoryData = pathHistory;
   const pathsData = paths;
   if (pathHistoryData && pathHistoryData.length > 0 && pathsData?.length) {
     const pts = pathsData.slice(0, 5).map(p => p.path);
     if (pts.length > 0) {
-      const dates = [...new Set(pathHistoryData.map((p: any) => p.snapshot_date))].sort() as string[];
+      const dates = [...new Set(pathHistoryData.map((p) => p.snapshot_date))].sort() as string[];
       pathHistoryChart = dates.map((date: string) => {
-        const point: any = { date };
+        const point: HistoryPoint = { date };
         for (const pp of pts) {
-          const entry = pathHistoryData.find((h: any) => h.path === pp && h.snapshot_date === date);
+          const entry = pathHistoryData.find((h) => h.path === pp && h.snapshot_date === date);
           point[pp] = entry?.count || 0;
         }
         return point;
@@ -123,7 +125,7 @@ export function RepoDetail() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <button onClick={() => navigate(`/github/${aid}`)} className="p-2 rounded-lg hover:bg-[var(--muted)] transition-colors">
+        <button onClick={() => navigate(`/github/${aid}`)} className="p-2 rounded-lg hover:bg-[var(--muted)] transition-colors" title={t("repoDetail.backToAccount")} aria-label={t("repoDetail.backToAccount")}>
           <ArrowLeft size={20} />
         </button>
         <div className="min-w-0 flex-1">
@@ -153,6 +155,7 @@ export function RepoDetail() {
         </CardHeader>
         <CardContent>
           {snapshots && snapshots.length > 1 ? (
+            <div role="img" aria-label={t("repoDetail.starHistory")}>
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={snapshots}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -162,6 +165,7 @@ export function RepoDetail() {
                 <Area type="monotone" dataKey="stars" stroke="#f59e0b" fill="#f59e0b20" name={t("repoDetail.stars")} />
               </AreaChart>
             </ResponsiveContainer>
+            </div>
           ) : (
             <div className="flex items-center justify-center h-[300px] text-sm text-[var(--muted-foreground)]">
               {snapshots?.length === 1 ? t("repoDetail.onlyOneDataPoint") : t("repoDetail.noStarHistory")}
@@ -178,6 +182,7 @@ export function RepoDetail() {
           </CardHeader>
           <CardContent>
             {clones && clones.length > 0 ? (
+              <div role="img" aria-label={t("repoDetail.gitClones")}>
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={clones}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -188,6 +193,7 @@ export function RepoDetail() {
                   <Bar dataKey="uniques" fill="#6366f1" radius={[4, 4, 0, 0]} name={t("repoDetail.uniqueCloners")} />
                 </BarChart>
               </ResponsiveContainer>
+              </div>
             ) : (
               <div className="flex items-center justify-center h-[250px] text-sm text-[var(--muted-foreground)]">
                 {t("repoDetail.noCloneData")}
@@ -203,6 +209,7 @@ export function RepoDetail() {
           </CardHeader>
           <CardContent>
             {views && views.length > 0 ? (
+              <div role="img" aria-label={t("repoDetail.visitors")}>
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={views}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -213,6 +220,7 @@ export function RepoDetail() {
                   <Bar dataKey="uniques" fill="#14b8a6" radius={[4, 4, 0, 0]} name={t("repoDetail.uniqueVisitors")} />
                 </BarChart>
               </ResponsiveContainer>
+              </div>
             ) : (
               <div className="flex items-center justify-center h-[250px] text-sm text-[var(--muted-foreground)]">
                 {t("repoDetail.noTrafficData")}
@@ -230,6 +238,7 @@ export function RepoDetail() {
           </CardHeader>
           <CardContent>
             {referrerHistoryChart && referrerHistoryChart.length > 1 ? (
+              <div role="img" aria-label={t("repoDetail.referringSites")}>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={referrerHistoryChart}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -242,6 +251,7 @@ export function RepoDetail() {
                   ))}
                 </LineChart>
               </ResponsiveContainer>
+              </div>
             ) : (
               <p className="text-sm text-[var(--muted-foreground)] text-center py-12">{t("repoDetail.noReferrerData")}</p>
             )}
@@ -255,6 +265,7 @@ export function RepoDetail() {
           </CardHeader>
           <CardContent>
             {pathHistoryChart && pathHistoryChart.length > 1 ? (
+              <div role="img" aria-label={t("repoDetail.popularContent")}>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={pathHistoryChart}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -267,6 +278,7 @@ export function RepoDetail() {
                   ))}
                 </LineChart>
               </ResponsiveContainer>
+              </div>
             ) : (
               <p className="text-sm text-[var(--muted-foreground)] text-center py-12">{t("repoDetail.noPopularContent")}</p>
             )}
@@ -281,6 +293,7 @@ export function RepoDetail() {
         </CardHeader>
         <CardContent>
           {releases && releases.length > 0 ? (
+            <div role="img" aria-label={t("repoDetail.releasesDownloads")}>
             <ResponsiveContainer width="100%" height={Math.max(200, releases.length * 60)}>
               <BarChart data={releases} layout="vertical" margin={{ left: 20, right: 40 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -288,15 +301,16 @@ export function RepoDetail() {
                 <YAxis type="category" dataKey="tag_name" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} width={120} tickFormatter={(v: string) => v.length > 15 ? v.slice(0, 15) + "…" : v} />
                 <Tooltip
                   contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }}
-                  formatter={((value: number) => [value.toLocaleString(), t("repoDetail.downloads")]) as any}
-                  labelFormatter={((label: string) => {
-                    const rel = releases.find((r: any) => r.tag_name === label);
-                    return rel ? `${rel.name || rel.tag_name} — ${new Date(rel.published_at).toLocaleDateString()}` : label;
-                  }) as any}
+                  formatter={(value: number) => [value.toLocaleString(), t("repoDetail.downloads")]}
+                  labelFormatter={(label: string) => {
+                    const rel = releases.find((r) => r.tag_name === label);
+                    return rel ? `${rel.name || rel.tag_name} — ${rel.published_at ? new Date(rel.published_at).toLocaleDateString() : ""}` : label;
+                  }}
                 />
                 <Bar dataKey="total_downloads" fill="#8b5cf6" radius={[0, 4, 4, 0]} name={t("repoDetail.downloads")} />
               </BarChart>
             </ResponsiveContainer>
+            </div>
           ) : (
             <p className="text-sm text-[var(--muted-foreground)] text-center py-8">
               {t("repoDetail.noReleases")}

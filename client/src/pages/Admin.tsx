@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { api } from "../api";
 import { Users, Plus, Trash2 } from "lucide-react";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 
 export function Admin() {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
   const [createError, setCreateError] = useState("");
   const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
 
@@ -32,15 +31,15 @@ export function Admin() {
     const password = (form.get("password") as string) || "";
     const role = (form.get("role") as string) || "user";
 
-    if (!username) { setCreateError("Username is required"); return; }
-    if (password.length < 4) { setCreateError("Password must be at least 4 characters"); return; }
+    if (!username) { setCreateError(t("admin.errorUsernameRequired")); return; }
+    if (password.length < 4) { setCreateError(t("admin.errorPasswordLength")); return; }
 
     try {
       await api.createUser({ username, password, role });
       (e.target as HTMLFormElement).reset();
       refetchUsers();
-    } catch (err: any) {
-      setCreateError(err.message || "Failed to create user");
+    } catch (err: unknown) {
+      setCreateError(err instanceof Error ? err.message : String(err));
     }
   };
 

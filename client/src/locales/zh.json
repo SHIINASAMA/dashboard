@@ -122,6 +122,7 @@
       "followers": "粉丝：{{count}}",
       "tweets": "推文：{{count}}",
       "fetchNow": "立即抓取",
+      "edit": "编辑",
       "delete": "删除"
     }
   },
@@ -501,6 +502,9 @@
     "noUsers": "暂无用户",
     "deleteUser": "删除用户",
     "deleteUserDesc": "此操作不可撤销，将同时删除该用户的所有关联数据。",
-    "forbidden": "无权访问管理页面"
+    "forbidden": "无权访问管理页面",
+    "errorUsernameRequired": "请输入用户名",
+    "errorPasswordLength": "密码至少需要4个字符",
+    "errorCreateFailed": "创建用户失败"
   }
 }

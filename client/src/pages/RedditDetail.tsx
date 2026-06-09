@@ -68,7 +68,7 @@ export function RedditDetail() {
     onSuccess: () => navigate("/reddit"),
   });
 
-  const triggerMutation = useMutation({
+  const _triggerMutation = useMutation({
     mutationFn: () => api.triggerFetch(accountId),
     onSuccess: () => queryClient.invalidateQueries(),
   });
@@ -89,7 +89,7 @@ export function RedditDetail() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <button onClick={() => navigate("/reddit")} className="p-2 rounded-lg hover:bg-[var(--muted)] transition-colors">
+        <button onClick={() => navigate("/reddit")} className="p-2 rounded-lg hover:bg-[var(--muted)] transition-colors" title={t("redditDetail.backToReddit")} aria-label={t("redditDetail.backToReddit")}>
           <ArrowLeft size={20} />
         </button>
         <div className="flex items-center gap-2">
@@ -106,16 +106,16 @@ export function RedditDetail() {
           </div>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <button onClick={() => triggerMutation.mutate()} disabled={triggerMutation.isPending}
+          <button onClick={() => _triggerMutation.mutate()} disabled={_triggerMutation.isPending}
             className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-sm disabled:opacity-40">
-            <Play size={14} /> {triggerMutation.isPending ? t("redditDetail.fetching") : t("redditDetail.fetchNow")}
+            <Play size={14} /> {_triggerMutation.isPending ? t("redditDetail.fetching") : t("redditDetail.fetchNow")}
           </button>
           <button onClick={() => { api.updateAccount(accountId, { isActive: !account.is_active }).then(() => queryClient.invalidateQueries({ queryKey: ["account", accountId] })); }}
-            className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors" title={account.is_active ? t("redditDetail.disable") : t("redditDetail.enable")}>
+            className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors" title={account.is_active ? t("redditDetail.disable") : t("redditDetail.enable")} aria-label={account.is_active ? t("redditDetail.disable") : t("redditDetail.enable")}>
             <RefreshCw size={16} />
           </button>
           <button onClick={() => { if (confirm(t("redditDetail.deleteConfirm", { name: account.screen_name }))) deleteMutation.mutate(); }}
-            className="p-2 rounded-lg bg-[var(--muted)] hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors text-red-500" title={t("redditDetail.delete")}>
+            className="p-2 rounded-lg bg-[var(--muted)] hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors text-red-500" title={t("redditDetail.delete")} aria-label={t("redditDetail.delete")}>
             <Trash2 size={16} />
           </button>
         </div>
@@ -146,6 +146,7 @@ export function RedditDetail() {
                 <CardDescription>{t("redditDetail.karmaTimelineDesc")}</CardDescription>
               </CardHeader>
               <CardContent>
+                <div role="img" aria-label={t("redditDetail.karmaTimeline")}>
                 <ResponsiveContainer width="100%" height={250}>
                   <LineChart data={timeline}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -157,6 +158,7 @@ export function RedditDetail() {
                     <Line type="monotone" dataKey="comment_karma" stroke="#3b82f6" name={t("redditDetail.commentKarma")} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -170,6 +172,7 @@ export function RedditDetail() {
                   <CardDescription>{t("redditDetail.dailyActivityDesc")}</CardDescription>
                 </CardHeader>
                 <CardContent>
+                  <div role="img" aria-label={t("redditDetail.dailyActivity")}>
                   <ResponsiveContainer width="100%" height={250}>
                     <BarChart data={(() => {
                       const map: Record<string, { date: string; posts: number; comments: number }> = {};
@@ -189,6 +192,7 @@ export function RedditDetail() {
                       <Bar dataKey="comments" fill="#3b82f6" name={t("redditDetail.recentComments")} radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -199,6 +203,7 @@ export function RedditDetail() {
                   <CardDescription>{t("redditDetail.topSubredditsDesc")}</CardDescription>
                 </CardHeader>
                 <CardContent>
+                  <div role="img" aria-label={t("redditDetail.topSubreddits")}>
                   <ResponsiveContainer width="100%" height={250}>
                     <PieChart>
                       <Pie data={subreddits} dataKey="count" nameKey="subreddit" cx="50%" cy="50%" outerRadius={80} label={({ subreddit, count }) => `r/${subreddit} (${count})`}>
@@ -209,6 +214,7 @@ export function RedditDetail() {
                       <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }} />
                     </PieChart>
                   </ResponsiveContainer>
+                  </div>
                 </CardContent>
               </Card>
             )}

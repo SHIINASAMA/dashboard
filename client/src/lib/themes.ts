@@ -33,7 +33,7 @@ export function loadSettings(): ThemeSettings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
-  } catch {}
+  } catch { /* intentionally empty, return defaults */ }
   return { ...DEFAULT_SETTINGS };
 }
 

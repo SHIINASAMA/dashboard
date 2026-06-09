@@ -17,7 +17,14 @@ import { Settings } from "./pages/Settings";
 import { Login } from "./pages/Login";
 import { api } from "./api";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 10_000,
+    },
+  },
+});
 
 // Wrap the full app so that auth state is available everywhere
 function AuthContext({ children }: { children: React.ReactNode }) {

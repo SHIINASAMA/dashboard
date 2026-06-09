@@ -95,6 +95,7 @@ export default function Layout() {
                 onClick={toggle}
                 className="ml-auto p-1 rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] shrink-0"
                 title={t("common.collapseSidebar")}
+                aria-label={t("common.collapseSidebar")}
               >
                 <PanelLeft size={16} />
               </button>
@@ -167,6 +168,7 @@ export default function Layout() {
                   onClick={toggle}
                   className="fixed left-3 top-1/2 -translate-y-1/2 z-10 p-1.5 rounded-r-md bg-[var(--card)] border border-[var(--border)] border-l-0 text-[var(--muted-foreground)] hover:text-[var(--foreground)] shadow-sm"
                   title={t("common.expandSidebar")}
+                  aria-label={t("common.expandSidebar")}
                 >
                   <PanelLeft size={18} />
                 </button>

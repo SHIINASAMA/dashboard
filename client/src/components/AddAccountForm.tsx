@@ -71,8 +71,9 @@ export default function AddAccountForm({ onClose, defaultPlatform = "twitter" }:
             {/* left column: common fields */}
             <div className="sm:col-span-2 flex flex-col gap-3">
               <div>
-                <label className="block text-xs font-medium mb-1 text-[var(--muted-foreground)]">{t("addAccountForm.username")}</label>
+                <label htmlFor="add-account-username" className="block text-xs font-medium mb-1 text-[var(--muted-foreground)]">{t("addAccountForm.username")}</label>
                 <input
+                  id="add-account-username"
                   type="text" value={screenName}
                   onChange={(e) => setScreenName(e.target.value)}
                   placeholder={platform === "github" ? t("addAccountForm.placeholderGithubUsername") : platform === "gitlab" ? t("addAccountForm.placeholderGitlabUsername") : platform === "reddit" ? t("addAccountForm.placeholderRedditUsername") : t("addAccountForm.placeholderXUsername")}
@@ -99,10 +100,11 @@ export default function AddAccountForm({ onClose, defaultPlatform = "twitter" }:
               )}
 
               <div>
-                <label className="block text-xs font-medium mb-1 text-[var(--muted-foreground)]">
+                <label htmlFor="add-account-token" className="block text-xs font-medium mb-1 text-[var(--muted-foreground)]">
                   {platform === "github" ? t("addAccountForm.personalAccessToken") : platform === "gitlab" ? t("addAccountForm.personalAccessToken") : platform === "reddit" ? (isRedditPublic ? t("addAccountForm.loidCookie") : t("addAccountForm.refreshToken")) : t("addAccountForm.authToken")}
                 </label>
                 <input
+                  id="add-account-token"
                   type="password" value={authToken}
                   onChange={(e) => setAuthToken(e.target.value)}
                   placeholder={platform === "github" ? t("addAccountForm.placeholderGithubToken") : platform === "gitlab" ? t("addAccountForm.placeholderGitlabToken") : platform === "reddit" ? (isRedditPublic ? t("addAccountForm.placeholderRedditToken") : t("addAccountForm.placeholderRedditOAuthToken")) : t("addAccountForm.placeholderXToken")}
@@ -118,8 +120,9 @@ export default function AddAccountForm({ onClose, defaultPlatform = "twitter" }:
 
               {platform === "gitlab" && (
                 <div>
-                  <label className="block text-xs font-medium mb-1 text-[var(--muted-foreground)]">{t("addAccountForm.instanceUrl")}</label>
+                  <label htmlFor="add-account-instance-url" className="block text-xs font-medium mb-1 text-[var(--muted-foreground)]">{t("addAccountForm.instanceUrl")}</label>
                   <input
+                    id="add-account-instance-url"
                     type="text" value={instanceUrl}
                     onChange={(e) => setInstanceUrl(e.target.value)}
                     placeholder={t("addAccountForm.placeholderInstanceUrl")}
@@ -129,8 +132,9 @@ export default function AddAccountForm({ onClose, defaultPlatform = "twitter" }:
               )}
 
               <div>
-                <label className="block text-xs font-medium mb-1 text-[var(--muted-foreground)]">{t("addAccountForm.fetchInterval")}</label>
+                <label htmlFor="add-account-interval" className="block text-xs font-medium mb-1 text-[var(--muted-foreground)]">{t("addAccountForm.fetchInterval")}</label>
                 <input
+                  id="add-account-interval"
                   type="number" value={fetchInterval}
                   onChange={(e) => setFetchInterval(Number(e.target.value))}
                   min={5} max={1440}

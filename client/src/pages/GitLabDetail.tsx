@@ -9,14 +9,7 @@ import { Badge } from "../components/ui/badge";
 import { StatCard } from "../components/StatCard";
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { ArrowLeft, ArrowUpRight, Play, RefreshCw, Trash2, AlertCircle, Star, GitFork, Code, Users, BookOpen, Settings2 } from "lucide-react";
-
-function GitlabInline({ size }: { size?: number }) {
-  return (
-    <svg viewBox="0 0 24 24" width={size || 18} height={size || 18} fill="currentColor">
-      <path d="M22.65 14.39L12 22.13 1.35 14.39a.84.84 0 0 1-.3-.94l1.22-3.78 2.44-7.51A.42.42 0 0 1 4.82 2a.43.43 0 0 1 .58 0 .42.42 0 0 1 .11.18l2.44 7.49h8.1l2.44-7.51A.42.42 0 0 1 18.6 2a.43.43 0 0 1 .58 0 .42.42 0 0 1 .11.18l2.44 7.51L23 13.45a.84.84 0 0 1-.35.94z" />
-    </svg>
-  );
-}
+import { GitlabIcon } from "../components/BrandIcons";
 
 function ContributionHeatmap({ data, tNamespace }: { data: GitlabContribution[]; tNamespace: string }) {
   const { t } = useTranslation();
@@ -140,11 +133,11 @@ export function GitLabDetail() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <button onClick={() => navigate("/gitlab")} className="p-2 rounded-lg hover:bg-[var(--muted)] transition-colors">
+        <button onClick={() => navigate("/gitlab")} className="p-2 rounded-lg hover:bg-[var(--muted)] transition-colors" title={t("gitlabDetail.backToGitLab")} aria-label={t("gitlabDetail.backToGitLab")}>
           <ArrowLeft size={20} />
         </button>
         <div className="flex items-center gap-2">
-          <GitlabInline size={18} />
+          <GitlabIcon size={18} />
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-semibold">{account.screen_name}</h2>
@@ -162,11 +155,11 @@ export function GitLabDetail() {
             <Play size={14} /> {triggerMutation.isPending ? t("gitlabDetail.fetching") : t("gitlabDetail.fetchNow")}
           </button>
           <button onClick={() => { api.updateAccount(accountId, { isActive: !account.is_active }).then(() => queryClient.invalidateQueries({ queryKey: ["account", accountId] })); }}
-            className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors" title={account.is_active ? t("gitlabDetail.disable") : t("gitlabDetail.enable")}>
+            className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors" title={account.is_active ? t("gitlabDetail.disable") : t("gitlabDetail.enable")} aria-label={account.is_active ? t("gitlabDetail.disable") : t("gitlabDetail.enable")}>
             <RefreshCw size={16} />
           </button>
           <button onClick={() => { if (confirm(t("gitlabDetail.deleteConfirm", { name: account.screen_name }))) deleteMutation.mutate(); }}
-            className="p-2 rounded-lg bg-[var(--muted)] hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors text-red-500" title={t("gitlabDetail.delete")}>
+            className="p-2 rounded-lg bg-[var(--muted)] hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors text-red-500" title={t("gitlabDetail.delete")} aria-label={t("gitlabDetail.delete")}>
             <Trash2 size={16} />
           </button>
         </div>
@@ -285,7 +278,7 @@ export function GitLabDetail() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><GitlabInline size={18} /> {t("gitlabDetail.contributionCalendar")}</CardTitle>
+              <CardTitle className="flex items-center gap-2"><GitlabIcon size={18} /> {t("gitlabDetail.contributionCalendar")}</CardTitle>
               <CardDescription>{t("gitlabDetail.contributionDesc")}</CardDescription>
             </CardHeader>
             <CardContent>
@@ -304,6 +297,7 @@ export function GitLabDetail() {
             </CardHeader>
             <CardContent>
               {Object.keys(overview.languages).length > 0 ? (
+                <div role="img" aria-label={t("gitlabDetail.languages")}>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie data={Object.entries(overview.languages).map(([name, count]) => ({ name, count }))} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={100} label={({ name, percent = 0 }) => `${name} ${(percent * 100).toFixed(0)}%`}>
@@ -312,6 +306,7 @@ export function GitLabDetail() {
                     <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }} />
                   </PieChart>
                 </ResponsiveContainer>
+                </div>
               ) : (
                 <p className="text-sm text-[var(--muted-foreground)] text-center py-12">{t("gitlabDetail.noLanguageData")}</p>
               )}

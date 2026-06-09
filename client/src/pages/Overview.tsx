@@ -10,7 +10,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area, LineChart, Line, PieChart, Pie, Cell, Legend,
 } from "recharts";
-import { MessageSquare, Heart, Repeat2, Eye, TrendingUp, ArrowUpRight, Star, GitFork, ThumbsUp } from "lucide-react";
+import { MessageSquare, Heart, Repeat2, Eye, TrendingUp, Star, GitFork, ThumbsUp } from "lucide-react";
 import { XIcon, GithubIcon, GitlabIcon, RedditIcon } from "../components/BrandIcons";
 
 type LangColors = Record<string, string>;
@@ -228,6 +228,7 @@ export function Overview() {
               <CardHeader className="pb-1"><CardTitle className="text-xs font-medium text-[var(--muted-foreground)]">{t("overview.charts.tweetActivity")}</CardTitle></CardHeader>
               <CardContent className="p-0">
                 {timeline?.dailyTweets && timeline.dailyTweets.length > 0 ? (
+                  <div role="img" aria-label={t("overview.charts.tweetActivity")}>
                   <ResponsiveContainer width="100%" height={160}>
                     <BarChart data={timeline.dailyTweets}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -237,6 +238,7 @@ export function Overview() {
                       <Bar dataKey="tweets_count" fill="var(--primary)" radius={[3, 3, 0, 0]} name={t("overview.charts.tweetsCount")} />
                     </BarChart>
                   </ResponsiveContainer>
+                  </div>
                 ) : (
                   <div className="flex items-center justify-center h-[160px] text-xs text-[var(--muted-foreground)]">{t("overview.charts.noTweetData")}</div>
                 )}
@@ -246,6 +248,7 @@ export function Overview() {
               <CardHeader className="pb-1"><CardTitle className="text-xs font-medium text-[var(--muted-foreground)]">{t("overview.charts.dailyEngagement")}</CardTitle></CardHeader>
               <CardContent className="p-0">
                 {timeline?.dailyTweets && timeline.dailyTweets.length > 0 ? (
+                  <div role="img" aria-label={t("overview.charts.dailyEngagement")}>
                   <ResponsiveContainer width="100%" height={160}>
                     <AreaChart data={timeline.dailyTweets}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -256,6 +259,7 @@ export function Overview() {
                       <Area type="monotone" dataKey="total_retweets" stroke="#3b82f6" fill="#3b82f620" name={t("overview.charts.retweets")} />
                     </AreaChart>
                   </ResponsiveContainer>
+                  </div>
                 ) : (
                   <div className="flex items-center justify-center h-[160px] text-xs text-[var(--muted-foreground)]">{t("overview.charts.noEngagementData")}</div>
                 )}
@@ -359,6 +363,7 @@ export function Overview() {
               <CardHeader className="pb-1"><CardTitle className="text-xs font-medium text-[var(--muted-foreground)]">{t("overview.charts.redditKarma")}</CardTitle></CardHeader>
               <CardContent className="p-0">
                 {redditKarmaTimeline.length > 0 ? (
+                  <div role="img" aria-label={t("overview.charts.redditKarma")}>
                   <ResponsiveContainer width="100%" height={160}>
                     <LineChart data={redditKarmaTimeline}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -370,6 +375,7 @@ export function Overview() {
                       <Legend />
                     </LineChart>
                   </ResponsiveContainer>
+                  </div>
                 ) : (
                   <div className="flex items-center justify-center h-[160px] text-xs text-[var(--muted-foreground)]">{t("redditDetail.noData")}</div>
                 )}
@@ -381,6 +387,7 @@ export function Overview() {
               <CardHeader className="pb-1"><CardTitle className="text-xs font-medium text-[var(--muted-foreground)]">{t("overview.charts.redditActivity")}</CardTitle></CardHeader>
               <CardContent className="p-0">
                 {redditDailyActivity.length > 0 ? (
+                  <div role="img" aria-label={t("overview.charts.redditActivity")}>
                   <ResponsiveContainer width="100%" height={160}>
                     <BarChart data={redditDailyActivity}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -391,6 +398,7 @@ export function Overview() {
                       <Bar dataKey="comments" fill="#f97316" radius={[3, 3, 0, 0]} name={t("overview.stats.redditComments")} />
                     </BarChart>
                   </ResponsiveContainer>
+                  </div>
                 ) : (
                   <div className="flex items-center justify-center h-[160px] text-xs text-[var(--muted-foreground)]">{t("redditDetail.noData")}</div>
                 )}
@@ -402,6 +410,7 @@ export function Overview() {
             <Card className="border-0 shadow-none bg-transparent">
               <CardHeader className="pb-1"><CardTitle className="text-xs font-medium text-[var(--muted-foreground)]">{t("overview.charts.redditSubreddits")}</CardTitle></CardHeader>
               <CardContent className="p-0">
+                <div role="img" aria-label={t("overview.charts.redditSubreddits")}>
                 <ResponsiveContainer width="100%" height={200}>
                   <PieChart>
                     <Pie data={mergedSubreddits} dataKey="count" nameKey="subreddit" cx="50%" cy="50%" outerRadius={70} label={({ subreddit, count }) => `${subreddit} (${count})`} labelLine={{ stroke: "var(--muted-foreground)", strokeWidth: 0.5 }}>
@@ -412,6 +421,7 @@ export function Overview() {
                     <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
                   </PieChart>
                 </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
           )}

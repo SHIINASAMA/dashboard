@@ -65,7 +65,7 @@ export function XDetail() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <button onClick={() => navigate("/x")} className="p-2 rounded-lg hover:bg-[var(--muted)] transition-colors">
+        <button onClick={() => navigate("/x")} className="p-2 rounded-lg hover:bg-[var(--muted)] transition-colors" title={t("xDetail.backToX")} aria-label={t("xDetail.backToX")}>
           <ArrowLeft size={20} />
         </button>
         <div>
@@ -94,6 +94,7 @@ export function XDetail() {
             }}
             className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors"
             title={account.is_active ? t("xDetail.disable") : t("xDetail.enable")}
+            aria-label={account.is_active ? t("xDetail.disable") : t("xDetail.enable")}
           >
             <RefreshCw size={16} />
           </button>
@@ -101,6 +102,7 @@ export function XDetail() {
             onClick={() => { if (confirm(t("xDetail.deleteConfirm", { name: account.screen_name }))) deleteMutation.mutate(); }}
             className="p-2 rounded-lg bg-[var(--muted)] hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors text-red-500"
             title={t("xDetail.delete")}
+            aria-label={t("xDetail.delete")}
           >
             <Trash2 size={16} />
           </button>
@@ -126,6 +128,7 @@ export function XDetail() {
           <Card>
             <CardHeader><CardTitle>{t("xDetail.tweetActivity")}</CardTitle></CardHeader>
             <CardContent>
+              <div role="img" aria-label={t("xDetail.tweetActivity")}>
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={timeline.dailyTweets}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -135,11 +138,13 @@ export function XDetail() {
                   <Bar dataKey="tweets_count" fill="var(--primary)" radius={[4, 4, 0, 0]} name={t("xDetail.tweetsCount")} />
                 </BarChart>
               </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader><CardTitle>{t("xDetail.views")}</CardTitle></CardHeader>
             <CardContent>
+              <div role="img" aria-label={t("xDetail.views")}>
               <ResponsiveContainer width="100%" height={250}>
                 <AreaChart data={timeline.dailyTweets}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -149,6 +154,7 @@ export function XDetail() {
                   <Area type="monotone" dataKey="total_views" stroke="#10b981" fill="#10b98120" name={t("xDetail.views")} />
                 </AreaChart>
               </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -158,6 +164,7 @@ export function XDetail() {
           <Card>
             <CardHeader><CardTitle>{t("xDetail.engagement")}</CardTitle></CardHeader>
             <CardContent>
+              <div role="img" aria-label={t("xDetail.engagement")}>
               <ResponsiveContainer width="100%" height={250}>
                 <AreaChart data={timeline.dailyTweets}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -168,6 +175,7 @@ export function XDetail() {
                   <Area type="monotone" dataKey="total_retweets" stroke="#3b82f6" fill="#3b82f620" name={t("xDetail.retweets")} />
                 </AreaChart>
               </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
         </div>

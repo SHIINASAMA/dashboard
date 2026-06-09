@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { api, type GitlabProject, type Account } from "../api";
+import { api, type Account } from "../api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import {
@@ -56,7 +56,7 @@ export function ProjectDetail() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <button onClick={() => navigate(`/gitlab/${aid}`)} className="p-2 rounded-lg hover:bg-[var(--muted)] transition-colors">
+        <button onClick={() => navigate(`/gitlab/${aid}`)} className="p-2 rounded-lg hover:bg-[var(--muted)] transition-colors" title={t("projectDetail.backToAccount")} aria-label={t("projectDetail.backToAccount")}>
           <ArrowLeft size={20} />
         </button>
         <div className="min-w-0 flex-1">
@@ -87,6 +87,7 @@ export function ProjectDetail() {
         </CardHeader>
         <CardContent>
           {snapshots && snapshots.length > 1 ? (
+            <div role="img" aria-label={t("projectDetail.starHistory")}>
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={snapshots}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -96,6 +97,7 @@ export function ProjectDetail() {
                 <Area type="monotone" dataKey="stars" stroke="#f59e0b" fill="#f59e0b20" name={t("projectDetail.stars")} />
               </AreaChart>
             </ResponsiveContainer>
+            </div>
           ) : (
             <div className="flex items-center justify-center h-[300px] text-sm text-[var(--muted-foreground)]">
               {snapshots?.length === 1 ? t("projectDetail.onlyOneDataPoint") : t("projectDetail.noStarHistory")}
@@ -111,6 +113,7 @@ export function ProjectDetail() {
         </CardHeader>
         <CardContent>
           {releases && releases.length > 0 ? (
+            <div role="img" aria-label={t("projectDetail.releasesDownloads")}>
             <ResponsiveContainer width="100%" height={Math.max(200, releases.length * 60)}>
               <BarChart data={releases} layout="vertical" margin={{ left: 20, right: 40 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -118,14 +121,15 @@ export function ProjectDetail() {
                 <YAxis type="category" dataKey="release_tag" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} width={120} tickFormatter={(v: string) => v.length > 15 ? v.slice(0, 15) + "…" : v} />
                 <Tooltip
                   contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }}
-                  labelFormatter={((label: string) => {
-                    const rel = releases.find((r: any) => r.release_tag === label);
+                  labelFormatter={(label: string) => {
+                    const rel = releases.find((r) => r.release_tag === label);
                     return rel ? `${rel.name || rel.release_tag} — ${rel.released_at ? new Date(rel.released_at).toLocaleDateString() : ""}` : label;
-                  }) as any}
+                  }}
                 />
                 <Bar dataKey="total_downloads" fill="#8b5cf6" radius={[0, 4, 4, 0]} name={t("projectDetail.releases")} />
               </BarChart>
             </ResponsiveContainer>
+            </div>
           ) : (
             <p className="text-sm text-[var(--muted-foreground)] text-center py-8">
               {t("projectDetail.noReleases")}
