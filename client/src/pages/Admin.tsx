@@ -36,7 +36,7 @@ export function Admin() {
 
     try {
       await api.createUser({ username, password, role });
-      (e.target as HTMLFormElement).reset();
+      e.currentTarget.reset();
       refetchUsers();
     } catch (err: unknown) {
       setCreateError(err instanceof Error ? err.message : String(err));

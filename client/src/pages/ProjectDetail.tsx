@@ -121,7 +121,7 @@ export function ProjectDetail() {
                 <YAxis type="category" dataKey="release_tag" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} width={120} tickFormatter={(v: string) => v.length > 15 ? v.slice(0, 15) + "…" : v} />
                 <Tooltip
                   contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }}
-                  labelFormatter={(label: string) => {
+                  labelFormatter={(label) => {
                     const rel = releases.find((r) => r.release_tag === label);
                     return rel ? `${rel.name || rel.release_tag} — ${rel.released_at ? new Date(rel.released_at).toLocaleDateString() : ""}` : label;
                   }}

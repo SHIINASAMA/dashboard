@@ -74,7 +74,7 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter basename={import.meta.env.BASE_URL} future={{ v7_startTransition: true }}>
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
         <AuthContext>
           <Routes>
             <Route path="login" element={<RedirectIfAuth><Login /></RedirectIfAuth>} />

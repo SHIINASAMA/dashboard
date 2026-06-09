@@ -35,7 +35,7 @@ export default function AddAccountForm({ onClose, defaultPlatform = "twitter" }:
       authToken,
       fetchInterval,
       platform,
-      instanceUrl: instanceUrl || null,
+      instanceUrl: instanceUrl || undefined,
       authType: authType || undefined,
     }),
     onSuccess: () => {
@@ -75,7 +75,7 @@ export default function AddAccountForm({ onClose, defaultPlatform = "twitter" }:
                 <input
                   id="add-account-username"
                   type="text" value={screenName}
-                  onChange={(e) => setScreenName(e.target.value)}
+                  onChange={(e) => setScreenName((e.target as HTMLInputElement).value)}
                   placeholder={platform === "github" ? t("addAccountForm.placeholderGithubUsername") : platform === "gitlab" ? t("addAccountForm.placeholderGitlabUsername") : platform === "reddit" ? t("addAccountForm.placeholderRedditUsername") : t("addAccountForm.placeholderXUsername")}
                   className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] text-sm"
                 />
@@ -106,7 +106,7 @@ export default function AddAccountForm({ onClose, defaultPlatform = "twitter" }:
                 <input
                   id="add-account-token"
                   type="password" value={authToken}
-                  onChange={(e) => setAuthToken(e.target.value)}
+                  onChange={(e) => setAuthToken((e.target as HTMLInputElement).value)}
                   placeholder={platform === "github" ? t("addAccountForm.placeholderGithubToken") : platform === "gitlab" ? t("addAccountForm.placeholderGitlabToken") : platform === "reddit" ? (isRedditPublic ? t("addAccountForm.placeholderRedditToken") : t("addAccountForm.placeholderRedditOAuthToken")) : t("addAccountForm.placeholderXToken")}
                   className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] font-mono text-xs"
                 />
@@ -124,7 +124,7 @@ export default function AddAccountForm({ onClose, defaultPlatform = "twitter" }:
                   <input
                     id="add-account-instance-url"
                     type="text" value={instanceUrl}
-                    onChange={(e) => setInstanceUrl(e.target.value)}
+                    onChange={(e) => setInstanceUrl((e.target as HTMLInputElement).value)}
                     placeholder={t("addAccountForm.placeholderInstanceUrl")}
                     className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] text-sm"
                   />
@@ -136,7 +136,7 @@ export default function AddAccountForm({ onClose, defaultPlatform = "twitter" }:
                 <input
                   id="add-account-interval"
                   type="number" value={fetchInterval}
-                  onChange={(e) => setFetchInterval(Number(e.target.value))}
+                  onChange={(e) => setFetchInterval(Number((e.target as HTMLInputElement).value))}
                   min={5} max={1440}
                   className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] text-sm"
                 />

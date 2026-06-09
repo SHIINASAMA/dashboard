@@ -206,7 +206,7 @@ export function RedditDetail() {
                   <div role="img" aria-label={t("redditDetail.topSubreddits")}>
                   <ResponsiveContainer width="100%" height={250}>
                     <PieChart>
-                      <Pie data={subreddits} dataKey="count" nameKey="subreddit" cx="50%" cy="50%" outerRadius={80} label={({ subreddit, count }) => `r/${subreddit} (${count})`}>
+                      <Pie data={subreddits} dataKey="count" nameKey="subreddit" cx="50%" cy="50%" outerRadius={80} label={(props: { name?: string; value?: number }) => `r/${props.name ?? ""} (${props.value ?? 0})`}>
                         {subreddits.map((_, i) => (
                           <Cell key={i} fill={["#f97316", "#3b82f6", "#22c55e", "#ef4444", "#a855f7", "#ec4899", "#14b8a6", "#eab308", "#6366f1", "#84cc16"][i % 10]} />
                         ))}

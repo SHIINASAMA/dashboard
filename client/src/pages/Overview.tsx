@@ -413,7 +413,7 @@ export function Overview() {
                 <div role="img" aria-label={t("overview.charts.redditSubreddits")}>
                 <ResponsiveContainer width="100%" height={200}>
                   <PieChart>
-                    <Pie data={mergedSubreddits} dataKey="count" nameKey="subreddit" cx="50%" cy="50%" outerRadius={70} label={({ subreddit, count }) => `${subreddit} (${count})`} labelLine={{ stroke: "var(--muted-foreground)", strokeWidth: 0.5 }}>
+                    <Pie data={mergedSubreddits} dataKey="count" nameKey="subreddit" cx="50%" cy="50%" outerRadius={70} label={(props: { name?: string; value?: number }) => `${props.name ?? ""} (${props.value ?? 0})`} labelLine={{ stroke: "var(--muted-foreground)", strokeWidth: 0.5 }}>
                       {mergedSubreddits.map((_, i) => (
                         <Cell key={i} fill={["var(--primary)", "#3b82f6", "#f97316", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#14b8a6", "#f43f5e", "#6366f1"][i % 10]} />
                       ))}

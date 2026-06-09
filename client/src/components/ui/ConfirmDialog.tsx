@@ -29,7 +29,7 @@ export function ConfirmDialog({ open, onOpenChange, title, description, confirmL
   }, [open]);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = (e: globalThis.KeyboardEvent) => {
       if (e.key === "Escape" && open) {
         onOpenChange(false);
       }
@@ -65,7 +65,7 @@ export function ConfirmDialog({ open, onOpenChange, title, description, confirmL
         <input
           type="text"
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => setInput((e.target as HTMLInputElement).value)}
           placeholder={t("confirm.enterCode")}
           className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
           autoFocus

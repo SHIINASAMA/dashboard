@@ -58,7 +58,7 @@ export default function EditAccountForm({ account, onClose }: Props) {
             <input
               id="edit-account-username"
               type="text" value={screenName}
-              onChange={(e) => setScreenName(e.target.value)}
+              onChange={(e) => setScreenName((e.target as HTMLInputElement).value)}
               className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] text-sm"
             />
           </div>
@@ -91,7 +91,7 @@ export default function EditAccountForm({ account, onClose }: Props) {
             <input
               id="edit-account-token"
               type="password" value={authToken}
-              onChange={(e) => setAuthToken(e.target.value)}
+              onChange={(e) => setAuthToken((e.target as HTMLInputElement).value)}
               placeholder={account.platform === "github" ? t("addAccountForm.placeholderGithubToken")
                 : account.platform === "gitlab" ? t("addAccountForm.placeholderGitlabToken")
                 : account.platform === "reddit" ? (isRedditPublic ? t("addAccountForm.placeholderRedditToken") : t("addAccountForm.placeholderRedditOAuthToken"))
@@ -109,7 +109,7 @@ export default function EditAccountForm({ account, onClose }: Props) {
               <input
                 id="edit-account-instance-url"
                 type="text" value={instanceUrl}
-                onChange={(e) => setInstanceUrl(e.target.value)}
+                onChange={(e) => setInstanceUrl((e.target as HTMLInputElement).value)}
                 placeholder={t("addAccountForm.placeholderInstanceUrl")}
                 className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] text-sm"
               />
@@ -121,7 +121,7 @@ export default function EditAccountForm({ account, onClose }: Props) {
             <input
               id="edit-account-interval"
               type="number" value={fetchInterval}
-              onChange={(e) => setFetchInterval(Number(e.target.value))}
+              onChange={(e) => setFetchInterval(Number((e.target as HTMLInputElement).value))}
               min={5} max={1440}
               className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] text-sm"
             />

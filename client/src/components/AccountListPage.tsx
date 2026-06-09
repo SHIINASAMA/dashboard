@@ -75,6 +75,7 @@ export default function AccountListPage({
   }
 
   const urlPrefix = PLATFORM_PREFIX[platform];
+  const i18nKey = urlPrefix; // translation namespace for this platform (e.g., "x" not "twitter")
 
   return (
     <div className="space-y-6">
@@ -98,7 +99,7 @@ export default function AccountListPage({
 
       <div>
         <h3 className="text-sm font-semibold mb-3">
-          {accounts.length > 0 ? t(`${platform}.configuredAccounts`) : t(`${platform}.noAccounts`)}
+          {accounts.length > 0 ? t(`${i18nKey}.configuredAccounts`) : t(`${i18nKey}.noAccounts`)}
         </h3>
         {accounts.length > 0 ? (
           <div className="space-y-3">
@@ -139,9 +140,9 @@ export default function AccountListPage({
                           ) : null}
                         </div>
                         <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-[var(--muted-foreground)]">
-                          <span>{t(`${platform}.accountCard.interval`, { minutes: account.fetch_interval })}</span>
+                          <span>{t(`${i18nKey}.accountCard.interval`, { minutes: account.fetch_interval })}</span>
                           {lastFetched && (
-                            <span>{t(`${platform}.accountCard.last`, { date: formatDateTime(lastFetched) })}</span>
+                            <span>{t(`${i18nKey}.accountCard.last`, { date: formatDateTime(lastFetched) })}</span>
                           )}
                           {renderMeta?.(account)}
                         </div>
@@ -158,8 +159,8 @@ export default function AccountListPage({
                             setEditAccount(account);
                           }}
                           className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors"
-                          title={t(`${platform}.accountCard.edit`)}
-                          aria-label={t(`${platform}.accountCard.edit`)}
+                          title={t(`${i18nKey}.accountCard.edit`)}
+                          aria-label={t(`${i18nKey}.accountCard.edit`)}
                         >
                           <Pencil size={16} />
                         </button>
@@ -170,8 +171,8 @@ export default function AccountListPage({
                           }}
                           disabled={toggleActiveMutation.isPending}
                           className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors disabled:opacity-40"
-                          title={t(`${platform}.accountCard.fetchNow`)}
-                          aria-label={t(`${platform}.accountCard.fetchNow`)}
+                          title={t(`${i18nKey}.accountCard.fetchNow`)}
+                          aria-label={t(`${i18nKey}.accountCard.fetchNow`)}
                         >
                           {account.is_active ? <PauseCircle size={16} /> : <PlayCircle size={16} />}
                         </button>
@@ -181,8 +182,8 @@ export default function AccountListPage({
                             deleteMutation.mutate(account.id);
                           }}
                           className="p-2 rounded-lg bg-[var(--muted)] hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors text-red-500"
-                          title={t(`${platform}.accountCard.delete`)}
-                          aria-label={t(`${platform}.accountCard.delete`)}
+                          title={t(`${i18nKey}.accountCard.delete`)}
+                          aria-label={t(`${i18nKey}.accountCard.delete`)}
                         >
                           <Trash2 size={16} />
                         </button>

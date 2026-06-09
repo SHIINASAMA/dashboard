@@ -14,11 +14,11 @@ async function fetchJSON<T>(url: string, options?: RequestInit): Promise<T> {
     ...options,
   });
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
+    const body = await res.json().catch(() => ({})) as Record<string, string>;
     const msg = body.error || `API error: ${res.status}`;
     throw new ApiError(msg, res.status);
   }
-  return res.json();
+  return res.json() as T;
 }
 
 export interface OverviewStats {
@@ -117,6 +117,11 @@ export interface AccountWithStats extends Account {
 }
 
 // ─── GitHub types ───────────────────────────────────────────────
+
+export interface GithubContribution {
+  date: string;
+  count: number;
+}
 
 export interface GithubOverview {
   stats: {
@@ -283,11 +288,10 @@ export const api = {
   // Accounts
   getAccounts: () => fetchJSON<AccountsResponse>("/accounts"),
   getAccount: (id: number) => fetchJSON<AccountWithStats>(`/accounts/${id}`),
-  createAccount: (data: { screenName: string; authToken?: string; fetchInterval?: number; platform?: string; instanceUrl?: string; authType?: string }) =>
+  createAccount: (data: { screenName: string; authToken?: string; fetchInterval?: number; platform?: string; instanceUrl?: string | null; authType?: string | null }) =>
     fetchJSON<Account>("/accounts", { method: "POST", body: JSON.stringify(data) }),
   updateAccount: (id: number, data: { screenName?: string; authToken?: string; fetchInterval?: number; isActive?: boolean; instanceUrl?: string; authType?: string }) =>
     fetchJSON<Account>(`/accounts/${id}`, { method: "PUT", body: JSON.stringify(data) }),
-  deleteAccount: (id: number) => fetchJSON<{ success: boolean }>(`/accounts/${id}`, { method: "DELETE" }),
   triggerFetch: (id: number) => fetchJSON<{ message: string }>(`/fetch/${id}`, { method: "POST" }),
 
   // Twitter
@@ -378,6 +382,6 @@ export const api = {
 
   // Confirmation tokens
   getConfirmToken: () => fetchJSON<{ token: string }>("/confirm/token", { method: "POST" }),
-  deleteAccount: (id: number, confirmToken: string) =>
-    fetchJSON<{ success: boolean }>(`/accounts/${id}`, { method: "DELETE", body: JSON.stringify({ confirmToken }) }),
+  deleteAccount: (id: number, confirmToken?: string) =>
+    fetchJSON<{ success: boolean }>(`/accounts/${id}`, { method: "DELETE", body: JSON.stringify({ confirmToken: confirmToken ?? "" }) }),
 };

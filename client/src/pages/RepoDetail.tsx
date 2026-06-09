@@ -301,8 +301,8 @@ export function RepoDetail() {
                 <YAxis type="category" dataKey="tag_name" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} width={120} tickFormatter={(v: string) => v.length > 15 ? v.slice(0, 15) + "…" : v} />
                 <Tooltip
                   contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }}
-                  formatter={(value: number) => [value.toLocaleString(), t("repoDetail.downloads")]}
-                  labelFormatter={(label: string) => {
+                  formatter={(value) => [String(value).toLocaleString() ?? "", t("repoDetail.downloads")]}
+                  labelFormatter={(label) => {
                     const rel = releases.find((r) => r.tag_name === label);
                     return rel ? `${rel.name || rel.tag_name} — ${rel.published_at ? new Date(rel.published_at).toLocaleDateString() : ""}` : label;
                   }}
