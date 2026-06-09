@@ -132,7 +132,7 @@ export function XDetail() {
                   <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                   <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
                   <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }} />
-                  <Bar dataKey="tweets_count" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="tweets_count" fill="var(--primary)" radius={[4, 4, 0, 0]} name={t("xDetail.tweetsCount")} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>

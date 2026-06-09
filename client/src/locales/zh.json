@@ -83,6 +83,7 @@
     },
     "charts": {
       "tweetActivity": "推文活跃度",
+      "tweetsCount": "推文数",
       "tweetActivityDesc": "过去 6 个月的每日推文数量",
       "dailyEngagement": "每日互动",
       "dailyEngagementDesc": "每日点赞和转发总数",
@@ -139,6 +140,7 @@
     "following": "正在关注",
     "tweets": "推文",
     "tweetActivity": "推文活跃度",
+      "tweetsCount": "推文数",
     "engagement": "互动",
     "likes": "点赞",
     "retweets": "转发",

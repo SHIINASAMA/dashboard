@@ -83,6 +83,7 @@
     },
     "charts": {
       "tweetActivity": "Tweet Activity",
+      "tweetsCount": "Tweets",
       "tweetActivityDesc": "Daily tweet count over the last 6 months",
       "dailyEngagement": "Daily Engagement",
       "dailyEngagementDesc": "Total likes and retweets per day",
@@ -139,6 +140,7 @@
     "following": "Following",
     "tweets": "Tweets",
     "tweetActivity": "Tweet Activity",
+      "tweetsCount": "Tweets",
     "engagement": "Engagement",
     "likes": "Likes",
     "retweets": "Retweets",

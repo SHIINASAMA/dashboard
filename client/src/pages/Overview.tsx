@@ -234,7 +234,7 @@ export function Overview() {
                       <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                       <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={30} />
                       <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
-                      <Bar dataKey="tweets_count" fill="var(--primary)" radius={[3, 3, 0, 0]} />
+                      <Bar dataKey="tweets_count" fill="var(--primary)" radius={[3, 3, 0, 0]} name={t("overview.charts.tweetsCount")} />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
