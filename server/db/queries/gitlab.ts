@@ -48,7 +48,7 @@ export async function getGitlabContributions(accountId: number, year?: number) {
 }
 
 export async function upsertGitlabProject(project: Omit<GitlabProjectRow, "id" | "fetched_at" | "pinned">) {
-  await getDb().insert(gitlab_projects).values(project).onConflictDoUpdate({
+  await getDb().insert(gitlab_projects).values({...project, fetched_at: sql`(datetime('now'))`}).onConflictDoUpdate({
     target: [gitlab_projects.account_id, gitlab_projects.project_id],
     set: {
       stars: project.stars, forks: project.forks, open_issues: project.open_issues,
@@ -68,11 +68,11 @@ export async function setPinnedGitlabProjects(accountId: number, projectIds: num
 }
 
 export async function insertGitlabStats(stats: Omit<GitlabStatsRow, "recorded_at">) {
-  await getDb().insert(gitlab_stats).values(stats);
+  await getDb().insert(gitlab_stats).values({...stats, recorded_at: sql`(datetime('now'))`});
 }
 
 export async function upsertGitlabContribution(c: { account_id: number; date: string; count: number }) {
-  await getDb().insert(gitlab_contributions).values(c).onConflictDoUpdate({
+  await getDb().insert(gitlab_contributions).values({...c, fetched_at: sql`(datetime('now'))`}).onConflictDoUpdate({
     target: [gitlab_contributions.account_id, gitlab_contributions.date],
     set: { count: c.count },
   });
@@ -97,7 +97,7 @@ export async function getGitlabProjectSnapshots(accountId: number, projectId: nu
 }
 
 export async function upsertGitlabRelease(r: { account_id: number; project_id: number; release_tag: string; name: string | null; description: string | null; released_at: string | null; created_at: string | null }) {
-  await getDb().insert(gitlab_releases).values(r).onConflictDoUpdate({
+  await getDb().insert(gitlab_releases).values({...r, fetched_at: sql`(datetime('now'))`}).onConflictDoUpdate({
     target: [gitlab_releases.account_id, gitlab_releases.project_id, gitlab_releases.release_tag],
     set: { name: r.name, description: r.description, released_at: r.released_at, created_at: r.created_at },
   });

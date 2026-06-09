@@ -51,6 +51,11 @@ function suppressBaseHintPlugin() {
 export default defineConfig({
   plugins: [react(), tailwindcss(), suppressBaseHintPlugin()],
   base: BASE,
+  resolve: {
+    alias: {
+      "@shared": resolve(__dirname, "..", "shared"),
+    },
+  },
   server: {
     proxy: {
       [`/${prefix}/api`]: {

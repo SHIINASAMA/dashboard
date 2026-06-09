@@ -16,7 +16,7 @@ import { fetchAccount } from "./fetcher";
 import { fetchGithubAccount } from "./fetchers/github";
 import { fetchGitlabAccount } from "./fetchers/gitlab";
 import { fetchRedditAccount, fetchRedditPublicAccount } from "./fetchers/reddit";
-import { sign, verifySignature } from "./crypto";
+import { getJwtSecret } from "./crypto";
 import { verifyPassword, verifyCredentials, setNewPassword, changePassword } from "./auth";
 import { getUsers, createUser, deleteUser } from "./db/queries/users";
 import { join, dirname } from "path";
@@ -73,26 +73,33 @@ setInterval(() => {
   }
 }, 120_000);
 
-// ── Session helpers ──────────────────────────────────────────────
+// ── Session helpers (JWT) ────────────────────────────────────────
+
+import { SignJWT, jwtVerify } from "jose";
 
 const SESSION_COOKIE = "dash_session";
 const SESSION_MAX_AGE = 7 * 24 * 60 * 60; // 7 days
 
-function createSessionToken(username: string, role: string): string {
-  const expires = Date.now() + SESSION_MAX_AGE * 1000;
-  const payload = `${username}:${role}:${expires}`;
-  const sig = sign(payload);
-  return `${payload}:${sig}`;
+async function createSessionToken(username: string, role: string): Promise<string> {
+  const secret = getJwtSecret();
+  return new SignJWT({ sub: username, role })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime(`${SESSION_MAX_AGE}s`)
+    .sign(secret);
 }
 
-function validateSession(token: string): { username: string; role: string } | null {
-  const parts = token.split(":");
-  if (parts.length !== 4) return null;
-  const [username, role, expiresStr, sig] = parts;
-  const payload = `${username}:${role}:${expiresStr}`;
-  if (!verifySignature(payload, sig)) return null;
-  if (parseInt(expiresStr) < Date.now()) return null;
-  return { username, role };
+async function validateSession(token: string): Promise<{ username: string; role: string } | null> {
+  try {
+    const secret = getJwtSecret();
+    const { payload } = await jwtVerify(token, secret);
+    const username = payload.sub;
+    const role = payload.role as string | undefined;
+    if (!username || !role) return null;
+    return { username, role };
+  } catch {
+    return null;
+  }
 }
 
 // ── App setup ────────────────────────────────────────────────────
@@ -131,7 +138,7 @@ app.use(`${BASE}/api/*`, async (c, next) => {
   if (!token) {
     return c.json({ error: "Unauthorized" }, 401);
   }
-  const session = validateSession(token);
+  const session = await validateSession(token);
   if (!session) {
     return c.json({ error: "Session expired or invalid" }, 401);
   }
@@ -160,7 +167,7 @@ app.post(`${BASE}/api/auth/login`, async (c) => {
         await new Promise(r => setTimeout(r, 800));
         return c.json({ error: "Invalid credentials" }, 401);
       }
-      const session = createSessionToken(username, result.role || "user");
+      const session = await createSessionToken(username, result.role || "user");
       setCookie(c, SESSION_COOKIE, session, {
         path: `${BASE}/`,
         httpOnly: true,
@@ -176,7 +183,7 @@ app.post(`${BASE}/api/auth/login`, async (c) => {
       await new Promise(r => setTimeout(r, 800));
       return c.json({ error: "Invalid password" }, 401);
     }
-    const session = createSessionToken("admin", "admin");
+    const session = await createSessionToken("admin", "admin");
     setCookie(c, SESSION_COOKIE, session, {
       path: `${BASE}/`,
       httpOnly: true,
@@ -190,10 +197,10 @@ app.post(`${BASE}/api/auth/login`, async (c) => {
   }
 });
 
-app.get(`${BASE}/api/auth/me`, (c) => {
+app.get(`${BASE}/api/auth/me`, async (c) => {
   const token = getCookie(c, SESSION_COOKIE);
   if (!token) return c.json({ authenticated: false });
-  const session = validateSession(token);
+  const session = await validateSession(token);
   if (!session) return c.json({ authenticated: false });
   return c.json({ authenticated: true, username: session.username, role: session.role });
 });
@@ -283,8 +290,12 @@ app.post(`${BASE}/api/fetch/:id`, async (c) => {
     : account.platform === "reddit"
     ? (account.auth_type === "reddit_public" ? fetchRedditPublicAccount : fetchRedditAccount)
     : fetchAccount;
-  await fn(account);
-  return c.json({ ok: true, message: `Fetch complete for @${account.screen_name}` });
+
+  // Run in background to avoid proxy timeout on long fetches
+  fn(account).catch((e: any) =>
+    console.error(`[Fetch ${id}] Background error:`, e.message)
+  );
+  return c.json({ ok: true, message: `Fetch started for @${account.screen_name}` });
 });
 
 // ── Serve client SPA (production) ─────────────────────────────────

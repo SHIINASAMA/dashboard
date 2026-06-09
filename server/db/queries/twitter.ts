@@ -174,7 +174,7 @@ export async function getCalendarData(year: number, accountIds?: number[]) {
 }
 
 export async function upsertTweet(tweet: Omit<TweetRow, "fetched_at">) {
-  await getDb().insert(tweets).values(tweet).onConflictDoUpdate({
+  await getDb().insert(tweets).values({...tweet, fetched_at: sql`(datetime('now'))`}).onConflictDoUpdate({
     target: tweets.id,
     set: {
       favorite_count: tweet.favorite_count,
@@ -187,7 +187,7 @@ export async function upsertTweet(tweet: Omit<TweetRow, "fetched_at">) {
 }
 
 export async function insertUserStats(stats: Omit<UserStatsRow, "recorded_at">) {
-  await getDb().insert(user_stats).values(stats);
+  await getDb().insert(user_stats).values({...stats, recorded_at: sql`(datetime('now'))`});
 }
 
 export async function getLatestUserStats(accountId: number) {

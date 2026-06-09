@@ -54,3 +54,8 @@ export function verifySignature(payload: string, signature: string): boolean {
     return timingSafeEqual(expected, actual);
   } catch { return false; }
 }
+
+/** Return the 32-byte key as Uint8Array for use with jose JWT */
+export function getJwtSecret(): Uint8Array {
+  return new Uint8Array(getKey());
+}

@@ -47,7 +47,7 @@ export async function getGithubContributions(accountId: number, year?: number) {
 }
 
 export async function upsertGithubRepo(repo: Omit<GithubRepoRow, "id" | "fetched_at" | "pinned">) {
-  await getDb().insert(github_repos).values(repo).onConflictDoUpdate({
+  await getDb().insert(github_repos).values({...repo, fetched_at: sql`(datetime('now'))`}).onConflictDoUpdate({
     target: [github_repos.account_id, github_repos.repo_id],
     set: {
       stars: repo.stars, forks: repo.forks, open_issues: repo.open_issues,
@@ -67,11 +67,11 @@ export async function setPinnedRepos(accountId: number, repoIds: number[]) {
 }
 
 export async function insertGithubStats(stats: Omit<GithubStatsRow, "recorded_at">) {
-  await getDb().insert(github_stats).values(stats);
+  await getDb().insert(github_stats).values({...stats, recorded_at: sql`(datetime('now'))`});
 }
 
 export async function upsertGithubContribution(c: { account_id: number; date: string; count: number; level: number }) {
-  await getDb().insert(github_contributions).values(c).onConflictDoUpdate({
+  await getDb().insert(github_contributions).values({...c, fetched_at: sql`(datetime('now'))`}).onConflictDoUpdate({
     target: [github_contributions.account_id, github_contributions.date],
     set: { count: c.count, level: c.level },
   });
@@ -174,7 +174,7 @@ export async function getGithubPathHistory(accountId: number, repoId: number) {
 }
 
 export async function upsertGithubRelease(r: { account_id: number; repo_id: number; release_id: number; tag_name: string | null; name: string | null; body: string | null; prerelease: number; published_at: string | null; html_url: string | null; total_downloads: number }) {
-  await getDb().insert(github_releases).values(r).onConflictDoUpdate({
+  await getDb().insert(github_releases).values({...r, fetched_at: sql`(datetime('now'))`}).onConflictDoUpdate({
     target: [github_releases.account_id, github_releases.repo_id, github_releases.release_id],
     set: {
       tag_name: r.tag_name, name: r.name, body: r.body,

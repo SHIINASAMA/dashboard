@@ -26,9 +26,16 @@ export function getDb() {
 }
 
 export function closeDb() {
-  if (_db) {
-    // libsql client doesn't expose close() directly; the singleton
-    // lives for the process lifetime anyway.
-  }
   _db = null;
+  _client = null;
+}
+
+/** Replace the global DB client with an in-memory SQLite database for testing.
+ *  Call before each test suite that queries the database. */
+export async function initTestDb() {
+  closeDb();
+  const tmpPath = `/tmp/dashboard_test_${Date.now()}.db`;
+  _client = createClient({ url: `file:${tmpPath}` });
+  await _client.execute("PRAGMA foreign_keys = ON");
+  _db = drizzle(_client, { schema });
 }

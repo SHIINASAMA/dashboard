@@ -7,7 +7,7 @@ export interface RedditPostRow { id: string; account_id: number; title: string; 
 export interface RedditCommentRow { id: string; account_id: number; body: string; subreddit: string; score: number; link_id: string; parent_id: string | null; depth: number; permalink: string; created_utc: number; is_submitter: number; }
 
 export async function insertRedditStats(stats: Omit<RedditStatsRow, "recorded_at">) {
-  await getDb().insert(reddit_stats).values(stats);
+  await getDb().insert(reddit_stats).values({...stats, recorded_at: sql`(datetime('now'))`});
 }
 
 export async function getRedditStatsTimeline(accountId: number) {
@@ -21,14 +21,14 @@ export async function getRedditStatsTimeline(accountId: number) {
 }
 
 export async function upsertRedditPost(post: Omit<RedditPostRow, "fetched_at">) {
-  await getDb().insert(reddit_posts).values(post).onConflictDoUpdate({
+  await getDb().insert(reddit_posts).values({...post, fetched_at: sql`(datetime('now'))`}).onConflictDoUpdate({
     target: reddit_posts.id,
     set: { score: post.score, upvote_ratio: post.upvote_ratio, num_comments: post.num_comments },
   });
 }
 
 export async function upsertRedditComment(comment: Omit<RedditCommentRow, "fetched_at">) {
-  await getDb().insert(reddit_comments).values(comment).onConflictDoUpdate({
+  await getDb().insert(reddit_comments).values({...comment, fetched_at: sql`(datetime('now'))`}).onConflictDoUpdate({
     target: reddit_comments.id,
     set: { score: comment.score },
   });
