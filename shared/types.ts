@@ -32,19 +32,24 @@ export interface AccountsResponse {
 // ─── Twitter / X types ───────────────────────────────────────────
 
 export interface OverviewStats {
-  total_tweets: number;
-  total_likes: number;
-  total_retweets: number;
-  total_replies: number;
-  total_views: number;
-  total_bookmarks: number;
-  avgEngagement: string;
+  // tweets (is_reply=0 AND is_retweet=0)
+  tweet_count: number;
+  tweet_likes: number;
+  tweet_retweets: number;
+  tweet_views: number;
+  // replies (is_reply=1)
+  reply_count: number;
+  reply_likes: number;
+  reply_retweets: number;
+  reply_views: number;
+  // profile
   followersCount: number;
   followingCount: number;
   userTweetCount: number;
+  // today
+  todayTweets: number;
   todayLikes: number;
   todayRetweets: number;
-  todayTweets: number;
 }
 
 export interface Tweet {

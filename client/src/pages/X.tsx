@@ -31,10 +31,10 @@ export function X() {
       formatUsername={(account) => `@${account.screen_name}`}
       renderHeader={() => (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title={t("overview.stats.totalTweets")} value={overview?.total_tweets ?? 0} icon={<MessageSquare size={20} />} description={overview ? t("overview.stats.today", { count: overview.todayTweets }) : t("overview.stats.dash")} />
-          <StatCard title={t("overview.stats.totalRetweets")} value={overview?.total_retweets ?? 0} icon={<Repeat2 size={20} />} description={overview ? t("overview.stats.today", { count: overview.todayRetweets }) : t("overview.stats.dash")} />
-          <StatCard title={t("overview.stats.avgEngagement")} value={overview?.avgEngagement ?? "0"} icon={<TrendingUp size={20} />} description={t("overview.stats.perTweet")} />
-          <StatCard title={t("overview.stats.totalViews")} value={overview?.total_views ?? 0} icon={<Eye size={20} />} />
+          <StatCard title={t("overview.stats.tweetCount")} value={overview?.tweet_count ?? 0} icon={<MessageSquare size={20} />} description={overview ? t("overview.stats.today", { count: overview.todayTweets }) : t("overview.stats.dash")} />
+          <StatCard title={t("overview.stats.tweetLikes")} value={(overview?.tweet_likes ?? 0).toLocaleString()} icon={<Heart size={20} />} />
+          <StatCard title={t("overview.stats.tweetRetweets")} value={(overview?.tweet_retweets ?? 0).toLocaleString()} icon={<Repeat2 size={20} />} />
+          <StatCard title={t("overview.stats.tweetViews")} value={(overview?.tweet_views ?? 0).toLocaleString()} icon={<Eye size={20} />} />
           <StatCard title={t("overview.stats.followers")} value={overview?.followersCount ?? 0} icon={<TrendingUp size={20} />} description={overview ? t("overview.stats.following", { count: overview.followingCount }) : t("overview.stats.dash")} />
         </div>
       )}

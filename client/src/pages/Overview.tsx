@@ -216,11 +216,17 @@ export function Overview() {
           <h3 className="text-sm font-semibold flex items-center gap-1.5 text-[var(--muted-foreground)]"><XIcon /> {t("overview.xHeading")}</h3>
 
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-            <StatCard title={t("overview.stats.totalTweets")} value={stats?.total_tweets ?? 0} icon={<MessageSquare size={16} />} description={stats ? t("overview.stats.today", { count: stats.todayTweets }) : undefined} />
-            <StatCard title={t("overview.stats.totalRetweets")} value={stats?.total_retweets ?? 0} icon={<Repeat2 size={16} />} description={stats ? t("overview.stats.today", { count: stats.todayRetweets }) : undefined} />
-            <StatCard title={t("overview.stats.avgEngagement")} value={stats?.avgEngagement ?? "0"} icon={<TrendingUp size={16} />} description={t("overview.stats.perTweet")} />
-            <StatCard title={t("overview.stats.totalViews")} value={stats?.total_views ?? 0} icon={<Eye size={16} />} />
+            <StatCard title={t("overview.stats.tweetCount")} value={stats?.tweet_count ?? 0} icon={<MessageSquare size={16} />} description={stats ? t("overview.stats.today", { count: stats.todayTweets }) : undefined} />
+            <StatCard title={t("overview.stats.tweetLikes")} value={(stats?.tweet_likes ?? 0).toLocaleString()} icon={<Heart size={16} />} />
+            <StatCard title={t("overview.stats.tweetRetweets")} value={(stats?.tweet_retweets ?? 0).toLocaleString()} icon={<Repeat2 size={16} />} />
+            <StatCard title={t("overview.stats.tweetViews")} value={(stats?.tweet_views ?? 0).toLocaleString()} icon={<Eye size={16} />} />
             <StatCard title={t("overview.stats.followers")} value={stats?.followersCount ?? 0} icon={<TrendingUp size={16} />} description={stats ? t("overview.stats.following", { count: stats.followingCount }) : undefined} />
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <StatCard title={t("overview.stats.replyCount")} value={stats?.reply_count ?? 0} icon={<MessageSquare size={16} />} />
+            <StatCard title={t("overview.stats.replyLikes")} value={(stats?.reply_likes ?? 0).toLocaleString()} icon={<Heart size={16} />} />
+            <StatCard title={t("overview.stats.replyRetweets")} value={(stats?.reply_retweets ?? 0).toLocaleString()} icon={<Repeat2 size={16} />} />
+            <StatCard title={t("overview.stats.replyViews")} value={(stats?.reply_views ?? 0).toLocaleString()} icon={<Eye size={16} />} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">

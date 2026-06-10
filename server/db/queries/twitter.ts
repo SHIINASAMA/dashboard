@@ -1,6 +1,7 @@
 import { eq, desc, sql, and, count, inArray, gte, like } from "drizzle-orm";
 import { getDb } from "../connection";
 import { tweets, user_stats } from "../../../db/schema";
+import type { OverviewStats } from "../../../shared/types";
 
 export interface TweetRow {
   id: string; account_id: number; full_text: string; created_at: string;
@@ -28,9 +29,9 @@ function isExplicitEmpty(ids?: number[]): boolean {
   return Array.isArray(ids) && ids.length === 0;
 }
 
-const EMPTY_OVERVIEW = {
-  total_tweets: 0, total_likes: 0, total_retweets: 0, total_replies: 0,
-  total_views: 0, total_bookmarks: 0, avgEngagement: "0",
+const EMPTY_OVERVIEW: OverviewStats = {
+  tweet_count: 0, tweet_likes: 0, tweet_retweets: 0, tweet_views: 0,
+  reply_count: 0, reply_likes: 0, reply_retweets: 0, reply_views: 0,
   followersCount: 0, followingCount: 0, userTweetCount: 0,
   todayLikes: 0, todayRetweets: 0, todayTweets: 0,
 };
@@ -40,23 +41,40 @@ export async function getOverviewStats(accountIds?: number[]) {
   const db = getDb();
   const tweetFilter = hasIds(accountIds) ? inArray(tweets.account_id, accountIds) : undefined;
 
-  const [ts] = await db.select({
-    total_tweets: count(),
-    total_likes: sql<number>`COALESCE(SUM(${tweets.favorite_count}), 0)`,
-    total_retweets: sql<number>`COALESCE(SUM(${tweets.retweet_count}), 0)`,
-    total_replies: sql<number>`COALESCE(SUM(${tweets.reply_count}), 0)`,
-    total_views: sql<number>`COALESCE(SUM(${tweets.view_count}), 0)`,
-    total_bookmarks: sql<number>`COALESCE(SUM(${tweets.bookmark_count}), 0)`,
-  }).from(tweets).where(tweetFilter);
+  // Tweet stats: own tweets only (not replies, not retweets)
+  const tweetCond = and(
+    eq(tweets.is_reply, 0), eq(tweets.is_retweet, 0),
+    ...(tweetFilter ? [tweetFilter] : []),
+  );
+  const [tw] = await db.select({
+    tweet_count: count(),
+    tweet_likes: sql<number>`COALESCE(SUM(${tweets.favorite_count}), 0)`,
+    tweet_retweets: sql<number>`COALESCE(SUM(${tweets.retweet_count}), 0)`,
+    tweet_views: sql<number>`COALESCE(SUM(${tweets.view_count}), 0)`,
+  }).from(tweets).where(tweetCond);
+
+  // Reply stats
+  const replyCond = and(
+    eq(tweets.is_reply, 1),
+    ...(tweetFilter ? [tweetFilter] : []),
+  );
+  const [rp] = await db.select({
+    reply_count: count(),
+    reply_likes: sql<number>`COALESCE(SUM(${tweets.favorite_count}), 0)`,
+    reply_retweets: sql<number>`COALESCE(SUM(${tweets.retweet_count}), 0)`,
+    reply_views: sql<number>`COALESCE(SUM(${tweets.view_count}), 0)`,
+  }).from(tweets).where(replyCond);
 
   const today = new Date().toISOString().slice(0, 10);
-  const todayConditions = [gte(tweets.created_at, today)];
-  if (tweetFilter) todayConditions.push(tweetFilter);
+  const todayCond = and(
+    gte(tweets.created_at, today),
+    ...(tweetFilter ? [tweetFilter] : []),
+  );
   const [td] = await db.select({
     today_likes: sql<number>`COALESCE(SUM(${tweets.favorite_count}), 0)`,
     today_retweets: sql<number>`COALESCE(SUM(${tweets.retweet_count}), 0)`,
     today_tweets: count(),
-  }).from(tweets).where(and(...todayConditions));
+  }).from(tweets).where(todayCond);
 
   const allStats = await db.select({
     account_id: user_stats.account_id,
@@ -79,10 +97,18 @@ export async function getOverviewStats(accountIds?: number[]) {
   const userTweetCount = latestStatsRows.reduce((s, r) => s + r.tweet_count, 0);
 
   return {
-    ...ts, avgEngagement: ts.total_tweets > 0
-      ? ((ts.total_likes + ts.total_retweets + ts.total_replies) / ts.total_tweets).toFixed(1) : "0",
+    tweet_count: tw?.tweet_count ?? 0,
+    tweet_likes: tw?.tweet_likes ?? 0,
+    tweet_retweets: tw?.tweet_retweets ?? 0,
+    tweet_views: tw?.tweet_views ?? 0,
+    reply_count: rp?.reply_count ?? 0,
+    reply_likes: rp?.reply_likes ?? 0,
+    reply_retweets: rp?.reply_retweets ?? 0,
+    reply_views: rp?.reply_views ?? 0,
     followersCount, followingCount, userTweetCount,
-    todayLikes: Number(td?.today_likes ?? 0), todayRetweets: Number(td?.today_retweets ?? 0), todayTweets: Number(td?.today_tweets ?? 0),
+    todayLikes: Number(td?.today_likes ?? 0),
+    todayRetweets: Number(td?.today_retweets ?? 0),
+    todayTweets: Number(td?.today_tweets ?? 0),
   };
 }
 
