@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { api, type TimelineData, type PaginatedTweets, type Tweet } from "../api";
-import { formatDateTime } from "../lib/i18n";
+import { formatDateTime, formatDate } from "../lib/datetime";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import {
@@ -225,7 +225,7 @@ export function XDetail() {
                   <span className="flex items-center gap-1"><Repeat2 size={12} /> {tweet.retweet_count}</span>
                   <span className="flex items-center gap-1"><MessageSquare size={12} /> {tweet.reply_count}</span>
                   {tweet.view_count > 0 && <span className="flex items-center gap-1"><Eye size={12} /> {tweet.view_count}</span>}
-                  <span>{new Date(tweet.created_at).toLocaleDateString()}</span>
+                  <span>{formatDate(tweet.created_at)}</span>
                 </div>
               </a>
             ))}
@@ -246,7 +246,7 @@ export function XDetail() {
                   <span className="flex items-center gap-1"><Repeat2 size={12} /> {tweet.retweet_count}</span>
                   <span className="flex items-center gap-1"><MessageSquare size={12} /> {tweet.reply_count}</span>
                   {tweet.view_count > 0 && <span className="flex items-center gap-1"><Eye size={12} /> {tweet.view_count}</span>}
-                  <span>{new Date(tweet.created_at).toLocaleDateString()}</span>
+                  <span>{formatDate(tweet.created_at)}</span>
                 </div>
               </a>
             ))}

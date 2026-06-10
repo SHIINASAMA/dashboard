@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { api, type GithubRepo } from "../api";
+import { formatDate } from "../lib/datetime";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import {
@@ -304,7 +305,7 @@ export function RepoDetail() {
                   formatter={(value) => [String(value).toLocaleString() ?? "", t("repoDetail.downloads")]}
                   labelFormatter={(label) => {
                     const rel = releases.find((r) => r.tag_name === label);
-                    return rel ? `${rel.name || rel.tag_name} — ${rel.published_at ? new Date(rel.published_at).toLocaleDateString() : ""}` : label;
+                    return rel ? `${rel.name || rel.tag_name} — ${rel.published_at ? formatDate(rel.published_at) : ""}` : label;
                   }}
                 />
                 <Bar dataKey="total_downloads" fill="#8b5cf6" radius={[0, 4, 4, 0]} name={t("repoDetail.downloads")} />

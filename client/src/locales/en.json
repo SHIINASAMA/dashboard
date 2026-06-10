@@ -353,7 +353,9 @@
     "modeDark": "Dark",
     "lightTheme": "Light theme",
     "darkTheme": "Dark theme",
-    "theme": "Theme"
+    "theme": "Theme",
+    "timezone": "Timezone",
+    "timezoneHint": "Dates on this page will use the selected timezone."
   },
   "addAccountForm": {
     "title": "Add Account",

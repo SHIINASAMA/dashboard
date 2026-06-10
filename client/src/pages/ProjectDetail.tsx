@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { api, type Account } from "../api";
+import { formatDate } from "../lib/datetime";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import {
@@ -123,7 +124,7 @@ export function ProjectDetail() {
                   contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }}
                   labelFormatter={(label) => {
                     const rel = releases.find((r) => r.release_tag === label);
-                    return rel ? `${rel.name || rel.release_tag} — ${rel.released_at ? new Date(rel.released_at).toLocaleDateString() : ""}` : label;
+                    return rel ? `${rel.name || rel.release_tag} — ${rel.released_at ? formatDate(rel.released_at) : ""}` : label;
                   }}
                 />
                 <Bar dataKey="total_downloads" fill="#8b5cf6" radius={[0, 4, 4, 0]} name={t("projectDetail.releases")} />

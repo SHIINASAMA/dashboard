@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { api, type GithubOverview, type GithubContribution, type GithubRepo } from "../api";
-import { formatDateTime } from "../lib/i18n";
+import { formatDateTime } from "../lib/datetime";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { StatCard } from "../components/StatCard";

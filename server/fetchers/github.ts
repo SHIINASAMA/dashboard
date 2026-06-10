@@ -141,7 +141,7 @@ export async function fetchGithubAccount(account: AccountRow) {
   } catch (err: any) {
     const msg = err.message || String(err);
     getLogger().error("GitHub", "@%s error: %s", account.screen_name, msg);
-    await updateAccount(account.id, { error_message: msg });
+    await updateAccount(account.id, { error_message: msg, last_fetched_at: new Date().toISOString() });
     return false;
   }
 }

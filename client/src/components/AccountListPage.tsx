@@ -7,7 +7,7 @@ import { Card, CardContent } from "./ui/card";
 import { Badge } from "./ui/badge";
 import AddAccountForm from "./AddAccountForm";
 import EditAccountForm from "./EditAccountForm";
-import { formatDateTime } from "../lib/i18n";
+import { formatDateTime } from "../lib/datetime";
 import { Pencil, Plus, PlayCircle, PauseCircle, Trash2, AlertCircle, ArrowUpRight } from "lucide-react";
 
 export interface AccountListPageProps {

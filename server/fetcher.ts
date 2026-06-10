@@ -3,6 +3,8 @@ import { upsertTweet, insertUserStats, updateAccount } from "./db";
 import { _xClient } from "../scripts/utils";
 import { getLogger } from "./logger";
 
+const LOG_TAG = "X";
+
 function toISO(createdAt: string | undefined): string {
   if (!createdAt) return "";
   return new Date(createdAt).toISOString();
@@ -17,14 +19,10 @@ async function apiCall<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
     try {
       return await fn();
     } catch (err: any) {
-      const is429 = err.name === "ResponseError" && err.response?.status === 429;
-      if (is429 && i < retries - 1) {
-        const wait = (i + 1) * 5_000;
-        getLogger().warn("Fetcher", "Rate limited, retrying in %ds...", wait / 1000);
-        await sleep(wait);
-        continue;
-      }
-      throw err;
+      if (i >= retries - 1) throw err;
+      const wait = (i + 1) * 10_000;
+      getLogger().warn(LOG_TAG, "API call failed (%s), retrying in %ds...", err.name || "Error", wait / 1000);
+      await sleep(wait);
     }
   }
   throw new Error("Unreachable");
@@ -192,7 +190,7 @@ export async function fetchAccount(account: AccountRow) {
   } catch (err: any) {
     const msg = err.message || String(err);
     getLogger().error("Fetcher", "@%s error: %s", account.screen_name, msg);
-    await updateAccount(account.id, { error_message: msg });
+    await updateAccount(account.id, { error_message: msg, last_fetched_at: new Date().toISOString() });
     return 0;
   }
 }

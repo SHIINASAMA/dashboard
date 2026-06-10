@@ -353,7 +353,9 @@
     "modeDark": "深色",
     "lightTheme": "浅色主题",
     "darkTheme": "深色主题",
-    "theme": "主题"
+    "theme": "主题",
+    "timezone": "时区",
+    "timezoneHint": "此页面的日期将使用所选的时区。"
   },
   "addAccountForm": {
     "title": "添加账户",

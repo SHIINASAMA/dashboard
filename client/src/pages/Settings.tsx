@@ -1,8 +1,9 @@
-import { Sun, Moon, Monitor, Key } from "lucide-react";
+import { Sun, Moon, Monitor, Key, Clock } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../components/useTheme";
-import { themes, type ThemeCategory } from "../lib/themes";
+import { themes } from "../lib/themes";
 import { api } from "../api";
+import { getTimezone, setTimezone } from "../lib/datetime";
 import { useState } from "react";
 
 const MODE_ICONS = {
@@ -55,8 +56,7 @@ export function Settings() {
     }
   };
 
-  const filtered = (category: ThemeCategory) =>
-    themes.filter((theme) => theme.category === category);
+  const allThemes = themes;
 
   const LANG_OPTIONS = [
     { value: "en" as const, label: "English" },
@@ -68,6 +68,35 @@ export function Settings() {
     light: t("settings.modeLight"),
     dark: t("settings.modeDark"),
   };
+
+  const tz = getTimezone();
+  const COMMON_TIMEZONES = [
+    "Asia/Shanghai",
+    "Asia/Tokyo",
+    "Asia/Seoul",
+    "Asia/Singapore",
+    "Asia/Hong_Kong",
+    "Asia/Taipei",
+    "Asia/Kolkata",
+    "Asia/Bangkok",
+    "Asia/Dubai",
+    "Europe/London",
+    "Europe/Paris",
+    "Europe/Berlin",
+    "Europe/Moscow",
+    "America/New_York",
+    "America/Chicago",
+    "America/Denver",
+    "America/Los_Angeles",
+    "America/Toronto",
+    "America/Vancouver",
+    "America/Buenos_Aires",
+    "America/Sao_Paulo",
+    "America/Mexico_City",
+    "Pacific/Auckland",
+    "Australia/Sydney",
+    "UTC",
+  ];
 
   return (
     <div className="space-y-8 max-w-lg">
@@ -94,6 +123,22 @@ export function Settings() {
               </button>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <h3 className="text-sm font-semibold flex items-center gap-1.5"><Clock size={14} /> {t("settings.timezone")}</h3>
+        <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--card)]">
+          <select
+            value={tz}
+            onChange={(e) => setTimezone(e.target.value)}
+            className="w-full text-sm px-3 py-2 rounded-lg bg-[var(--muted)] border border-[var(--border)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+          >
+            {COMMON_TIMEZONES.map((zone) => (
+              <option key={zone} value={zone}>{zone.replace(/_/g, " ")}</option>
+            ))}
+          </select>
+          <p className="text-xs text-[var(--muted-foreground)] mt-2">{t("settings.timezoneHint")}</p>
         </div>
       </section>
 
@@ -163,22 +208,24 @@ export function Settings() {
           </div>
 
           <div className="space-y-3">
-            {(settings.mode === "system" || settings.mode === "light") && (
-              <ThemeSelect
-                label={settings.mode === "system" ? t("settings.lightTheme") : t("settings.theme")}
-                options={filtered("light")}
-                value={settings.lightTheme}
-                onChange={(id) => setSettings({ ...settings, lightTheme: id })}
-              />
-            )}
-            {(settings.mode === "system" || settings.mode === "dark") && (
-              <ThemeSelect
-                label={settings.mode === "system" ? t("settings.darkTheme") : t("settings.theme")}
-                options={filtered("dark")}
-                value={settings.darkTheme}
-                onChange={(id) => setSettings({ ...settings, darkTheme: id })}
-              />
-            )}
+            <div className="space-y-3">
+              {(settings.mode === "system" || settings.mode === "light") && (
+                <ThemeSelect
+                  label={settings.mode === "system" ? t("settings.lightTheme") : t("settings.theme")}
+                  options={allThemes}
+                  value={settings.lightTheme}
+                  onChange={(id) => setSettings({ ...settings, lightTheme: id })}
+                />
+              )}
+              {(settings.mode === "system" || settings.mode === "dark") && (
+                <ThemeSelect
+                  label={settings.mode === "system" ? t("settings.darkTheme") : t("settings.theme")}
+                  options={allThemes}
+                  value={settings.darkTheme}
+                  onChange={(id) => setSettings({ ...settings, darkTheme: id })}
+                />
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -193,7 +240,7 @@ function ThemeSelect({
   onChange,
 }: {
   label: string;
-  options: typeof themes;
+  options: Theme[];
   value: string;
   onChange: (id: string) => void;
 }) {

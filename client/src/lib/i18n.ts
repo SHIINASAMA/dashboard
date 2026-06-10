@@ -24,14 +24,4 @@ if (import.meta.env.DEV) {
   });
 }
 
-export function formatDate(date: Date | string): string {
-  const lang = i18n.language;
-  return new Date(date).toLocaleDateString(lang === "zh" ? "zh-CN" : "en-US");
-}
-
-export function formatDateTime(date: Date | string): string {
-  const lang = i18n.language;
-  return new Date(date).toLocaleString(lang === "zh" ? "zh-CN" : "en-US");
-}
-
 export default i18n;

@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { api, type RedditOverview, type RedditPost, type RedditComment } from "../api";
-import { formatDateTime } from "../lib/i18n";
+import { formatDateTime, formatDate } from "../lib/datetime";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { StatCard } from "../components/StatCard";
@@ -237,7 +237,7 @@ export function RedditDetail() {
                           <span>r/{post.subreddit}</span>
                           <span className="flex items-center gap-0.5"><ThumbsUp size={10} /> {post.score.toLocaleString()}</span>
                           <span className="flex items-center gap-0.5"><MessageSquare size={10} /> {post.num_comments.toLocaleString()}</span>
-                          <span>{new Date(post.created_utc * 1000).toLocaleDateString()}</span>
+                          <span>{formatDate(new Date(post.created_utc * 1000))}</span>
                         </div>
                       </div>
                       <ArrowUpRight size={14} className="text-[var(--muted-foreground)] shrink-0" />
@@ -266,7 +266,7 @@ export function RedditDetail() {
                         <div className="flex items-center gap-3 text-xs text-[var(--muted-foreground)] mt-1">
                           <span>r/{comment.subreddit}</span>
                           <span className="flex items-center gap-0.5"><ThumbsUp size={10} /> {comment.score.toLocaleString()}</span>
-                          <span>{new Date(comment.created_utc * 1000).toLocaleDateString()}</span>
+                          <span>{formatDate(new Date(comment.created_utc * 1000))}</span>
                         </div>
                       </div>
                     </div>

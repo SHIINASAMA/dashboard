@@ -1,9 +1,6 @@
-export type ThemeCategory = "light" | "dark";
-
 export interface Theme {
   id: string;
   name: string;
-  category: ThemeCategory;
 }
 
 export interface ThemeSettings {
@@ -13,13 +10,22 @@ export interface ThemeSettings {
 }
 
 export const themes: Theme[] = [
-  { id: "default-light", name: "Default Light", category: "light" },
-  { id: "default-dark", name: "Default Dark", category: "dark" },
+  { id: "default-light", name: "Default Light" },
+  { id: "default-dark", name: "Default Dark" },
+  { id: "sepia-light", name: "Sepia Light" },
+  { id: "sepia-dark", name: "Sepia Dark" },
+  { id: "cyber-light", name: "Cyber Light" },
+  { id: "cyber-dark", name: "Cyber Dark" },
+  { id: "forest-light", name: "Forest Light" },
+  { id: "forest-dark", name: "Forest Dark" },
+  { id: "sky-light", name: "Sky Light" },
+  { id: "sky-dark", name: "Sky Dark" },
+  { id: "rose-light", name: "Rose Light" },
+  { id: "rose-dark", name: "Rose Dark" },
 ];
 
-export const darkThemeIds = new Set(
-  themes.filter((t) => t.category === "dark").map((t) => t.id),
-);
+// Themes whose name ends with "-dark" are dark variants.
+const isDarkId = (id: string) => id.endsWith("-dark");
 
 export const DEFAULT_SETTINGS: ThemeSettings = {
   mode: "system",
@@ -44,14 +50,12 @@ export function saveSettings(settings: ThemeSettings) {
 export function resolveTheme(settings: ThemeSettings): string {
   if (settings.mode === "light") return settings.lightTheme;
   if (settings.mode === "dark") return settings.darkTheme;
-  const prefersDark = window.matchMedia(
-    "(prefers-color-scheme: dark)",
-  ).matches;
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
   return prefersDark ? settings.darkTheme : settings.lightTheme;
 }
 
 export function applyTheme(themeId: string) {
   const root = document.documentElement;
   root.setAttribute("data-theme", themeId);
-  root.classList.toggle("dark", darkThemeIds.has(themeId));
+  root.classList.toggle("dark", isDarkId(themeId));
 }
