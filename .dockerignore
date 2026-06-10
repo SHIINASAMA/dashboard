@@ -1,0 +1,10 @@
+node_modules
+client/node_modules
+client/dist
+data
+.git
+.env
+*.md
+docs
+.github
+.DS_Store

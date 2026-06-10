@@ -151,8 +151,19 @@ export function loadConfig(): DashboardConfig {
       // Normalise: strip leading/trailing slashes from any existing value
       const clean = (_config.urlPrefix || "").replace(/^\/+|\/+$/g, "");
       _config.urlPrefix = clean;
-      // Migrate: if urlPrefix is still empty, generate one
-      if (!_config.urlPrefix) {
+      // When DASHBOARD_URL_PREFIX is explicitly set via env, it overrides config.json.
+      // This allows the Docker image to use a matching prefix between client build and server.
+      if (process.env.DASHBOARD_URL_PREFIX !== undefined) {
+        const envPrefix = process.env.DASHBOARD_URL_PREFIX.replace(/^\/+|\/+$/g, "");
+        if (envPrefix !== _config.urlPrefix) {
+          _config.urlPrefix = envPrefix;
+          saveConfig(_config);
+          console.log("🔒 URL prefix overridden by env:", envPrefix || "(none)");
+        }
+      }
+      // Migrate: if urlPrefix is still empty AND no env override, generate one.
+      // When DASHBOARD_URL_PREFIX is explicitly "" (e.g. in Docker), don't auto-generate.
+      if (!_config.urlPrefix && process.env.DASHBOARD_URL_PREFIX === undefined) {
         _config.urlPrefix = generatePrefix();
         saveConfig(_config);
         console.log("🔒 URL prefix auto-generated:", _config.urlPrefix);
@@ -169,7 +180,9 @@ export function loadConfig(): DashboardConfig {
 
   // First run — auto-generate urlPrefix, migrate other env vars
   _config = {
-    urlPrefix: process.env.DASHBOARD_URL_PREFIX?.replace(/^\/+|\/+$/g, "") || generatePrefix(),
+    urlPrefix: process.env.DASHBOARD_URL_PREFIX !== undefined
+      ? process.env.DASHBOARD_URL_PREFIX.replace(/^\/+|\/+$/g, "")
+      : generatePrefix(),
     host: process.env.HOST || "localhost",
     port: Number(process.env.PORT) || 3001,
     https: process.env.HTTPS === "true",
@@ -188,7 +201,7 @@ export function loadConfig(): DashboardConfig {
   };
   writeFileSync(CONFIG_PATH, JSON.stringify(_config, null, 2) + "\n", { mode: 0o600 });
   console.log("📄 config.json created at", CONFIG_PATH);
-  if (!process.env.DASHBOARD_URL_PREFIX) {
+  if (process.env.DASHBOARD_URL_PREFIX === undefined) {
     console.log("🔒 URL prefix auto-generated:", _config.urlPrefix);
   }
   return _config;

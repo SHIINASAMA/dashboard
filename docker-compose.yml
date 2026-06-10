@@ -1,0 +1,34 @@
+services:
+  dashboard:
+    build:
+      context: .
+      args:
+        # Must match DASHBOARD_URL_PREFIX below.  Default is no prefix.
+        # If you change this, set DASHBOARD_URL_PREFIX to the same value (without trailing slash).
+        VITE_BASE: ${VITE_BASE:-/}
+    image: dashboard:latest
+    container_name: dashboard
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3001}:3001"
+    environment:
+      HOST: 0.0.0.0
+      PORT: "3001"
+      DATA_DIR: ${DATA_DIR:-./data}
+      # Required: 64 hex characters (32 bytes) for AES encryption + JWT.
+      # Generate with: openssl rand -hex 32
+      DASHBOARD_SECRET: ${DASHBOARD_SECRET:-}
+      # URL prefix — if empty, no prefix is used.  Must match the VITE_BASE build arg.
+      # If you want a prefix, set both DASHBOARD_URL_PREFIX and VITE_BASE.
+      DASHBOARD_URL_PREFIX: ${DASHBOARD_URL_PREFIX:-}
+      HTTPS: "false"
+      # Optional proxy for outbound API calls
+      HTTPS_PROXY: ${HTTPS_PROXY:-}
+      HTTP_PROXY: ${HTTP_PROXY:-}
+      # Optional: Reddit OAuth (create a script app at https://www.reddit.com/prefs/apps)
+      REDDIT_CLIENT_ID: ${REDDIT_CLIENT_ID:-}
+      REDDIT_CLIENT_SECRET: ${REDDIT_CLIENT_SECRET:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      # Mount the project's own data/ directory by default.
+      - ${DATA_HOST_DIR:-./data}:/app/data
