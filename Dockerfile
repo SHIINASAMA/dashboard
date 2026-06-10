@@ -14,8 +14,6 @@ RUN cd client && bun install
 # Copy source and build (skip tsc to avoid @shared alias + missing type issues)
 COPY shared/ shared/
 COPY client/ client/
-ARG VITE_BASE=/
-ENV VITE_BASE=${VITE_BASE}
 RUN cd client && bunx vite build
 
 # ── Stage 2: Run server ────────────────────────────────────────────

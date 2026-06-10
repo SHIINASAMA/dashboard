@@ -41,14 +41,11 @@ const cfg = loadConfig();
 const logger = initLogger(cfg.log);
 logger.info("Server", "Logger initialized: dir=%s level=%s size=%s files=%d",
   cfg.log.dir, cfg.log.level, cfg.log.maxSize, cfg.log.maxFiles);
-// urlPrefix is always set and does not contain slashes
-const PREFIX = cfg.urlPrefix;
-const BASE = PREFIX ? `/${PREFIX}` : "";
 
 const port = cfg.port;
 const protocol = cfg.https ? "https" : "http";
 const host = cfg.host;
-const serverUrl = `${protocol}://${host}${port === 443 || port === 80 ? "" : `:${port}`}${BASE}`;
+const serverUrl = `${protocol}://${host}${port === 443 || port === 80 ? "" : `:${port}`}`;
 
 const CLIENT_DIST = join(__dirname, "..", "client", "dist");
 const isProd = existsSync(join(CLIENT_DIST, "index.html"));
@@ -131,14 +128,14 @@ if (allowed.length > 0) {
 // ── Auth middleware ───────────────────────────────────────────────
 
 // Require auth for all API routes except auth endpoints and health
-app.use(`${BASE}/api/*`, async (c, next) => {
+app.use("/api/*", async (c, next) => {
   const path = c.req.path;
 
   // Public endpoints (no session required)
-  if (path === `${BASE}/api/health`) return next();
-  if (path === `${BASE}/api/auth/login`) return next();
-  if (path === `${BASE}/api/auth/me`) return next();
-  if (path === `${BASE}/api/reddit/callback`) return next();
+  if (path === "/api/health") return next();
+  if (path === "/api/auth/login") return next();
+  if (path === "/api/auth/me") return next();
+  if (path === "/api/reddit/callback") return next();
 
   const token = getCookie(c, SESSION_COOKIE);
   if (!token) {
@@ -157,7 +154,7 @@ app.use(`${BASE}/api/*`, async (c, next) => {
 
 // ── Auth routes ───────────────────────────────────────────────────
 
-app.post(`${BASE}/api/auth/login`, async (c) => {
+app.post("/api/auth/login", async (c) => {
   try {
     // Rate limit by IP
     const ip = c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || "unknown";
@@ -175,7 +172,7 @@ app.post(`${BASE}/api/auth/login`, async (c) => {
       }
       const session = await createSessionToken(username, result.role || "user");
       setCookie(c, SESSION_COOKIE, session, {
-        path: `${BASE}/`,
+        path: "/",
         httpOnly: true,
         secure: protocol === "https",
         sameSite: "Lax",
@@ -191,7 +188,7 @@ app.post(`${BASE}/api/auth/login`, async (c) => {
     }
     const session = await createSessionToken("admin", "admin");
     setCookie(c, SESSION_COOKIE, session, {
-      path: `${BASE}/`,
+      path: "/",
       httpOnly: true,
       secure: protocol === "https",
       sameSite: "Lax",
@@ -203,7 +200,7 @@ app.post(`${BASE}/api/auth/login`, async (c) => {
   }
 });
 
-app.get(`${BASE}/api/auth/me`, async (c) => {
+app.get("/api/auth/me", async (c) => {
   const token = getCookie(c, SESSION_COOKIE);
   if (!token) return c.json({ authenticated: false });
   const session = await validateSession(token);
@@ -211,13 +208,13 @@ app.get(`${BASE}/api/auth/me`, async (c) => {
   return c.json({ authenticated: true, username: session.username, role: session.role });
 });
 
-app.post(`${BASE}/api/auth/logout`, (c) => {
-  deleteCookie(c, SESSION_COOKIE, { path: `${BASE}/`, maxAge: 0 });
+app.post("/api/auth/logout", (c) => {
+  deleteCookie(c, SESSION_COOKIE, { path: "/", maxAge: 0 });
   return c.json({ ok: true });
 });
 
 // Change password (requires current session)
-app.post(`${BASE}/api/auth/change-password`, async (c) => {
+app.post("/api/auth/change-password", async (c) => {
   try {
     const { currentPassword, newPassword } = await c.req.json();
     if (!newPassword || newPassword.length < 4) {
@@ -236,12 +233,12 @@ app.post(`${BASE}/api/auth/change-password`, async (c) => {
 
 // ── User management (admin only) ──────────────────────────────────
 
-app.get(`${BASE}/api/users`, async (c) => {
+app.get("/api/users", async (c) => {
   if (c.get("sessionRole") !== "admin") return c.json({ error: "Forbidden" }, 403);
   return c.json({ users: await getUsers() });
 });
 
-app.post(`${BASE}/api/users`, async (c) => {
+app.post("/api/users", async (c) => {
   if (c.get("sessionRole") !== "admin") return c.json({ error: "Forbidden" }, 403);
   const { username, password, role } = await c.req.json();
   if (!username || !password) return c.json({ error: "username and password required" }, 400);
@@ -256,7 +253,7 @@ app.post(`${BASE}/api/users`, async (c) => {
   }
 });
 
-app.delete(`${BASE}/api/users/:id`, async (c) => {
+app.delete("/api/users/:id", async (c) => {
   if (c.get("sessionRole") !== "admin") return c.json({ error: "Forbidden" }, 403);
   const id = Number(c.req.param("id"));
   if (id === 1) return c.json({ error: "Cannot delete the bootstrap admin" }, 400);
@@ -271,7 +268,7 @@ app.delete(`${BASE}/api/users/:id`, async (c) => {
 
 // ── Request logging middleware ────────────────────────────────────
 
-app.use(`${BASE}/api/*`, async (c, next) => {
+app.use("/api/*", async (c, next) => {
   const start = Date.now();
   await next();
   const ms = Date.now() - start;
@@ -280,18 +277,18 @@ app.use(`${BASE}/api/*`, async (c, next) => {
 
 // ── API routes ────────────────────────────────────────────────────
 
-app.route(`${BASE}/api/tweets`, tweetsRouter);
-app.route(`${BASE}/api/stats`, statsRouter);
-app.route(`${BASE}/api/accounts`, accountsRouter);
-app.route(`${BASE}/api/github`, githubRouter);
-app.route(`${BASE}/api/gitlab`, gitlabRouter);
-app.route(`${BASE}/api/reddit`, redditRouter);
-app.route(`${BASE}/api/confirm`, confirmRouter);
+app.route("/api/tweets", tweetsRouter);
+app.route("/api/stats", statsRouter);
+app.route("/api/accounts", accountsRouter);
+app.route("/api/github", githubRouter);
+app.route("/api/gitlab", gitlabRouter);
+app.route("/api/reddit", redditRouter);
+app.route("/api/confirm", confirmRouter);
 
-app.get(`${BASE}/api/health`, (c) => c.json({ status: "ok" }));
+app.get("/api/health", (c) => c.json({ status: "ok" }));
 
 // Manual trigger for any platform
-app.post(`${BASE}/api/fetch/:id`, async (c) => {
+app.post("/api/fetch/:id", async (c) => {
   const id = Number(c.req.param("id"));
   const account = await getAccountById(id);
   if (!account) return c.json({ error: "Account not found" }, 404);
@@ -316,19 +313,15 @@ app.post(`${BASE}/api/fetch/:id`, async (c) => {
 // ── Serve client SPA (production) ─────────────────────────────────
 
 if (isProd) {
-  const rewrite = (path: string) => path.replace(BASE, "") || "/";
-
-  app.use(`${BASE}/assets/*`, serveStatic({
+  app.use("/assets/*", serveStatic({
     root: join(CLIENT_DIST, "assets"),
-    rewriteRequestPath: rewrite,
   }));
-  app.use(`${BASE}/*`, serveStatic({
+  app.use("/*", serveStatic({
     root: CLIENT_DIST,
-    rewriteRequestPath: rewrite,
   }));
 
   // SPA fallback: serve index.html for all non-API GET routes
-  app.get(`${BASE}/*`, async (c) => {
+  app.get("/*", async (c) => {
     const indexPath = join(CLIENT_DIST, "index.html");
     if (existsSync(indexPath)) {
       c.header("Content-Type", "text/html");
@@ -341,7 +334,6 @@ if (isProd) {
 startScheduler();
 
 logger.info("Server", "Running on %s", serverUrl);
-logger.info("Server", "URL prefix: %s", BASE || "(none)");
 if (isProd) logger.info("Server", "Serving production client build");
 
 // Export the redirect URI so the fetcher can use it for OAuth callbacks

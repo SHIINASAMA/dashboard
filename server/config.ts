@@ -68,9 +68,6 @@ export interface DatabaseConfig {
 }
 
 export interface DashboardConfig {
-  /** URL prefix for all routes, e.g. "/my-dashboard" */
-  urlPrefix: string;
-
   /** Server listen host */
   host: string;
 
@@ -102,7 +99,6 @@ export interface DashboardConfig {
 }
 
 const DEFAULTS: DashboardConfig = {
-  urlPrefix: "",
   host: "localhost",
   port: 3001,
   https: false,
@@ -119,17 +115,6 @@ const DEFAULTS: DashboardConfig = {
     maxFiles: logMaxFiles(),
   },
 };
-
-function generatePrefix(): string {
-  return randomBytes(12).toString("base64url"); // 12 bytes = 16 base64url chars, no leading /
-}
-
-// prefixValue returns the urlPrefix value from config (no slash).
-// Empty string means no prefix → use '/' as the base path.
-function prefixValue(cfg: DashboardConfig): string {
-  const p = (cfg.urlPrefix || "").replace(/^\/+|\/+$/g, "");
-  return p;
-}
 
 // ── Load / save ───────────────────────────────────────────────────
 
@@ -148,41 +133,14 @@ export function loadConfig(): DashboardConfig {
       _config.log = { ...DEFAULTS.log, ...(_config.log || {}) };
       _config.database = { ...DEFAULTS.database, ...(_config.database || {}) };
       if (!_config.log.dir) _config.log.dir = logDir();
-      // Normalise: strip leading/trailing slashes from any existing value
-      const clean = (_config.urlPrefix || "").replace(/^\/+|\/+$/g, "");
-      _config.urlPrefix = clean;
-      // When DASHBOARD_URL_PREFIX is explicitly set via env, it overrides config.json.
-      // This allows the Docker image to use a matching prefix between client build and server.
-      if (process.env.DASHBOARD_URL_PREFIX !== undefined) {
-        const envPrefix = process.env.DASHBOARD_URL_PREFIX.replace(/^\/+|\/+$/g, "");
-        if (envPrefix !== _config.urlPrefix) {
-          _config.urlPrefix = envPrefix;
-          saveConfig(_config);
-          console.log("🔒 URL prefix overridden by env:", envPrefix || "(none)");
-        }
-      }
-      // Migrate: if urlPrefix is still empty AND no env override, generate one.
-      // When DASHBOARD_URL_PREFIX is explicitly "" (e.g. in Docker), don't auto-generate.
-      if (!_config.urlPrefix && process.env.DASHBOARD_URL_PREFIX === undefined) {
-        _config.urlPrefix = generatePrefix();
-        saveConfig(_config);
-        console.log("🔒 URL prefix auto-generated:", _config.urlPrefix);
-      }
-      // If we normalised (had extra slashes), save the cleaned version
-      if (clean !== (raw.urlPrefix || "")) {
-        saveConfig(_config);
-      }
       return _config;
     } catch (e) {
       console.warn("⚠  config.json is corrupt — using defaults");
     }
   }
 
-  // First run — auto-generate urlPrefix, migrate other env vars
+  // First run
   _config = {
-    urlPrefix: process.env.DASHBOARD_URL_PREFIX !== undefined
-      ? process.env.DASHBOARD_URL_PREFIX.replace(/^\/+|\/+$/g, "")
-      : generatePrefix(),
     host: process.env.HOST || "localhost",
     port: Number(process.env.PORT) || 3001,
     https: process.env.HTTPS === "true",
@@ -201,18 +159,11 @@ export function loadConfig(): DashboardConfig {
   };
   writeFileSync(CONFIG_PATH, JSON.stringify(_config, null, 2) + "\n", { mode: 0o600 });
   console.log("📄 config.json created at", CONFIG_PATH);
-  if (process.env.DASHBOARD_URL_PREFIX === undefined) {
-    console.log("🔒 URL prefix auto-generated:", _config.urlPrefix);
-  }
   return _config;
 }
 
 export function saveConfig(updates: Partial<DashboardConfig>): DashboardConfig {
   _config = { ...loadConfig(), ...updates };
-  // Normalise urlPrefix on save
-  if (_config.urlPrefix) {
-    _config.urlPrefix = _config.urlPrefix.replace(/^\/+|\/+$/g, "");
-  }
   // Set default sqlite path if not configured
   if (!_config.database.sqlite.path) {
     _config.database.sqlite.path = join(dataDir(), "db", "dashboard.db");

@@ -2,10 +2,6 @@ services:
   dashboard:
     build:
       context: .
-      args:
-        # Must match DASHBOARD_URL_PREFIX below.  Default is no prefix.
-        # If you change this, set DASHBOARD_URL_PREFIX to the same value (without trailing slash).
-        VITE_BASE: ${VITE_BASE:-/}
     image: dashboard:latest
     container_name: dashboard
     restart: unless-stopped
@@ -18,9 +14,6 @@ services:
       # Required: 64 hex characters (32 bytes) for AES encryption + JWT.
       # Generate with: openssl rand -hex 32
       DASHBOARD_SECRET: ${DASHBOARD_SECRET:-}
-      # URL prefix — if empty, no prefix is used.  Must match the VITE_BASE build arg.
-      # If you want a prefix, set both DASHBOARD_URL_PREFIX and VITE_BASE.
-      DASHBOARD_URL_PREFIX: ${DASHBOARD_URL_PREFIX:-}
       HTTPS: "false"
       # Optional proxy for outbound API calls
       HTTPS_PROXY: ${HTTPS_PROXY:-}
