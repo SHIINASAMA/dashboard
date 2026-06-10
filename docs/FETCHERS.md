@@ -7,22 +7,43 @@ The scheduler (`server/scheduler.ts`) runs every 60 seconds, dispatching a singl
 Uses `twitter-openapi-typescript` library (wraps `twitter-openapi-typescript-generated`). Auth token stored from X.com cookies.
 
 ### Fetch flow
-1. Fetch user profile → extract stats (followers, following, tweet count)
-2. Fetch tweets in batches (batchSize=50, maxTweets=800, 2s delay between batches)
-3. Fetch pinned tweets via `legacy.pinnedTweetIdsStr` → `getTweetDetail`
-4. Insert/update engagement data
+1. Fetch user profile via `getUserByScreenName` → extract stats (followers, following, tweet count) + pinned tweet IDs from `legacy.pinnedTweetIdsStr`
+2. Discover all own tweets via `getUserTweetsAndReplies`, iterating all pages by cursor until exhausted (batchSize=100, maxTweets=800, 2s delay between pages). Own tweets are **recursively collected** from the timeline entry structure (see below).
+3. For every unique own tweet ID (including pinned tweets not found in the timeline):
+   - Call `getTweetDetail({ focalTweetId })` to retrieve **real** engagement counts (views, likes, retweets, etc.)
+   - `getUserTweetsAndReplies` returns zeroed/absent engagement; only `getTweetDetail` provides correct data
+4. Upsert each tweet into `tweets` table
+
+### Timeline entry structure & nested replies
+
+`getUserTweetsAndReplies` returns pages of `data[]` entries. Each entry may contain a **top-level tweet** (`entry.tweet`) AND a **`replies` array** listing replies to that tweet. Reply objects have the same `{ tweet, user, replies }` shape and can themselves contain nested replies (level 2). **Own replies are only found inside other users' `replies` arrays** — they never appear as top-level entries.
+
+**Discovery algorithm (2026-06-10, verified against 82-tweet dump):**
+```
+for each entry in page.data:
+    collectOwn(entry)                           // top-level tweet
+    for each reply in entry.replies:
+        collectOwn(reply)                       // level-1 nested reply
+        for each nr in reply.replies:
+            collectOwn(nr)                      // level-2 nested reply
+```
+where `collectOwn` checks `tweet.legacy.userIdStr === ownUserId`.
+
+Without recursive reply walking, only ~29 of 82 own tweets were found (35%). With it, all 82 were recovered.
+
+### Why not `getUserTweets` endpoint?
+- `getUserTweets` returns a subset of `getUserTweetsAndReplies` (no replies to others) and provides **zeroed engagement counts** — the SDK/API no longer returns real values from timeline endpoints
+- Only `getTweetDetail` returns real view counts, likes, retweets, etc.
+- Therefore `getUserTweets` is not used at all
 
 ### Rate-limiting
-- batchSize=50, maxTweets=800
-- 2s delay between batches
+- batchSize=100, maxTweets=800 (timeline discovery)
+- 2s delay between timeline pages, 1s delay between detail calls
 - 5s retry wait on 429
 
 ### Data stored
 - `user_stats` (followers, following, tweet count snapshots)
 - `tweets` (with engagement counts)
-
-### Repost counting
-X.com UI shows reposts as `retweetCount + quoteCount`. The API separates these; the fetcher stores their sum as `retweet_count`.
 
 ## GitHub — `server/fetchers/github.ts`
 

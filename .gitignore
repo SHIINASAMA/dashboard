@@ -42,5 +42,7 @@ node_modules/*
 
 # Dashboard
 /data/*
+!/data/db/
+/data/dumps/
 client/node_modules/
 client/dist/

@@ -1,7 +1,6 @@
 import type { AccountRow } from "./db";
-import { upsertTweet, insertUserStats, updateAccount, updateTweetEngagement } from "./db";
+import { upsertTweet, insertUserStats, updateAccount } from "./db";
 import { _xClient } from "../scripts/utils";
-import { get } from "lodash";
 import { getLogger } from "./logger";
 
 function toISO(createdAt: string | undefined): string {
@@ -31,29 +30,66 @@ async function apiCall<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
   throw new Error("Unreachable");
 }
 
+function parseViews(views: any): number {
+  if (!views) return 0;
+  const c = views.count;
+  if (c === undefined || c === null) return 0;
+  return parseInt(String(c), 10) || 0;
+}
+
+function extractTweet(tweetObj: any, accountId: number) {
+  const t = tweetObj.tweet || tweetObj;
+  if (!t) return null;
+  const legacy = t.legacy;
+  if (!legacy) return null;
+
+  const tid = String(legacy.idStr || t.restId || "");
+  if (!tid) return null;
+
+  const views = tweetObj.views || t.views;
+
+  return {
+    id: tid,
+    account_id: accountId,
+    full_text: legacy.fullText || "",
+    created_at: toISO(legacy.createdAt),
+    favorite_count: legacy.favoriteCount || 0,
+    retweet_count: (legacy.retweetCount || 0) + (legacy.quoteCount || 0),
+    reply_count: legacy.replyCount || 0,
+    view_count: parseViews(views),
+    bookmark_count: legacy.bookmarkCount || 0,
+    is_quote: Boolean(legacy.isQuoteStatus) && !legacy.inReplyToStatusIdStr ? 1 : 0,
+    is_reply: Boolean(legacy.inReplyToStatusIdStr) ? 1 : 0,
+    is_retweet: (legacy.fullText || "").startsWith("RT @") ? 1 : 0,
+    media_urls: "[]",
+    urls: "[]",
+    hashtags: "[]",
+    mentions: "[]",
+    lang: legacy.lang || "",
+  };
+}
+
 export async function fetchAccount(account: AccountRow) {
-  getLogger().info("Fetcher", "Fetching @%s...", account.screen_name);
+  const logger = getLogger();
+  logger.info("Fetcher", "Fetching @%s...", account.screen_name);
 
   try {
     const client = await _xClient(account.auth_token);
     await sleep(1000);
 
-    // 1. Resolve user ID and get stats from the same call
-    let userId = account.user_id;
-    let legacy: any;
+    // ── Phase 1: User profile ──────────────────────────────────────
+    const profileResp = await apiCall(() =>
+      client.getUserApi().getUserByScreenName({ screenName: account.screen_name }),
+    );
+    const userData = profileResp.data as any;
+    const legacy = userData.user?.legacy || {};
+    const userId = account.user_id || userData.user?.restId || userData.raw?.restId || "";
 
-    if (userId) {
-      const resp = await apiCall(() => client.getUserApi().getUserByScreenName({ screenName: account.screen_name }));
-      const userData = resp.data as any;
-      legacy = userData.user?.legacy || {};
-    } else {
-      const resp = await apiCall(() => client.getUserApi().getUserByScreenName({ screenName: account.screen_name }));
-      const userData = resp.data as any;
-      legacy = userData.user?.legacy || {};
-      userId = userData.user?.restId || userData.raw?.restId || "";
-      if (userId) {
-        await await updateAccount(account.id, { user_id: userId });
-      }
+    if (!userId) {
+      throw new Error(`Could not resolve user ID for @${account.screen_name}`);
+    }
+    if (!account.user_id) {
+      await updateAccount(account.id, { user_id: userId });
     }
 
     // Record stats
@@ -65,210 +101,131 @@ export async function fetchAccount(account: AccountRow) {
         tweet_count: legacy.statusesCount || 0,
         listed_count: legacy.listedCount || 0,
       });
-      getLogger().info("Fetcher", "@%s: stats recorded", account.screen_name);
+      logger.info("Fetcher", "@%s: stats recorded (followers=%d)", account.screen_name, legacy.followersCount || 0);
     }
 
-    if (!userId) {
-      throw new Error(`Could not resolve user ID for @${account.screen_name}`);
-    }
+    // Collect pinned IDs upfront
+    const pinnedIds: string[] = (legacy.pinnedTweetIdsStr as string[]) || [];
 
-    // 1.5. Fetch pinned tweets (not returned by timeline endpoints)
-    {
-      const pinnedIds: string[] =
-        (legacy.pinnedTweetIdsStr as string[]) || [];
-
-      if (pinnedIds.length > 0) {
-        getLogger().info("Fetcher", "@%s: fetching %d pinned tweet(s)...", account.screen_name, pinnedIds.length);
-        await sleep(1000);
-        for (const pid of pinnedIds) {
-          try {
-            await sleep(1000);
-            const detailResp = await client
-              .getTweetApi()
-              .getTweetDetail({ focalTweetId: pid });
-            const entries = ((detailResp.data as any).data || {}) as any;
-            for (const key of Object.keys(entries)) {
-              const entry = entries[key];
-              const tweetResult = entry?.tweet || entry;
-              const tlegacy = tweetResult?.legacy;
-              if (tlegacy?.idStr === pid) {
-                const views = tweetResult?.views || entry?.views;
-                await upsertTweet({
-                  id: pid,
-                  account_id: account.id,
-                  full_text: tlegacy.fullText || "",
-                  created_at: toISO(tlegacy.createdAt),
-                  favorite_count: tlegacy.favoriteCount || 0,
-                  retweet_count:
-                    (tlegacy.retweetCount || 0) + (tlegacy.quoteCount || 0),
-                  reply_count: tlegacy.replyCount || 0,
-                  view_count:
-                    views?.count
-                      ? parseInt(String(views.count), 10) || 0
-                      : 0,
-                  bookmark_count: tlegacy.bookmarkCount || 0,
-                  is_quote: Boolean(tlegacy.isQuoteStatus) ? 1 : 0,
-                  is_reply: Boolean(tlegacy.inReplyToStatusIdStr) ? 1 : 0,
-                  is_retweet: 0,
-                });
-                break;
-              }
-            }
-          } catch (_) { /* Non-fatal */ }
-        }
-      }
-    }
-
-    // 2. Fetch tweets from both endpoints.
-    //    getUserTweets returns the user's own tweets with real engagement;
-    //    getUserTweetsAndReplies additionally returns replies to others.
-    //    Both are needed for complete coverage.
+    // ── Phase 2: Discover all own tweet IDs ─────────────────────────
     await sleep(2000);
+    logger.info("Fetcher", "@%s: discovering tweets...", account.screen_name);
+
+    const ownIds = new Set<string>();
+    for (const pid of pinnedIds) ownIds.add(pid);
 
     const maxTweets = 800;
-    const batchSize = 50;
-    const kaoruTweetIds = [];
+    const batchSize = 100;
+    let cursor: string | undefined;
+    let totalFetched = 0;
 
-    async function fetchFromEndpoint(
-      label: string,
-      apiFn: (params: any) => Promise<any>
-    ) {
-      let cursor: string | undefined;
-      let totalFetched = 0;
-      while (totalFetched < maxTweets) {
-        const params: Record<string, unknown> = { userId, count: batchSize };
-        if (cursor) params.cursor = cursor;
+    while (totalFetched < maxTweets) {
+      const params = { userId, count: batchSize, ...(cursor ? { cursor } : {}) } as any;
+      const resp = await apiCall(() =>
+        (client.getTweetApi() as any).getUserTweetsAndReplies(params),
+      ) as any;
+      const entries = ((resp.data as any).data || []) as any[];
 
-        const resp = await apiCall(() => apiFn(params));
-        const tweets = ((resp.data as any).data || []) as any[];
+      if (entries.length === 0) break;
 
-        if (tweets.length === 0) break;
-
-        for (const tweet of tweets) {
-          const t = tweet.tweet;
-          if (!t) continue;
-
-          const legacyTweet = t.legacy;
-          if (!legacyTweet) continue;
-
-          // Skip tweets whose author differs from the account
-          const tweetAuthorId = legacyTweet.userIdStr || "";
-          if (tweetAuthorId && tweetAuthorId !== userId) continue;
-
-          const tweetId = String(legacyTweet.idStr || "");
-          if (!tweetId) continue;
-
-          kaoruTweetIds.push(tweetId);
-
-          const views = t.views;
-
-          const mediaUrls = (get(legacyTweet, "extendedEntities.media", []) as any[])
-            .filter((m: any) => m.type === "photo")
-            .map((m: any) => m.mediaUrlHttps);
-          const urls = (get(legacyTweet, "entities.urls", []) as any[])
-            .map((u: any) => u.expandedUrl || u.url);
-          const hashtags = (get(legacyTweet, "entities.hashtags", []) as any[])
-            .map((h: any) => h.text);
-          const mentions = (get(legacyTweet, "entities.user_mentions", []) as any[])
-            .map((m: any) => m.screenName);
-
-          await upsertTweet({
-            id: tweetId,
-            account_id: account.id,
-            full_text: legacyTweet.fullText || "",
-            created_at: toISO(legacyTweet.createdAt),
-            favorite_count: legacyTweet.favoriteCount || 0,
-            retweet_count: (legacyTweet.retweetCount || 0) + (legacyTweet.quoteCount || 0),
-            reply_count: legacyTweet.replyCount || 0,
-            view_count: views?.count ? parseInt(String(views.count), 10) || 0 : 0,
-            bookmark_count: legacyTweet.bookmarkCount || 0,
-            is_quote: Boolean(legacyTweet.isQuoteStatus) ? 1 : 0,
-            is_reply: Boolean(legacyTweet.inReplyToStatusIdStr) ? 1 : 0,
-            is_retweet: (legacyTweet.fullText || "").startsWith("RT @") ? 1 : 0,
-            media_urls: JSON.stringify(mediaUrls),
-            urls: JSON.stringify(urls),
-            hashtags: JSON.stringify(hashtags),
-            mentions: JSON.stringify(mentions),
-            lang: legacyTweet.lang || "",
-          });
-        }
-
-        totalFetched += tweets.length;
-        const rawData = resp.data as any;
-        const cursorObj = rawData.cursor;
-        cursor = cursorObj?.bottom?.value || cursorObj?.top?.value;
-        if (!cursor) {
-          getLogger().info("Fetcher", "@%s: %s no cursor after %d tweets", account.screen_name, label, totalFetched);
-          break;
-        }
-
-        getLogger().info("Fetcher", "@%s: %s %d tweets...", account.screen_name, label, totalFetched);
-        await sleep(2000);
+      for (const entry of entries) {
+        collectOwnTweets(entry, userId, ownIds);
       }
+
+      totalFetched += entries.length;
+      const rawData = resp.data as any;
+      const cursorObj = rawData.cursor;
+      cursor = cursorObj?.bottom?.value || cursorObj?.top?.value;
+      if (!cursor) break;
+      await sleep(2000);
     }
 
-    await fetchFromEndpoint("getUserTweets",
-      (params: any) => client.getTweetApi().getUserTweets(params));
-    await sleep(2000);
-    await fetchFromEndpoint("getUserTweetsAndReplies",
-      (params: any) => client.getTweetApi().getUserTweetsAndReplies(params));
+    const allIds = [...ownIds];
+    logger.info("Fetcher", "@%s: discovered %d own tweets (including %d pinned)", account.screen_name, allIds.length, pinnedIds.length);
 
-    // 3. Merge real engagement via getTweetDetail (best-effort).
-    //    getUserTweetsAndReplies returns 0 for engagement on author's own
-    //    tweets, but getTweetDetail returns real counts. Process up to 30
-    //    tweets per fetch to avoid excessive API calls.
-    if (kaoruTweetIds.length > 0) {
-      const maxDetail = kaoruTweetIds.length;
-      const toProcess = kaoruTweetIds.slice(0, maxDetail);
-      getLogger().info("Fetcher", "@%s: fetching engagement for %d/%d tweets...", account.screen_name, toProcess.length, kaoruTweetIds.length);
-      for (const tid of toProcess) {
-        try {
-          await sleep(1000);
-          const detailResp = await client.getTweetApi().getTweetDetail({ focalTweetId: tid });
-          const entries = ((detailResp.data as any).data || {});
-          for (const key of Object.keys(entries)) {
-            const entry = entries[key];
-            const tweetResult = entry?.tweet || entry;
-            const legacy = tweetResult?.legacy;
-            if (legacy?.idStr === tid) {
-              const views = tweetResult?.views || entry?.views;
-              await updateTweetEngagement(tid, {
-                favorite_count: legacy.favoriteCount || 0,
-                retweet_count: (legacy.retweetCount || 0) + (legacy.quoteCount || 0),
-                reply_count: legacy.replyCount || 0,
-                view_count: views?.count ? parseInt(String(views.count), 10) || 0 : 0,
-                bookmark_count: legacy.bookmarkCount || 0,
-              });
-              break;
+    // ── Phase 3: Fetch full details for each tweet ──────────────────
+    logger.info("Fetcher", "@%s: fetching details for %d tweets...", account.screen_name, allIds.length);
+
+    let savedCount = 0;
+    let errorCount = 0;
+
+    for (const tid of allIds) {
+      try {
+        await sleep(1000);
+        const detailResp = await apiCall(() =>
+          client.getTweetApi().getTweetDetail({ focalTweetId: tid }),
+        );
+        const entries = ((detailResp.data as any).data || []) as any[];
+
+        let found = false;
+        for (const entry of entries) {
+          const resultLegacy = (entry.tweet || entry).legacy;
+          if (!resultLegacy) continue;
+          const resultId = String(resultLegacy.idStr || (entry.tweet || entry).restId || "");
+          if (resultId === tid) {
+            const tweetData = extractTweet(entry.tweet || entry, account.id);
+            if (tweetData) {
+              await upsertTweet(tweetData);
+              savedCount++;
+              found = true;
             }
+            break;
           }
-        } catch (e) {
-          // Non-fatal
         }
+
+        if (!found) errorCount++;
+      } catch (e: any) {
+        logger.warn("Fetcher", "@%s: detail error for %s: %s", account.screen_name, tid, e.message);
+        errorCount++;
       }
-      getLogger().info("Fetcher", "@%s: engagement merge done", account.screen_name);
     }
+
+    logger.info("Fetcher", "@%s: %d saved, %d errors", account.screen_name, savedCount, errorCount);
 
     await updateAccount(account.id, {
       last_fetched_at: new Date().toISOString(),
       error_message: null,
     });
 
-    getLogger().info("Fetcher", "@%s: done (%d tweets processed)", account.screen_name, kaoruTweetIds.length);
-    return kaoruTweetIds.length;
+    logger.info("Fetcher", "@%s: done", account.screen_name);
+    return savedCount;
   } catch (err: any) {
     const msg = err.message || String(err);
     getLogger().error("Fetcher", "@%s error: %s", account.screen_name, msg);
-
-    if (err.name === "ResponseError" && err.response) {
-      try {
-        const status = err.response.status;
-        const body = await err.response.text().catch(() => "");
-        getLogger().error("Fetcher", "HTTP %d: %s", status, body.slice(0, 500));
-      } catch (_) {}
-    }
-
     await updateAccount(account.id, { error_message: msg });
     return 0;
   }
+}
+
+// ── Helper: recursively collect own tweet IDs from timeline entries ──
+
+function collectOwnTweets(entry: any, userId: string, out: Set<string>) {
+  collectFromEntry(entry, userId, out);
+
+  // Walk nested replies (level 1)
+  const replies = entry.replies;
+  if (Array.isArray(replies)) {
+    for (const reply of replies) {
+      if (reply && typeof reply === "object") {
+        collectFromEntry(reply, userId, out);
+        // Walk nested replies (level 2)
+        const nested = reply.replies;
+        if (Array.isArray(nested)) {
+          for (const nr of nested) {
+            if (nr && typeof nr === "object") collectFromEntry(nr, userId, out);
+          }
+        }
+      }
+    }
+  }
+}
+
+function collectFromEntry(entry: any, userId: string, out: Set<string>) {
+  const t = entry.tweet || entry;
+  if (!t) return;
+  const legacy = t.legacy;
+  if (!legacy) return;
+  if (legacy.userIdStr !== userId) return;
+  const tid = String(legacy.idStr || t.restId || "");
+  if (tid) out.add(tid);
 }

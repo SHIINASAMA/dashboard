@@ -265,6 +265,26 @@ export function Overview() {
                 )}
               </CardContent>
             </Card>
+                <Card className="border-0 shadow-none bg-transparent">
+              <CardHeader className="pb-1"><CardTitle className="text-xs font-medium text-[var(--muted-foreground)]">{t("overview.charts.dailyViews")}</CardTitle></CardHeader>
+              <CardContent className="p-0">
+                {timeline?.dailyTweets && timeline.dailyTweets.length > 0 ? (
+                  <div role="img" aria-label={t("overview.charts.dailyViews")}>
+                  <ResponsiveContainer width="100%" height={160}>
+                    <AreaChart data={timeline.dailyTweets}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                      <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
+                      <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={30} />
+                      <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
+                      <Area type="monotone" dataKey="total_views" stroke="#10b981" fill="#10b98120" name={t("overview.charts.views")} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-[160px] text-xs text-[var(--muted-foreground)]">{t("overview.charts.noTweetData")}</div>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           {topLiked && topLiked.length > 0 && (
