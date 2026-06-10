@@ -271,7 +271,9 @@ export function Overview() {
                 )}
               </CardContent>
             </Card>
-                <Card className="border-0 shadow-none bg-transparent">
+          </div>
+          <div className="grid grid-cols-1 gap-2">
+            <Card className="border-0 shadow-none bg-transparent">
               <CardHeader className="pb-1"><CardTitle className="text-xs font-medium text-[var(--muted-foreground)]">{t("overview.charts.dailyViews")}</CardTitle></CardHeader>
               <CardContent className="p-0">
                 {timeline?.dailyTweets && timeline.dailyTweets.length > 0 ? (
