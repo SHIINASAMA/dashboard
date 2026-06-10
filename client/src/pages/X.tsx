@@ -4,7 +4,7 @@ import { api } from "../api";
 import { StatCard } from "../components/StatCard";
 import AccountListPage from "../components/AccountListPage";
 import { XIcon } from "../components/BrandIcons";
-import { MessageSquare, Repeat2, Eye, TrendingUp } from "lucide-react";
+import { MessageSquare, Repeat2, Eye, TrendingUp, Heart } from "lucide-react";
 
 export function X() {
   const { t } = useTranslation();
