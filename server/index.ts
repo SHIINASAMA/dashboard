@@ -269,6 +269,15 @@ app.delete(`${BASE}/api/users/:id`, async (c) => {
   return c.json({ ok: true });
 });
 
+// ── Request logging middleware ────────────────────────────────────
+
+app.use(`${BASE}/api/*`, async (c, next) => {
+  const start = Date.now();
+  await next();
+  const ms = Date.now() - start;
+  logger.info("HTTP", "%s %s %d (%dms)", c.req.method, c.req.path, c.res.status || 0, ms);
+});
+
 // ── API routes ────────────────────────────────────────────────────
 
 app.route(`${BASE}/api/tweets`, tweetsRouter);

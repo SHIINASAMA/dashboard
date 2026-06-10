@@ -22,7 +22,7 @@ accountsRouter.get("/", async (c) => {
   }
   const accounts = await getAccounts(ownerId);
   const twitterIds = accounts.filter((a: any) => a.platform === "twitter").map((a: any) => a.id);
-  const overview = getOverviewStats(twitterIds.length > 0 ? twitterIds : [-1]);
+  const overview = await getOverviewStats(twitterIds.length > 0 ? twitterIds : [-1]);
   return c.json({ accounts, overview });
 });
 
@@ -31,7 +31,7 @@ accountsRouter.get("/:id", async (c) => {
   const account = await getAccountById(id);
   if (!account) return c.json({ error: "Not found" }, 404);
   const { auth_token, ...pub } = account;
-  const stats = getLatestUserStats(id);
+  const stats = await getLatestUserStats(id);
   return c.json({ ...pub, stats });
 });
 
