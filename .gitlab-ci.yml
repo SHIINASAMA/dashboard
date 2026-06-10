@@ -1,0 +1,16 @@
+stages:
+  - build
+  - deploy
+
+build:
+  stage: build
+  image: reg.mikumikumi.xyz/base/kaniko-builder:latest
+  script:
+    - build
+
+deploy:
+  stage: deploy
+  image: reg.mikumikumi.xyz/base/kubectl:latest
+  script:
+    - echo "${KUBECONFIG}" > ~/.kube/config
+    - "kubectl set image -n kaoru statefulset/dashboard dashboard=reg.mikumikumi.xyz/kaoru/dashboard:${CI_COMMIT_SHORT_SHA} --kubeconfig ~/.kube/config"
