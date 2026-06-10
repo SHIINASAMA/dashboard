@@ -98,7 +98,7 @@ export function GitLabDetail() {
     queryKey: ["gitlab", "overview", accountId],
     queryFn: () => api.getGitlabOverview(accountId!),
     enabled: !!accountId,
-    refetchInterval: 30_000,
+    refetchInterval: 3 * 60_000,
   });
 
   const { data: contributions } = useQuery<GitlabContribution[]>({

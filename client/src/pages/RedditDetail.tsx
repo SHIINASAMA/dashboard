@@ -30,7 +30,7 @@ export function RedditDetail() {
     queryKey: ["reddit", "overview", accountId],
     queryFn: () => api.getRedditOverview(accountId!),
     enabled: !!accountId,
-    refetchInterval: 30_000,
+    refetchInterval: 3 * 60_000,
   });
 
   const { data: postsData } = useQuery({

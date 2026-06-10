@@ -55,7 +55,7 @@ export function Overview() {
   const { data: stats, isLoading } = useQuery<OverviewStats>({
     queryKey: ["overview"],
     queryFn: api.getOverview,
-    refetchInterval: 30_000,
+    refetchInterval: 3 * 60_000,
   });
 
   const { data: timeline } = useQuery<TimelineData>({
@@ -71,7 +71,7 @@ export function Overview() {
   const { data: accountsData } = useQuery({
     queryKey: ["accounts"],
     queryFn: api.getAccounts,
-    refetchInterval: 30_000,
+    refetchInterval: 3 * 60_000,
   });
 
   const allAccounts = accountsData?.accounts || [];
@@ -83,7 +83,7 @@ export function Overview() {
     queries: ghAccounts.map((acc) => ({
       queryKey: ["github", "overview", acc.id],
       queryFn: () => api.getGithubOverview(acc.id),
-      staleTime: 30_000,
+      staleTime: 3 * 60_000,
     })),
   });
 
@@ -91,7 +91,7 @@ export function Overview() {
     queries: glAccounts.map((acc) => ({
       queryKey: ["gitlab", "overview", acc.id],
       queryFn: () => api.getGitlabOverview(acc.id),
-      staleTime: 30_000,
+      staleTime: 3 * 60_000,
     })),
   });
 
@@ -102,7 +102,7 @@ export function Overview() {
     queries: redditAccounts.map((acc) => ({
       queryKey: ["reddit", "overview", acc.id],
       queryFn: () => api.getRedditOverview(acc.id),
-      staleTime: 30_000,
+      staleTime: 3 * 60_000,
     })),
   });
 
@@ -110,7 +110,7 @@ export function Overview() {
     queries: redditAccounts.map((acc) => ({
       queryKey: ["reddit", "timeline", acc.id],
       queryFn: () => api.getRedditTimeline(acc.id),
-      staleTime: 30_000,
+      staleTime: 3 * 60_000,
     })),
   });
 
@@ -118,7 +118,7 @@ export function Overview() {
     queries: redditAccounts.map((acc) => ({
       queryKey: ["reddit", "activity", acc.id],
       queryFn: () => api.getRedditActivity(acc.id),
-      staleTime: 30_000,
+      staleTime: 3 * 60_000,
     })),
   });
 

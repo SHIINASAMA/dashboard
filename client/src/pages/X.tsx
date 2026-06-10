@@ -12,7 +12,7 @@ export function X() {
   const { data } = useQuery({
     queryKey: ["accounts"],
     queryFn: api.getAccounts,
-    refetchInterval: 10_000,
+    refetchInterval: 3 * 60_000,
   });
 
   const overview = data?.overview;

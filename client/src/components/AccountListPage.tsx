@@ -55,7 +55,7 @@ export default function AccountListPage({
   const { data, isLoading } = useQuery({
     queryKey: ["accounts"],
     queryFn: api.getAccounts,
-    refetchInterval: 10_000,
+    refetchInterval: 3 * 60_000,
   });
 
   const accounts = (data?.accounts || []).filter((a: Account) => a.platform === platform);
