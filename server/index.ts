@@ -136,6 +136,7 @@ app.use("/api/*", async (c, next) => {
   if (path === "/api/auth/login") return next();
   if (path === "/api/auth/me") return next();
   if (path === "/api/reddit/callback") return next();
+  if (path === "/api/bing-wallpaper") return next();
 
   const token = getCookie(c, SESSION_COOKIE);
   if (!token) {
@@ -286,6 +287,22 @@ app.route("/api/reddit", redditRouter);
 app.route("/api/confirm", confirmRouter);
 
 app.get("/api/health", (c) => c.json({ status: "ok" }));
+
+// Bing wallpaper redirect — fetches the JSON from Bing on the server side
+// (no CORS), then returns a 302 to the actual image URL on bing.com CDN.
+// The browser loads the image from bing.com directly via the redirect.
+app.get("/api/bing-wallpaper", async (c) => {
+  try {
+    const res = await fetch("https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1");
+    if (!res.ok) return c.json({ error: "Failed to fetch wallpaper" }, 502);
+    const data = await res.json() as { images?: { url: string }[] };
+    const img = data.images?.[0];
+    if (!img) return c.json({ error: "No image" }, 502);
+    return c.redirect(`https://www.bing.com${img.url}`, 302);
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500);
+  }
+});
 
 // Manual trigger for any platform
 app.post("/api/fetch/:id", async (c) => {

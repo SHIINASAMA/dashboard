@@ -7,6 +7,7 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { LayoutDashboard, PanelLeft, Settings, LogOut, Shield } from "lucide-react";
 import { XIcon, GithubIcon, GitlabIcon, RedditIcon } from "./BrandIcons";
 import { api } from "../api";
+import { useBingWallpaper } from "../lib/useBingWallpaper";
 
 const SIDEBAR_KEY = "sidebar-state";
 
@@ -22,6 +23,7 @@ export default function Layout() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { url } = useBingWallpaper();
   const [visible, setVisible] = useState(loadVisible);
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -87,7 +89,7 @@ export default function Layout() {
           visible={visible}
           snap
         >
-          <aside className="h-full border-r border-[var(--border)] bg-[var(--card)] flex flex-col overflow-y-auto">
+          <aside className="h-full border-r border-[var(--border)] bg-[var(--card)] flex flex-col overflow-y-auto relative z-10">
             <div className="flex items-center gap-3 px-5 py-4 border-b border-[var(--border)] shrink-0">
               <LayoutDashboard size={20} className="shrink-0" />
               <h1 className="text-lg font-semibold truncate">{t("common.dashboard")}</h1>
@@ -161,8 +163,14 @@ export default function Layout() {
           </aside>
         </Allotment.Pane>
         <Allotment.Pane minSize={300}>
-          <main className="h-full overflow-auto">
-            <div className="max-w-6xl mx-auto px-8 py-8">
+          <main className="h-full overflow-auto relative">
+            <img
+              src={url}
+              alt=""
+              className="fixed inset-0 w-full h-full object-cover pointer-events-none"
+            />
+            <div className="fixed inset-0 bg-[var(--background)]/70" />
+            <div className="max-w-6xl mx-auto px-8 py-8 relative z-10">
               {!visible && (
                 <button
                   onClick={toggle}

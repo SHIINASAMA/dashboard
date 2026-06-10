@@ -1,6 +1,6 @@
 {
   "common": {
-    "dashboard": "Dashboard",
+    "dashboard": "Social Data Hub",
     "loading": "Loading...",
     "cancel": "Cancel",
     "delete": "Delete",
@@ -9,7 +9,7 @@
     "collapseSidebar": "Collapse sidebar",
     "expandSidebar": "Expand sidebar",
     "save": "Save",
-    "copyright": "© 2026 Dashboard"
+    "copyright": "© 2026 Social Data Hub"
   },
   "login": {
     "username": "Username",
