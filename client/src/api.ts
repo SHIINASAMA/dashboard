@@ -53,10 +53,11 @@ export const api = {
 
   // Twitter
   getOverview: () => fetchJSON<OverviewStats>("/stats/overview"),
-  getTweets: (page = 1, limit = 20, sort = "created_at", order = "desc", search?: string, accountIds?: number[]) => {
+  getTweets: (page = 1, limit = 20, sort = "created_at", order = "desc", search?: string, accountIds?: number[], isReply?: number) => {
     let url = `/tweets?page=${page}&limit=${limit}&sort=${sort}&order=${order}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
     if (accountIds?.length) url += `&accountIds=${accountIds.join(",")}`;
+    if (isReply !== undefined) url += `&isReply=${isReply}`;
     return fetchJSON<PaginatedTweets>(url);
   },
   getTweet: (id: string) => fetchJSON<Tweet>(`/tweets/${id}`),

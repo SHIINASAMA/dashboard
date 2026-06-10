@@ -1,13 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { api, type TimelineData } from "../api";
+import { useState } from "react";
+import { api, type TimelineData, type PaginatedTweets, type Tweet } from "../api";
 import { formatDateTime } from "../lib/i18n";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import {
   ArrowLeft, Play, RefreshCw, Trash2, AlertCircle,
-  MessageSquare, Heart, Repeat2, Eye,
+  MessageSquare, Heart, Repeat2, Eye, ExternalLink,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -20,6 +21,7 @@ export function XDetail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const accountId = Number(id);
+  const [tab, setTab] = useState<"tweets" | "replies">("tweets");
 
   const { data: account, isLoading } = useQuery({
     queryKey: ["account", accountId],
@@ -27,9 +29,15 @@ export function XDetail() {
     enabled: !!accountId,
   });
 
-  const { data: tweets } = useQuery({
+  const { data: tweets } = useQuery<PaginatedTweets>({
     queryKey: ["tweets", accountId],
-    queryFn: () => api.getTweets(1, 50, "created_at", "desc", undefined, [accountId]),
+    queryFn: () => api.getTweets(1, 50, "created_at", "desc", undefined, [accountId], 0),
+    enabled: !!accountId,
+  });
+
+  const { data: replies } = useQuery<PaginatedTweets>({
+    queryKey: ["replies", accountId],
+    queryFn: () => api.getTweets(1, 50, "created_at", "desc", undefined, [accountId], 1),
     enabled: !!accountId,
   });
 
@@ -181,13 +189,37 @@ export function XDetail() {
         </div>
       )}
 
-      {tweets && tweets.data.length > 0 && (
+      {(tweets || replies) && (
         <Card>
-          <CardHeader><CardTitle>{t("xDetail.recentTweets")}</CardTitle></CardHeader>
+          <CardHeader>
+            <div className="flex items-center gap-4 border-b border-[var(--border)] pb-0">
+              <button
+                onClick={() => setTab("tweets")}
+                className={`pb-3 text-sm font-medium border-b-2 transition-colors ${tab === "tweets" ? "border-[var(--primary)] text-[var(--primary)]" : "border-transparent text-[var(--muted-foreground)] hover:text-[var(--foreground)]"}`}
+              >
+                {t("xDetail.recentTweets")}
+              </button>
+              <button
+                onClick={() => setTab("replies")}
+                className={`pb-3 text-sm font-medium border-b-2 transition-colors ${tab === "replies" ? "border-[var(--primary)] text-[var(--primary)]" : "border-transparent text-[var(--muted-foreground)] hover:text-[var(--foreground)]"}`}
+              >
+                {t("xDetail.recentReplies")}
+              </button>
+            </div>
+          </CardHeader>
           <CardContent className="space-y-3">
-            {tweets.data.slice(0, 20).map((tweet) => (
-              <div key={tweet.id} className="p-3 rounded-lg bg-[var(--muted)] space-y-2">
-                <p className="text-sm whitespace-pre-wrap break-words">{tweet.full_text}</p>
+            {tab === "tweets" && tweets && tweets.data.length > 0 && tweets.data.slice(0, 20).map((tweet: Tweet) => (
+              <a
+                key={tweet.id}
+                href={`https://x.com/${account.screen_name}/status/${tweet.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block p-3 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors space-y-2 group"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm whitespace-pre-wrap break-words">{tweet.full_text}</p>
+                  <ExternalLink size={12} className="shrink-0 mt-1 text-[var(--muted-foreground)] opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
                 <div className="flex items-center gap-4 text-xs text-[var(--muted-foreground)]">
                   <span className="flex items-center gap-1"><Heart size={12} /> {tweet.favorite_count}</span>
                   <span className="flex items-center gap-1"><Repeat2 size={12} /> {tweet.retweet_count}</span>
@@ -195,7 +227,28 @@ export function XDetail() {
                   {tweet.view_count > 0 && <span className="flex items-center gap-1"><Eye size={12} /> {tweet.view_count}</span>}
                   <span>{new Date(tweet.created_at).toLocaleDateString()}</span>
                 </div>
-              </div>
+              </a>
+            ))}
+            {tab === "replies" && replies && replies.data.length > 0 && replies.data.slice(0, 20).map((tweet: Tweet) => (
+              <a
+                key={tweet.id}
+                href={`https://x.com/${account.screen_name}/status/${tweet.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block p-3 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors space-y-2 group"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm whitespace-pre-wrap break-words">{tweet.full_text}</p>
+                  <ExternalLink size={12} className="shrink-0 mt-1 text-[var(--muted-foreground)] opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+                <div className="flex items-center gap-4 text-xs text-[var(--muted-foreground)]">
+                  <span className="flex items-center gap-1"><Heart size={12} /> {tweet.favorite_count}</span>
+                  <span className="flex items-center gap-1"><Repeat2 size={12} /> {tweet.retweet_count}</span>
+                  <span className="flex items-center gap-1"><MessageSquare size={12} /> {tweet.reply_count}</span>
+                  {tweet.view_count > 0 && <span className="flex items-center gap-1"><Eye size={12} /> {tweet.view_count}</span>}
+                  <span>{new Date(tweet.created_at).toLocaleDateString()}</span>
+                </div>
+              </a>
             ))}
           </CardContent>
         </Card>

@@ -112,13 +112,14 @@ export async function getOverviewStats(accountIds?: number[]) {
   };
 }
 
-export async function getTweets(page: number, limit: number, sort: string, order: string, search?: string, accountIds?: number[]) {
+export async function getTweets(page: number, limit: number, sort: string, order: string, search?: string, accountIds?: number[], isReply?: number) {
   if (isExplicitEmpty(accountIds)) return { data: [], total: 0, page, limit, totalPages: 0 };
   const db = getDb();
   const offset = (page - 1) * limit;
   const conditions: any[] = [];
   if (search) conditions.push(like(tweets.full_text, `%${search}%`));
   if (hasIds(accountIds)) conditions.push(inArray(tweets.account_id, accountIds));
+  if (isReply !== undefined) conditions.push(eq(tweets.is_reply, isReply));
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
   const allowedSorts: Record<string, any> = {
     created_at: tweets.created_at, favorite_count: tweets.favorite_count,

@@ -16,8 +16,10 @@ tweetsRouter.get("/", async (c) => {
   const order = c.req.query("order") || "desc";
   const search = c.req.query("search");
   const accountIds = parseAccountIds(c);
+  const isReplyParam = c.req.query("isReply");
+  const isReply = isReplyParam !== undefined ? Number(isReplyParam) : undefined;
 
-  const data = await getTweets(page, limit, sort, order, search, accountIds);
+  const data = await getTweets(page, limit, sort, order, search, accountIds, isReply);
   return c.json(data);
 });
 
