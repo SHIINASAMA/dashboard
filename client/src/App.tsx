@@ -15,6 +15,7 @@ const GitLabDetail = lazy(() => import("./pages/GitLabDetail").then(m => ({ defa
 const ProjectDetail = lazy(() => import("./pages/ProjectDetail").then(m => ({ default: m.ProjectDetail })));
 const Reddit = lazy(() => import("./pages/Reddit").then(m => ({ default: m.Reddit })));
 const RedditDetail = lazy(() => import("./pages/RedditDetail").then(m => ({ default: m.RedditDetail })));
+const AccountsPage = lazy(() => import("./pages/AccountsPage").then(m => ({ default: m.default })));
 const Admin = lazy(() => import("./pages/Admin").then(m => ({ default: m.Admin })));
 const Settings = lazy(() => import("./pages/Settings").then(m => ({ default: m.Settings })));
 const Login = lazy(() => import("./pages/Login").then(m => ({ default: m.Login })));
@@ -83,6 +84,7 @@ export default function App() {
               <Route path="login" element={<RedirectIfAuth><Login /></RedirectIfAuth>} />
               <Route element={<RequireAuth><Layout /></RequireAuth>}>
                 <Route index element={<Overview />} />
+                <Route path="accounts" element={<AccountsPage />} />
                 <Route path="x" element={<X />} />
                 <Route path="x/:id" element={<XDetail />} />
                 <Route path="github" element={<GitHub />} />

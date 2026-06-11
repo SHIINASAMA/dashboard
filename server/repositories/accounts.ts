@@ -31,6 +31,7 @@ export async function getAccounts(ownerId?: number) {
     screen_name: accounts.screen_name,
     platform: accounts.platform,
     user_id: accounts.user_id,
+    auth_token: accounts.auth_token,
     fetch_interval: accounts.fetch_interval,
     is_active: accounts.is_active,
     last_fetched_at: accounts.last_fetched_at,

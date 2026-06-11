@@ -18,8 +18,6 @@ export function GitLab() {
       icon={GitlabIcon}
       emptyIcon={<GitlabIcon size={32} />}
       emptyText={t("gitlab.emptyState")}
-      addFirstLabel={t("gitlab.addFirstAccount")}
-      addLabel={t("gitlab.addAccount")}
       renderBadge={() => (
         <Badge className="text-[10px] px-1.5">{t("badge.gitlab")}</Badge>
       )}

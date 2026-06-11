@@ -17,8 +17,6 @@ export function GitHub() {
       icon={GithubIcon}
       emptyIcon={<GithubIcon size={32} />}
       emptyText={t("github.emptyState")}
-      addFirstLabel={t("github.addFirstAccount")}
-      addLabel={t("github.addAccount")}
       renderBadge={() => (
         <Badge className="bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-800">
           {t("badge.github")}

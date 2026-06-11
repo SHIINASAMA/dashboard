@@ -15,7 +15,8 @@ function decToken(cipher: string): string {
 }
 
 export async function getAccounts(ownerId?: number) {
-  return accountsRepo.getAccounts(ownerId);
+  const rows = await accountsRepo.getAccounts(ownerId);
+  return rows.map(r => ({ ...r, auth_token: decToken(r.auth_token) })) as AccountRow[];
 }
 
 export async function getActiveAccounts() {

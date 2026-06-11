@@ -18,8 +18,6 @@ export function Reddit() {
       icon={RedditIcon}
       emptyIcon={<RedditIcon size={32} />}
       emptyText={t("reddit.emptyState")}
-      addFirstLabel={t("reddit.addFirstAccount")}
-      addLabel={t("reddit.addAccount")}
       renderBadge={(account: Account) => (
         <>
           <Badge className="text-[10px] px-1.5">{t("badge.reddit")}</Badge>

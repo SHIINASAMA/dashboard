@@ -169,17 +169,19 @@ export async function fetchRedditAccount(account: AccountRow) {
 }
 
 // ── Public (cookie-based) fetcher ──────────────────────────────
-// Uses the loid cookie to access Reddit's JSON API without OAuth.
-// The auth_token field stores the loid cookie value (from browser dev tools).
-// This works because Reddit allows unauthenticated JSON access when a
-// valid loid cookie is present. OAuth is NOT required for basic profile data.
+// Uses browser cookies to access Reddit's JSON API without OAuth.
+// auth_token is a JSON object: { "loid": "...", "reddit_session": "..." }
+// Additional cookie fields can be added as needed.
 
-async function redditPublicFetch(path: string, loid: string): Promise<any> {
+async function redditPublicFetch(path: string, cookies: Record<string, string>): Promise<any> {
+  const cookieStr = Object.entries(cookies)
+    .map(([k, v]) => `${k}=${v}`)
+    .join("; ");
   const res = await fetch(`https://old.reddit.com${path}`, {
     headers: {
-      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "User-Agent": "Safari/537.36",
       "Accept": "application/json",
-      "Cookie": `loid=${loid}`,
+      "Cookie": cookieStr,
     },
     tls: { rejectUnauthorized: false },
   });
@@ -187,7 +189,7 @@ async function redditPublicFetch(path: string, loid: string): Promise<any> {
     const body = await res.text().catch(() => "");
     getLogger().error("Reddit", "Public API HTTP %d for %s: %s", res.status, path, body.slice(0, 300));
     if (res.status === 403) {
-      throw new Error(`Reddit rejected the request (HTTP 403). This may be because: (1) your loid cookie expired, or (2) the server IP is blocked by Reddit (common for datacenter/VPS IPs). Try from a residential IP or use OAuth instead. Body: ${body.slice(0, 200)}`);
+      throw new Error(`Reddit rejected the request (HTTP 403). This may be because: (1) your cookies have expired, or (2) the server IP is blocked by Reddit (common for datacenter/VPS IPs). Try from a residential IP or use OAuth instead. Body: ${body.slice(0, 200)}`);
     }
     throw new Error(`Reddit public API ${res.status} for ${path}: ${body.slice(0, 200)}`);
   }
@@ -195,7 +197,13 @@ async function redditPublicFetch(path: string, loid: string): Promise<any> {
 }
 
 export async function fetchRedditPublicAccount(account: AccountRow) {
-  const loid = account.auth_token;
+  let cookies: Record<string, string>;
+  try {
+    cookies = JSON.parse(account.auth_token);
+  } catch {
+    // fallback: old plaintext loid token -> wrap in object for backward compat
+    cookies = { loid: account.auth_token };
+  }
   const username = account.screen_name;
 
   try {
@@ -203,7 +211,7 @@ export async function fetchRedditPublicAccount(account: AccountRow) {
 
     // 1. Fetch public profile
     getLogger().info("Reddit", "@%s (public): fetching profile...", username);
-    const profile = await redditPublicFetch(`/user/${username}/about.json`, loid);
+    const profile = await redditPublicFetch(`/user/${username}/about.json`, cookies);
     if (!profile?.data?.name) {
       throw new Error("Invalid Reddit user profile — user may not exist");
     }
@@ -222,7 +230,7 @@ export async function fetchRedditPublicAccount(account: AccountRow) {
     let after: string | undefined;
     while (postCount < 50) {
       const path = `/user/${username}/submitted.json?limit=25&sort=new${after ? `&after=${after}` : ""}`;
-      const posts = await redditPublicFetch(path, loid);
+      const posts = await redditPublicFetch(path, cookies);
       const children = posts?.data?.children ?? [];
       if (children.length === 0) break;
 
@@ -258,7 +266,7 @@ export async function fetchRedditPublicAccount(account: AccountRow) {
     after = undefined;
     while (commentCount < 50) {
       const path = `/user/${username}/comments.json?limit=25&sort=new${after ? `&after=${after}` : ""}`;
-      const comments = await redditPublicFetch(path, loid);
+      const comments = await redditPublicFetch(path, cookies);
       const children = comments?.data?.children ?? [];
       if (children.length === 0) break;
 
