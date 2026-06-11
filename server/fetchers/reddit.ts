@@ -177,7 +177,7 @@ async function redditPublicFetch(path: string, cookies: Record<string, string>):
   const cookieStr = Object.entries(cookies)
     .map(([k, v]) => `${k}=${v}`)
     .join("; ");
-  const res = await fetch(`https://old.reddit.com${path}`, {
+  const res = await fetch(`https://www.reddit.com${path}`, {
     headers: {
       "User-Agent": "Safari/537.36",
       "Accept": "application/json",
