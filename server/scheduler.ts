@@ -1,4 +1,4 @@
-import { getActiveAccounts } from "./repositories/accounts";
+import { getActiveAccounts } from "./services/accounts";
 import { fetchAccount } from "./fetcher";
 import { fetchGithubAccount } from "./fetchers/github";
 import { fetchGitlabAccount } from "./fetchers/gitlab";

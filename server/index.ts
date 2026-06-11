@@ -11,7 +11,7 @@ import redditRouter from "./routes/reddit";
 import confirmRouter from "./routes/confirm";
 import { validateConfirmToken } from "./routes/confirm";
 import { startScheduler } from "./scheduler";
-import { getAccountById, updateAccount } from "./repositories/accounts";
+import { getAccountById, updateAccount } from "./services/accounts";
 import { fetchAccount } from "./fetcher";
 import { fetchGithubAccount } from "./fetchers/github";
 import { fetchGitlabAccount } from "./fetchers/gitlab";
