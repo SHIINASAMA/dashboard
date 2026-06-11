@@ -23,6 +23,7 @@ async function getRedditAccessToken(refreshToken: string): Promise<string> {
 
   if (!res.ok) {
     const body = await res.text().catch(() => "");
+    getLogger().error("Reddit", "OAuth token exchange failed: HTTP %d — %s", res.status, body.slice(0, 200));
     throw new Error(`Reddit OAuth error ${res.status}: ${body.slice(0, 200)}`);
   }
 
@@ -39,7 +40,9 @@ async function redditFetch(path: string, token: string): Promise<any> {
     tls: { rejectUnauthorized: false },
   });
   if (!res.ok) {
-    throw new Error(`Reddit API ${res.status} for ${path}`);
+    const body = await res.text().catch(() => "");
+    getLogger().error("Reddit", "OAuth API HTTP %d for %s: %s", res.status, path, body.slice(0, 300));
+    throw new Error(`Reddit API ${res.status} for ${path}: ${body.slice(0, 200)}`);
   }
   return res.json();
 }
@@ -58,7 +61,10 @@ export async function fetchRedditAccount(account: AccountRow) {
     // 1. Get access token
     const accessToken = await getRedditAccessToken(refreshToken);
 
+    getLogger().info("Reddit", "OAuth token exchange succeeded for @%s", username);
+
     // 2. Fetch user profile
+    getLogger().info("Reddit", "@%s: fetching profile...", username);
     const profile = await redditFetch(`/user/${username}/about`, accessToken);
     if (!profile?.data?.name) {
       throw new Error("Invalid Reddit user profile");
@@ -70,9 +76,10 @@ export async function fetchRedditAccount(account: AccountRow) {
       post_karma: pdata.link_karma ?? 0,
       comment_karma: pdata.comment_karma ?? 0,
     });
-    getLogger().info("Reddit", "@%s: karma recorded (post=%d, comment=%d)", username, pdata.link_karma, pdata.comment_karma);
+    getLogger().info("Reddit", "@%s: profile fetched, karma recorded (post=%d, comment=%d)", username, pdata.link_karma, pdata.comment_karma);
 
     // 3. Fetch posts
+    getLogger().info("Reddit", "@%s: fetching posts...", username);
     let postCount = 0;
     let after: string | undefined;
     while (postCount < 200) {
@@ -105,9 +112,10 @@ export async function fetchRedditAccount(account: AccountRow) {
       if (!after) break;
       await sleep(1000);
     }
-    getLogger().info("Reddit", "@%s: %d posts fetched", username, postCount);
+    getLogger().info("Reddit", "@%s: %d posts saved", username, postCount);
 
     // 4. Fetch comments
+    getLogger().info("Reddit", "@%s: fetching comments...", username);
     let commentCount = 0;
     after = undefined;
     while (commentCount < 200) {
@@ -139,7 +147,7 @@ export async function fetchRedditAccount(account: AccountRow) {
       if (!after) break;
       await sleep(1000);
     }
-    getLogger().info("Reddit", "@%s: %d comments fetched", username, commentCount);
+    getLogger().info("Reddit", "@%s: %d comments saved", username, commentCount);
 
     // Success
     await updateAccount(account.id, {
@@ -176,10 +184,12 @@ async function redditPublicFetch(path: string, loid: string): Promise<any> {
     tls: { rejectUnauthorized: false },
   });
   if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    getLogger().error("Reddit", "Public API HTTP %d for %s: %s", res.status, path, body.slice(0, 300));
     if (res.status === 403) {
-      throw new Error("Reddit rejected the request (403). Your loid cookie may have expired. Get a new one from your browser's dev tools (Application > Cookies > loid).");
+      throw new Error(`Reddit rejected the request (HTTP 403). This may be because: (1) your loid cookie expired, or (2) the server IP is blocked by Reddit (common for datacenter/VPS IPs). Try from a residential IP or use OAuth instead. Body: ${body.slice(0, 200)}`);
     }
-    throw new Error(`Reddit public API ${res.status} for ${path}`);
+    throw new Error(`Reddit public API ${res.status} for ${path}: ${body.slice(0, 200)}`);
   }
   return res.json();
 }
@@ -192,6 +202,7 @@ export async function fetchRedditPublicAccount(account: AccountRow) {
     getLogger().info("Reddit", "Fetching @%s (public)...", username);
 
     // 1. Fetch public profile
+    getLogger().info("Reddit", "@%s (public): fetching profile...", username);
     const profile = await redditPublicFetch(`/user/${username}/about.json`, loid);
     if (!profile?.data?.name) {
       throw new Error("Invalid Reddit user profile — user may not exist");
@@ -203,9 +214,10 @@ export async function fetchRedditPublicAccount(account: AccountRow) {
       post_karma: pdata.link_karma ?? 0,
       comment_karma: pdata.comment_karma ?? 0,
     });
-    getLogger().info("Reddit", "@%s (public): karma recorded (post=%d, comment=%d)", username, pdata.link_karma, pdata.comment_karma);
+    getLogger().info("Reddit", "@%s (public): profile fetched, karma recorded (post=%d, comment=%d)", username, pdata.link_karma, pdata.comment_karma);
 
     // 2. Fetch posts
+    getLogger().info("Reddit", "@%s (public): fetching posts...", username);
     let postCount = 0;
     let after: string | undefined;
     while (postCount < 50) {
@@ -238,9 +250,10 @@ export async function fetchRedditPublicAccount(account: AccountRow) {
       if (!after) break;
       await sleep(2000);
     }
-    getLogger().info("Reddit", "@%s (public): %d posts fetched", username, postCount);
+    getLogger().info("Reddit", "@%s (public): %d posts saved", username, postCount);
 
     // 3. Fetch comments
+    getLogger().info("Reddit", "@%s (public): fetching comments...", username);
     let commentCount = 0;
     after = undefined;
     while (commentCount < 50) {
@@ -272,7 +285,7 @@ export async function fetchRedditPublicAccount(account: AccountRow) {
       if (!after) break;
       await sleep(2000);
     }
-    getLogger().info("Reddit", "@%s (public): %d comments fetched", username, commentCount);
+    getLogger().info("Reddit", "@%s (public): %d comments saved", username, commentCount);
 
     await updateAccount(account.id, {
       last_fetched_at: new Date().toISOString(),
