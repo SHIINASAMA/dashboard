@@ -181,8 +181,8 @@ async function redditPublicFetchCurl(path: string, cookies: Record<string, strin
   const proc = Bun.spawn([
     "curl",
     "-sS",
-    "-v",
     "--http1.1",
+    "-w", "\n%{http_code}",
     url,
     "-H", "User-Agent: Safari/537.36",
     "-H", "Accept: application/json",
@@ -193,22 +193,23 @@ async function redditPublicFetchCurl(path: string, cookies: Record<string, strin
   const stderr = await new Response(proc.stderr).text();
   const exitCode = await proc.exited;
 
-  // Parse HTTP status from curl verbose stderr: "< HTTP/1.1 NNN ..."
-  const statusMatch = stderr.match(/< HTTP\/\d\.\d\s+(\d{3})/);
-  const status = statusMatch ? parseInt(statusMatch[1], 10) : (exitCode !== 0 ? 0 : 200);
+  // Last line of stdout is the HTTP status code from curl -w
+  const lastNewline = stdout.lastIndexOf("\n");
+  const status = lastNewline >= 0 ? parseInt(stdout.slice(lastNewline + 1).trim(), 10) || 0 : (exitCode !== 0 ? 0 : 200);
+  const body = lastNewline >= 0 ? stdout.slice(0, lastNewline) : stdout;
 
   if (status >= 400 || status === 0) {
     getLogger().error("Reddit", "Public API (curl) HTTP %d for %s (exit=%d)", status, path, exitCode);
     if (status === 403) {
-      throw new Error(`Reddit rejected the request (HTTP 403). This may be because: (1) your cookies have expired, or (2) the server IP is blocked by Reddit (common for datacenter/VPS IPs). Try from a residential IP or use OAuth instead. Body: ${stdout.slice(0, 200)}`);
+      throw new Error(`Reddit rejected the request (HTTP 403). This may be because: (1) your cookies have expired, or (2) the server IP is blocked by Reddit (common for datacenter/VPS IPs). Try from a residential IP or use OAuth instead. Body: ${body.slice(0, 200)}`);
     }
     if (status === 0) {
       throw new Error(`Reddit public API curl failed (exit=${exitCode}): ${stderr.slice(0, 200)}`);
     }
-    throw new Error(`Reddit public API ${status} for ${path}: ${stdout.slice(0, 200)}`);
+    throw new Error(`Reddit public API ${status} for ${path}: ${body.slice(0, 200)}`);
   }
 
-  return JSON.parse(stdout);
+  return JSON.parse(body);
 }
 
 // ── Public (cookie-based) fetcher (old, Bun fetch) ─────────────────
