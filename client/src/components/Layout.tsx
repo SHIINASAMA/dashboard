@@ -122,19 +122,6 @@ export default function Layout() {
               ))}
             </nav>
             <div className="mt-auto p-3 border-t border-[var(--border)] space-y-3">
-              <NavLink
-                to="/accounts"
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isActive
-                      ? "bg-[var(--primary)]/10 text-[var(--primary)]"
-                      : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
-                  }`
-                }
-              >
-                <Users size={18} />
-                {t("nav.accounts")}
-              </NavLink>
               {isAdmin && (
                 <NavLink
                   to="/admin"
@@ -150,6 +137,19 @@ export default function Layout() {
                   {t("nav.admin")}
                 </NavLink>
               )}
+              <NavLink
+                to="/accounts"
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-[var(--primary)]/10 text-[var(--primary)]"
+                      : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+                  }`
+                }
+              >
+                <Users size={18} />
+                {t("nav.accounts")}
+              </NavLink>
               <NavLink
                 to="/settings"
                 className={({ isActive }) =>
