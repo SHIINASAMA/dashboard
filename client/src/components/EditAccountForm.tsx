@@ -45,7 +45,7 @@ export default function EditAccountForm({ account, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 overflow-y-auto py-10" onClick={onClose}>
-      <div className="bg-[var(--card)] rounded-xl p-6 w-full max-w-lg mx-4 shadow-lg border border-[var(--border)]" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-[var(--card)] rounded-xl p-6 w-full max-w-2xl mx-4 shadow-lg border border-[var(--border)]" onClick={(e) => e.stopPropagation()}>
         <h2 className="text-lg font-semibold mb-4">{t("editAccountForm.title")}</h2>
 
         {error && (

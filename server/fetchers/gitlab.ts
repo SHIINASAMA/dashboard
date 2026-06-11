@@ -22,35 +22,15 @@ interface GlApiResponse<T> {
   nextPage: number | null;
 }
 
-function getProxyAgent(): any {
-  const proxyUrl = process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.https_proxy || process.env.http_proxy;
-  if (!proxyUrl) return undefined;
-  try {
-    const { hostname, port } = new URL(proxyUrl);
-    if (hostname && port) {
-      // Bun supports proxy natively via HTTP_PROXY/HTTPS_PROXY env vars
-      // but for explicit control we use the proxy option
-      return proxyUrl;
-    }
-  } catch {}
-  return undefined;
-}
-
 async function glFetch<T>(apiBase: string, path: string, token: string): Promise<GlApiResponse<T>> {
   const url = `${apiBase}${path}`;
-  const proxy = getProxyAgent();
-  const fetchOpts: any = {
+  const res = await fetch(url, {
     headers: {
       "PRIVATE-TOKEN": token,
       "User-Agent": "dashboard",
     },
-    proxy: proxy,
-  };
-  // Disable TLS verification for self-hosted instances or when using a local proxy
-  if (!apiBase.includes("gitlab.com") || proxy) {
-    fetchOpts.tls = { rejectUnauthorized: false };
-  }
-  const res = await fetch(url, fetchOpts).catch((e: any) => {
+    tls: { rejectUnauthorized: false },
+  }).catch((e: any) => {
     throw new Error(`GitLab network error: ${e.message || e}`);
   });
 

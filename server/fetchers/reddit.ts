@@ -2,14 +2,6 @@ import type { AccountRow } from "../repositories/accounts";
 import { insertRedditStats, upsertRedditPost, upsertRedditComment, updateAccount } from "../db";
 import { getLogger } from "../logger";
 
-function getProxyUrl(): string | undefined {
-  return process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.https_proxy || process.env.http_proxy;
-}
-
-function hasProxy(): boolean {
-  return !!getProxyUrl();
-}
-
 async function getRedditAccessToken(refreshToken: string): Promise<string> {
   const clientId = process.env.REDDIT_CLIENT_ID;
   const clientSecret = process.env.REDDIT_CLIENT_SECRET;
@@ -18,8 +10,7 @@ async function getRedditAccessToken(refreshToken: string): Promise<string> {
   }
 
   const auth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
-  const proxy = getProxyUrl();
-  const fetchOpts: any = {
+  const res = await fetch("https://www.reddit.com/api/v1/access_token", {
     method: "POST",
     headers: {
       Authorization: `Basic ${auth}`,
@@ -27,11 +18,8 @@ async function getRedditAccessToken(refreshToken: string): Promise<string> {
       "User-Agent": "dashboard/1.0",
     },
     body: `grant_type=refresh_token&refresh_token=${encodeURIComponent(refreshToken)}`,
-    proxy,
-  };
-  // Local proxy (Clash/V2Ray etc.) does TLS MITM — skip verification when proxying
-  if (proxy) fetchOpts.tls = { rejectUnauthorized: false };
-  const res = await fetch("https://www.reddit.com/api/v1/access_token", fetchOpts);
+    tls: { rejectUnauthorized: false },
+  });
 
   if (!res.ok) {
     const body = await res.text().catch(() => "");
@@ -43,16 +31,13 @@ async function getRedditAccessToken(refreshToken: string): Promise<string> {
 }
 
 async function redditFetch(path: string, token: string): Promise<any> {
-  const proxy = getProxyUrl();
-  const fetchOpts: any = {
+  const res = await fetch(`https://oauth.reddit.com${path}`, {
     headers: {
       Authorization: `Bearer ${token}`,
       "User-Agent": "dashboard/1.0",
     },
-    proxy,
-  };
-  if (proxy) fetchOpts.tls = { rejectUnauthorized: false };
-  const res = await fetch(`https://oauth.reddit.com${path}`, fetchOpts);
+    tls: { rejectUnauthorized: false },
+  });
   if (!res.ok) {
     throw new Error(`Reddit API ${res.status} for ${path}`);
   }
@@ -182,17 +167,14 @@ export async function fetchRedditAccount(account: AccountRow) {
 // valid loid cookie is present. OAuth is NOT required for basic profile data.
 
 async function redditPublicFetch(path: string, loid: string): Promise<any> {
-  const proxy = getProxyUrl();
-  const fetchOpts: any = {
+  const res = await fetch(`https://old.reddit.com${path}`, {
     headers: {
       "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
       "Accept": "application/json",
       "Cookie": `loid=${loid}`,
     },
-    proxy,
-  };
-  if (proxy) fetchOpts.tls = { rejectUnauthorized: false };
-  const res = await fetch(`https://old.reddit.com${path}`, fetchOpts);
+    tls: { rejectUnauthorized: false },
+  });
   if (!res.ok) {
     if (res.status === 403) {
       throw new Error("Reddit rejected the request (403). Your loid cookie may have expired. Get a new one from your browser's dev tools (Application > Cookies > loid).");

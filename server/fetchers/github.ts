@@ -20,7 +20,7 @@ async function ghFetch(path: string, token?: string) {
   };
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${GITHUB_API}${path}`, { headers });
+  const res = await fetch(`${GITHUB_API}${path}`, { headers, tls: { rejectUnauthorized: false } });
   if (res.status === 403) {
     const body = await res.text().catch(() => "");
     const err = new Error(`GitHub API 403: ${body.slice(0, 200)}`);
@@ -305,6 +305,7 @@ async function fetchContributions(username: string, token: string | undefined, y
     method: "POST",
     headers,
     body: JSON.stringify({ query }),
+    tls: { rejectUnauthorized: false },
   });
 
   const body: any = await res.json();
