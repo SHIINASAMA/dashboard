@@ -20,6 +20,9 @@ RUN cd client && bunx vite build
 FROM oven/bun:1-slim
 WORKDIR /app
 
+# curl is needed by the Reddit public fetcher to avoid Bun's TLS fingerprint detection
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
 ENV HTTP_PROXY= HTTPS_PROXY= http_proxy= https_proxy=
 
 COPY package.json bun.lockb ./

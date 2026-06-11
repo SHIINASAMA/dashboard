@@ -168,12 +168,53 @@ export async function fetchRedditAccount(account: AccountRow) {
   }
 }
 
-// ── Public (cookie-based) fetcher ──────────────────────────────
-// Uses browser cookies to access Reddit's JSON API without OAuth.
-// auth_token is a JSON object: { "loid": "...", "reddit_session": "..." }
-// Additional cookie fields can be added as needed.
+// ── Public (cookie-based) fetcher (curl) ──────────────────────────
+// Uses curl subprocess to avoid Bun's TLS fingerprint detection by Reddit.
+// The old fetch()-based implementation is kept below as redditPublicFetchOld.
 
-async function redditPublicFetch(path: string, cookies: Record<string, string>): Promise<any> {
+async function redditPublicFetchCurl(path: string, cookies: Record<string, string>): Promise<any> {
+  const cookieStr = Object.entries(cookies)
+    .map(([k, v]) => `${k}=${v}`)
+    .join("; ");
+
+  const url = `https://www.reddit.com${path}`;
+  const proc = Bun.spawn([
+    "curl",
+    "-sS",
+    "-v",
+    "--http1.1",
+    url,
+    "-H", "User-Agent: Safari/537.36",
+    "-H", "Accept: application/json",
+    "-H", `Cookie: ${cookieStr}`,
+  ]);
+
+  const stdout = await new Response(proc.stdout).text();
+  const stderr = await new Response(proc.stderr).text();
+  const exitCode = await proc.exited;
+
+  // Parse HTTP status from curl verbose stderr: "< HTTP/1.1 NNN ..."
+  const statusMatch = stderr.match(/< HTTP\/\d\.\d\s+(\d{3})/);
+  const status = statusMatch ? parseInt(statusMatch[1], 10) : (exitCode !== 0 ? 0 : 200);
+
+  if (status >= 400 || status === 0) {
+    getLogger().error("Reddit", "Public API (curl) HTTP %d for %s (exit=%d)", status, path, exitCode);
+    if (status === 403) {
+      throw new Error(`Reddit rejected the request (HTTP 403). This may be because: (1) your cookies have expired, or (2) the server IP is blocked by Reddit (common for datacenter/VPS IPs). Try from a residential IP or use OAuth instead. Body: ${stdout.slice(0, 200)}`);
+    }
+    if (status === 0) {
+      throw new Error(`Reddit public API curl failed (exit=${exitCode}): ${stderr.slice(0, 200)}`);
+    }
+    throw new Error(`Reddit public API ${status} for ${path}: ${stdout.slice(0, 200)}`);
+  }
+
+  return JSON.parse(stdout);
+}
+
+// ── Public (cookie-based) fetcher (old, Bun fetch) ─────────────────
+// Kept as dead code reference. No longer used — replaced by redditPublicFetchCurl.
+
+async function redditPublicFetchOld(path: string, cookies: Record<string, string>): Promise<any> {
   const cookieStr = Object.entries(cookies)
     .map(([k, v]) => `${k}=${v}`)
     .join("; ");
@@ -211,7 +252,7 @@ export async function fetchRedditPublicAccount(account: AccountRow) {
 
     // 1. Fetch public profile
     getLogger().info("Reddit", "@%s (public): fetching profile...", username);
-    const profile = await redditPublicFetch(`/user/${username}/about.json`, cookies);
+    const profile = await redditPublicFetchCurl(`/user/${username}/about.json`, cookies);
     if (!profile?.data?.name) {
       throw new Error("Invalid Reddit user profile — user may not exist");
     }
@@ -230,7 +271,7 @@ export async function fetchRedditPublicAccount(account: AccountRow) {
     let after: string | undefined;
     while (postCount < 50) {
       const path = `/user/${username}/submitted.json?limit=25&sort=new${after ? `&after=${after}` : ""}`;
-      const posts = await redditPublicFetch(path, cookies);
+      const posts = await redditPublicFetchCurl(path, cookies);
       const children = posts?.data?.children ?? [];
       if (children.length === 0) break;
 
@@ -266,7 +307,7 @@ export async function fetchRedditPublicAccount(account: AccountRow) {
     after = undefined;
     while (commentCount < 50) {
       const path = `/user/${username}/comments.json?limit=25&sort=new${after ? `&after=${after}` : ""}`;
-      const comments = await redditPublicFetch(path, cookies);
+      const comments = await redditPublicFetchCurl(path, cookies);
       const children = comments?.data?.children ?? [];
       if (children.length === 0) break;
 
