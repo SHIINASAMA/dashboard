@@ -1,17 +1,18 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { pgTable, text, integer, serial } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { accounts } from "./accounts";
 
-export const gitlab_stats = sqliteTable("gitlab_stats", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const gitlab_stats = pgTable("gitlab_stats", {
+  id: serial("id").primaryKey(),
   account_id: integer("account_id").notNull().references(() => accounts.id),
   public_projects: integer("public_projects").default(0),
   followers: integer("followers").notNull(),
   following: integer("following").notNull(),
-  recorded_at: text("recorded_at").notNull().default("(datetime('now'))"),
+  recorded_at: text("recorded_at").notNull().default(sql`NOW()`),
 });
 
-export const gitlab_projects = sqliteTable("gitlab_projects", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const gitlab_projects = pgTable("gitlab_projects", {
+  id: serial("id").primaryKey(),
   account_id: integer("account_id").notNull().references(() => accounts.id),
   project_id: integer("project_id").notNull(),
   name: text("name").notNull(),
@@ -29,11 +30,11 @@ export const gitlab_projects = sqliteTable("gitlab_projects", {
   created_at: text("created_at"),
   updated_at: text("updated_at"),
   last_activity_at: text("last_activity_at"),
-  fetched_at: text("fetched_at").notNull().default("(datetime('now'))"),
+  fetched_at: text("fetched_at").notNull().default(sql`NOW()`),
 });
 
-export const gitlab_project_snapshots = sqliteTable("gitlab_project_snapshots", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const gitlab_project_snapshots = pgTable("gitlab_project_snapshots", {
+  id: serial("id").primaryKey(),
   account_id: integer("account_id").notNull().references(() => accounts.id),
   project_id: integer("project_id").notNull(),
   stars: integer("stars").notNull(),
@@ -42,8 +43,8 @@ export const gitlab_project_snapshots = sqliteTable("gitlab_project_snapshots", 
   snapshot_date: text("snapshot_date").notNull(),
 });
 
-export const gitlab_releases = sqliteTable("gitlab_releases", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const gitlab_releases = pgTable("gitlab_releases", {
+  id: serial("id").primaryKey(),
   account_id: integer("account_id").notNull().references(() => accounts.id),
   project_id: integer("project_id").notNull(),
   release_tag: text("release_tag").notNull(),
@@ -51,11 +52,11 @@ export const gitlab_releases = sqliteTable("gitlab_releases", {
   description: text("description"),
   released_at: text("released_at"),
   created_at: text("created_at"),
-  fetched_at: text("fetched_at").notNull().default("(datetime('now'))"),
+  fetched_at: text("fetched_at").notNull().default(sql`NOW()`),
 });
 
-export const gitlab_release_assets = sqliteTable("gitlab_release_assets", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const gitlab_release_assets = pgTable("gitlab_release_assets", {
+  id: serial("id").primaryKey(),
   release_id: integer("release_id").notNull().references(() => gitlab_releases.id),
   name: text("name").notNull(),
   download_count: integer("download_count").default(0),
@@ -64,10 +65,10 @@ export const gitlab_release_assets = sqliteTable("gitlab_release_assets", {
   url: text("url"),
 });
 
-export const gitlab_contributions = sqliteTable("gitlab_contributions", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const gitlab_contributions = pgTable("gitlab_contributions", {
+  id: serial("id").primaryKey(),
   account_id: integer("account_id").notNull().references(() => accounts.id),
   date: text("date").notNull(),
   count: integer("count").default(0),
-  fetched_at: text("fetched_at").notNull().default("(datetime('now'))"),
+  fetched_at: text("fetched_at").notNull().default(sql`NOW()`),
 });

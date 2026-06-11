@@ -8,3 +8,4 @@ data
 docs
 .github
 .DS_Store
+test.db

@@ -1,6 +1,5 @@
 import { password } from "bun";
-import { loadConfig, saveConfig } from "./config";
-import { getUserByUsername, getUserById, updateUserPassword } from "./db/queries/users";
+import { getUserByUsername, getUserById, updateUserPassword } from "./repositories/users";
 
 // ── Multi-user auth ──────────────────────────────────────────────
 

@@ -1,4 +1,4 @@
-import type { AccountRow } from "../db";
+import type { AccountRow } from "../repositories/accounts";
 import {
   upsertGithubRepo, insertGithubStats, upsertGithubContribution, updateAccount,
   upsertGithubRepoSnapshot,

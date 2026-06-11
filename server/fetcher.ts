@@ -1,5 +1,6 @@
-import type { AccountRow } from "./db";
-import { upsertTweet, insertUserStats, updateAccount } from "./db";
+import type { AccountRow } from "./repositories/accounts";
+import { upsertTweet, insertUserStats } from "./repositories/twitter";
+import { updateAccount } from "./repositories/accounts";
 import { _xClient } from "../scripts/utils";
 import { getLogger } from "./logger";
 

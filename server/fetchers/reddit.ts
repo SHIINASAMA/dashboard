@@ -1,4 +1,4 @@
-import type { AccountRow } from "../db";
+import type { AccountRow } from "../repositories/accounts";
 import { insertRedditStats, upsertRedditPost, upsertRedditComment, updateAccount } from "../db";
 import { getLogger } from "../logger";
 

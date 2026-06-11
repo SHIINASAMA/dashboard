@@ -1,41 +1,46 @@
-import { drizzle } from "drizzle-orm/libsql";
-import { createClient, type Client } from "@libsql/client";
+import { drizzle } from "drizzle-orm/node-postgres";
+import type { Pool } from "pg";
 import { loadConfig } from "../config";
-import { dataDir } from "../config";
-import { join } from "path";
 import * as schema from "../../db/schema/index.js";
 
-let _client: Client | null = null;
-let _db: ReturnType<typeof drizzle<typeof schema>> | null = null;
+let _pgPool: Pool | null = null;
+let _db: ReturnType<typeof drizzle> | null = null;
 
-export function getClient(): Client {
-  if (!_client) {
-    const cfg = loadConfig().database;
-    const sqlitePath = cfg.sqlite.path || join(dataDir(), "db", "dashboard.db");
-    _client = createClient({ url: `file:${sqlitePath}` });
-    _client.execute("PRAGMA foreign_keys = ON");
-  }
-  return _client;
+export async function initPgPool(): Promise<void> {
+  const cfg = loadConfig().database;
+  if (!cfg) throw new Error("PostgreSQL config missing");
+  const { Pool } = await import("pg");
+  _pgPool = new Pool({
+    host: cfg.host,
+    port: cfg.port,
+    database: cfg.database,
+    user: cfg.user,
+    password: cfg.password,
+    max: (cfg as any).max ?? 5,
+    ssl: (cfg as any).ssl ? { rejectUnauthorized: false } : undefined,
+  });
+
+  const client = await _pgPool.connect();
+  client.release();
+  console.log("[DB] Connected to PostgreSQL at %s:%d/%s", cfg.host, cfg.port, cfg.database);
 }
 
 export function getDb() {
   if (!_db) {
-    _db = drizzle(getClient(), { schema });
+    if (!_pgPool) throw new Error("PostgreSQL pool not initialized. Call initPgPool() first.");
+    _db = drizzle(_pgPool, { schema });
   }
   return _db;
 }
 
-export function closeDb() {
-  _db = null;
-  _client = null;
+export function getPgPool(): Pool | null {
+  return _pgPool;
 }
 
-/** Replace the global DB client with an in-memory SQLite database for testing.
- *  Call before each test suite that queries the database. */
-export async function initTestDb() {
-  closeDb();
-  const tmpPath = `/tmp/dashboard_test_${Date.now()}.db`;
-  _client = createClient({ url: `file:${tmpPath}` });
-  await _client.execute("PRAGMA foreign_keys = ON");
-  _db = drizzle(_client, { schema });
+export async function closeDb() {
+  _db = null;
+  if (_pgPool) {
+    await _pgPool.end();
+    _pgPool = null;
+  }
 }

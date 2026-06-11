@@ -1,18 +1,19 @@
-import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
+import { pgTable, text, integer, serial } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { accounts } from "./accounts";
 
-export const github_stats = sqliteTable("github_stats", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const github_stats = pgTable("github_stats", {
+  id: serial("id").primaryKey(),
   account_id: integer("account_id").notNull().references(() => accounts.id),
   public_repos: integer("public_repos").notNull(),
   public_gists: integer("public_gists").default(0),
   followers: integer("followers").notNull(),
   following: integer("following").notNull(),
-  recorded_at: text("recorded_at").notNull().default("(datetime('now'))"),
+  recorded_at: text("recorded_at").notNull().default(sql`NOW()`),
 });
 
-export const github_repos = sqliteTable("github_repos", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const github_repos = pgTable("github_repos", {
+  id: serial("id").primaryKey(),
   account_id: integer("account_id").notNull().references(() => accounts.id),
   repo_id: integer("repo_id").notNull(),
   name: text("name").notNull(),
@@ -29,20 +30,20 @@ export const github_repos = sqliteTable("github_repos", {
   created_at: text("created_at"),
   updated_at: text("updated_at"),
   pushed_at: text("pushed_at"),
-  fetched_at: text("fetched_at").notNull().default("(datetime('now'))"),
+  fetched_at: text("fetched_at").notNull().default(sql`NOW()`),
 });
 
-export const github_contributions = sqliteTable("github_contributions", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const github_contributions = pgTable("github_contributions", {
+  id: serial("id").primaryKey(),
   account_id: integer("account_id").notNull().references(() => accounts.id),
   date: text("date").notNull(),
   count: integer("count").default(0),
   level: integer("level").default(0),
-  fetched_at: text("fetched_at").notNull().default("(datetime('now'))"),
+  fetched_at: text("fetched_at").notNull().default(sql`NOW()`),
 });
 
-export const github_repo_snapshots = sqliteTable("github_repo_snapshots", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const github_repo_snapshots = pgTable("github_repo_snapshots", {
+  id: serial("id").primaryKey(),
   account_id: integer("account_id").notNull().references(() => accounts.id),
   repo_id: integer("repo_id").notNull(),
   stars: integer("stars").notNull(),
@@ -51,8 +52,8 @@ export const github_repo_snapshots = sqliteTable("github_repo_snapshots", {
   snapshot_date: text("snapshot_date").notNull(),
 });
 
-export const github_traffic_clones = sqliteTable("github_traffic_clones", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const github_traffic_clones = pgTable("github_traffic_clones", {
+  id: serial("id").primaryKey(),
   account_id: integer("account_id").notNull().references(() => accounts.id),
   repo_id: integer("repo_id").notNull(),
   date: text("date").notNull(),
@@ -60,8 +61,8 @@ export const github_traffic_clones = sqliteTable("github_traffic_clones", {
   uniques: integer("uniques").default(0),
 });
 
-export const github_traffic_views = sqliteTable("github_traffic_views", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const github_traffic_views = pgTable("github_traffic_views", {
+  id: serial("id").primaryKey(),
   account_id: integer("account_id").notNull().references(() => accounts.id),
   repo_id: integer("repo_id").notNull(),
   date: text("date").notNull(),
@@ -69,29 +70,29 @@ export const github_traffic_views = sqliteTable("github_traffic_views", {
   uniques: integer("uniques").default(0),
 });
 
-export const github_referrers = sqliteTable("github_referrers", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const github_referrers = pgTable("github_referrers", {
+  id: serial("id").primaryKey(),
   account_id: integer("account_id").notNull().references(() => accounts.id),
   repo_id: integer("repo_id").notNull(),
   referrer: text("referrer").notNull(),
   count: integer("count").default(0),
   uniques: integer("uniques").default(0),
-  snapshot_date: text("snapshot_date").notNull().default("(date('now'))"),
+  snapshot_date: text("snapshot_date").notNull().default(sql`CURRENT_DATE`),
 });
 
-export const github_paths = sqliteTable("github_paths", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const github_paths = pgTable("github_paths", {
+  id: serial("id").primaryKey(),
   account_id: integer("account_id").notNull().references(() => accounts.id),
   repo_id: integer("repo_id").notNull(),
   path: text("path").notNull(),
   title: text("title"),
   count: integer("count").default(0),
   uniques: integer("uniques").default(0),
-  snapshot_date: text("snapshot_date").notNull().default("(date('now'))"),
+  snapshot_date: text("snapshot_date").notNull().default(sql`CURRENT_DATE`),
 });
 
-export const github_releases = sqliteTable("github_releases", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const github_releases = pgTable("github_releases", {
+  id: serial("id").primaryKey(),
   account_id: integer("account_id").notNull().references(() => accounts.id),
   repo_id: integer("repo_id").notNull(),
   release_id: integer("release_id").notNull(),
@@ -102,11 +103,11 @@ export const github_releases = sqliteTable("github_releases", {
   published_at: text("published_at"),
   html_url: text("html_url"),
   total_downloads: integer("total_downloads").default(0),
-  fetched_at: text("fetched_at").notNull().default("(datetime('now'))"),
+  fetched_at: text("fetched_at").notNull().default(sql`NOW()`),
 });
 
-export const github_release_assets = sqliteTable("github_release_assets", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const github_release_assets = pgTable("github_release_assets", {
+  id: serial("id").primaryKey(),
   release_id: integer("release_id").notNull().references(() => github_releases.id),
   name: text("name").notNull(),
   download_count: integer("download_count").default(0),

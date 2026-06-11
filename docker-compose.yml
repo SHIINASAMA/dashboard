@@ -2,7 +2,6 @@ services:
   dashboard:
     build:
       context: .
-    image: dashboard:latest
     container_name: dashboard
     restart: unless-stopped
     ports:
@@ -10,18 +9,46 @@ services:
     environment:
       HOST: 0.0.0.0
       PORT: "3001"
-      DATA_DIR: ${DATA_DIR:-./data}
-      # Required: 64 hex characters (32 bytes) for AES encryption + JWT.
-      # Generate with: openssl rand -hex 32
+      DATA_DIR: /app/data
+      NODE_ENV: production
       DASHBOARD_SECRET: ${DASHBOARD_SECRET:-}
-      HTTPS: "false"
-      # Optional proxy for outbound API calls
+      HTTPS: "${HTTPS:-false}"
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${PG_USER:-dashboard}:${PG_PASSWORD:-dashboard}@postgres:5432/${PG_DB:-dashboard}}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+      ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH:-}
       HTTPS_PROXY: ${HTTPS_PROXY:-}
       HTTP_PROXY: ${HTTP_PROXY:-}
-      # Optional: Reddit OAuth (create a script app at https://www.reddit.com/prefs/apps)
       REDDIT_CLIENT_ID: ${REDDIT_CLIENT_ID:-}
       REDDIT_CLIENT_SECRET: ${REDDIT_CLIENT_SECRET:-}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_DIR: /app/data/logs
+      LOG_MAX_SIZE: ${LOG_MAX_SIZE:-10m}
+      LOG_MAX_FILES: ${LOG_MAX_FILES:-5}
     volumes:
-      # Mount the project's own data/ directory by default.
-      - ${DATA_HOST_DIR:-./data}:/app/data
+      - dashboard_data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: dashboard-pg
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${PG_USER:-dashboard}
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-dashboard}
+      POSTGRES_DB: ${PG_DB:-dashboard}
+    ports:
+      - "${PG_PORT:-5432}:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER:-dashboard} -d ${PG_DB:-dashboard}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+volumes:
+  dashboard_data:
+  pg_data:

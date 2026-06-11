@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getTweets, getTweetById } from "../db";
+import { getTweets, getTweetById } from "../repositories/twitter";
 
 function parseAccountIds(c: any): number[] | undefined {
   const raw = c.req.query("accountIds");

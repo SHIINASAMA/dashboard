@@ -1,17 +1,18 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { pgTable, text, integer, serial } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { accounts } from "./accounts";
 
-export const user_stats = sqliteTable("user_stats", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const user_stats = pgTable("user_stats", {
+  id: serial("id").primaryKey(),
   account_id: integer("account_id").notNull().references(() => accounts.id),
   followers_count: integer("followers_count").notNull(),
   following_count: integer("following_count").notNull(),
   tweet_count: integer("tweet_count").notNull(),
   listed_count: integer("listed_count").default(0),
-  recorded_at: text("recorded_at").notNull().default("(datetime('now'))"),
+  recorded_at: text("recorded_at").notNull().default(sql`NOW()`),
 });
 
-export const tweets = sqliteTable("tweets", {
+export const tweets = pgTable("tweets", {
   id: text("id").primaryKey(),
   account_id: integer("account_id").notNull().references(() => accounts.id),
   full_text: text("full_text").notNull(),
@@ -29,5 +30,5 @@ export const tweets = sqliteTable("tweets", {
   hashtags: text("hashtags").default("[]"),
   mentions: text("mentions").default("[]"),
   lang: text("lang").default(""),
-  fetched_at: text("fetched_at").notNull().default("(datetime('now'))"),
+  fetched_at: text("fetched_at").notNull().default(sql`NOW()`),
 });

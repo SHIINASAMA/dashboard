@@ -1,13 +1,11 @@
 import { Hono } from "hono";
 import {
-  getOverviewStats,
-  getTimelineStats,
-  getTopTweets,
-  getCalendarData,
-} from "../db";
+  getOverviewStats, getTimeline as getTimelineStats,
+  getTopTweets, getCalendarData,
+} from "../repositories/twitter";
 
-import { getAccounts } from "../db";
-import { getUserByUsername } from "../db/queries/users";
+import { getAccounts } from "../services/accounts";
+import { getUserByUsername } from "../repositories/users";
 
 function parseAccountIds(c: any): number[] | undefined {
   const raw = c.req.query("accountIds");
@@ -20,11 +18,11 @@ async function getFilteredTwitterIds(c: any): Promise<number[]> {
   if (c.get("sessionRole") !== "admin") {
     const username = c.get("sessionUser") as string;
     const user = await getUserByUsername(username);
-    if (!user) return []; // no user, no data
+    if (!user) return [];
     ownerId = user.id;
   }
   const accounts = await getAccounts(ownerId);
-  return accounts.filter((a: any) => a.platform === "twitter").map((r: any) => r.id);
+  return accounts.filter((a) => a.platform === "twitter").map((r) => r.id);
 }
 
 const statsRouter = new Hono();

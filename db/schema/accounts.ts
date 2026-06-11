@@ -1,8 +1,9 @@
-import { sqliteTable, text, integer, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { pgTable, text, integer, serial, uniqueIndex } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { users } from "./users";
 
-export const accounts = sqliteTable("accounts", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const accounts = pgTable("accounts", {
+  id: serial("id").primaryKey(),
   owner_id: integer("owner_id").notNull().references(() => users.id),
   screen_name: text("screen_name").notNull(),
   platform: text("platform").notNull().default("twitter"),
@@ -14,8 +15,8 @@ export const accounts = sqliteTable("accounts", {
   error_message: text("error_message"),
   instance_url: text("instance_url"),
   auth_type: text("auth_type"),
-  created_at: text("created_at").notNull().default("(datetime('now'))"),
-  updated_at: text("updated_at").notNull().default("(datetime('now'))"),
+  created_at: text("created_at").notNull().default(sql`NOW()`),
+  updated_at: text("updated_at").notNull().default(sql`NOW()`),
   deleted_at: text("deleted_at"),
 },
 (table) => ({
