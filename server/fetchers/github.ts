@@ -10,6 +10,7 @@ import { getDb } from "../db/connection";
 import { eq, and } from "drizzle-orm";
 import { github_releases } from "../../db/schema";
 import { getLogger } from "../logger";
+import { fetchWithConfig } from "../http";
 
 const GITHUB_API = "https://api.github.com";
 
@@ -20,7 +21,7 @@ async function ghFetch(path: string, token?: string) {
   };
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${GITHUB_API}${path}`, { headers, tls: { rejectUnauthorized: false } });
+  const res = await fetchWithConfig(`${GITHUB_API}${path}`, { headers });
   if (res.status === 403) {
     const body = await res.text().catch(() => "");
     const err = new Error(`GitHub API 403: ${body.slice(0, 200)}`);
@@ -277,9 +278,9 @@ async function fetchRepoReleases(accountId: number, repoId: number, fullName: st
 
 async function fetchContributions(username: string, token: string | undefined, year: number) {
   const query = `
-    query {
-      user(login: "${username}") {
-        contributionsCollection(from: "${year}-01-01T00:00:00Z", to: "${year}-12-31T23:59:59Z") {
+    query($login: String!, $from: DateTime!, $to: DateTime!) {
+      user(login: $login) {
+        contributionsCollection(from: $from, to: $to) {
           contributionCalendar {
             weeks {
               contributionDays {
@@ -301,11 +302,17 @@ async function fetchContributions(username: string, token: string | undefined, y
   };
   if (token) headers.Authorization = `bearer ${token}`;
 
-  const res = await fetch("https://api.github.com/graphql", {
+  const res = await fetchWithConfig("https://api.github.com/graphql", {
     method: "POST",
     headers,
-    body: JSON.stringify({ query }),
-    tls: { rejectUnauthorized: false },
+    body: JSON.stringify({
+      query,
+      variables: {
+        login: username,
+        from: `${year}-01-01T00:00:00Z`,
+        to: `${year}-12-31T23:59:59Z`,
+      },
+    }),
   });
 
   const body: any = await res.json();

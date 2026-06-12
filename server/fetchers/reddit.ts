@@ -1,6 +1,7 @@
 import type { AccountRow } from "../repositories/accounts";
 import { insertRedditStats, upsertRedditPost, upsertRedditComment, updateAccount } from "../db";
 import { getLogger } from "../logger";
+import { fetchWithConfig } from "../http";
 
 async function getRedditAccessToken(refreshToken: string): Promise<string> {
   const clientId = process.env.REDDIT_CLIENT_ID;
@@ -10,7 +11,7 @@ async function getRedditAccessToken(refreshToken: string): Promise<string> {
   }
 
   const auth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
-  const res = await fetch("https://www.reddit.com/api/v1/access_token", {
+  const res = await fetchWithConfig("https://www.reddit.com/api/v1/access_token", {
     method: "POST",
     headers: {
       Authorization: `Basic ${auth}`,
@@ -18,7 +19,6 @@ async function getRedditAccessToken(refreshToken: string): Promise<string> {
       "User-Agent": "dashboard/1.0",
     },
     body: `grant_type=refresh_token&refresh_token=${encodeURIComponent(refreshToken)}`,
-    tls: { rejectUnauthorized: false },
   });
 
   if (!res.ok) {
@@ -32,12 +32,11 @@ async function getRedditAccessToken(refreshToken: string): Promise<string> {
 }
 
 async function redditFetch(path: string, token: string): Promise<any> {
-  const res = await fetch(`https://oauth.reddit.com${path}`, {
+  const res = await fetchWithConfig(`https://oauth.reddit.com${path}`, {
     headers: {
       Authorization: `Bearer ${token}`,
       "User-Agent": "dashboard/1.0",
     },
-    tls: { rejectUnauthorized: false },
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
@@ -214,6 +213,7 @@ async function redditPublicFetchCurl(path: string, cookies: Record<string, strin
 
 // ── Public (cookie-based) fetcher (old, Bun fetch) ─────────────────
 // Kept as dead code reference. No longer used — replaced by redditPublicFetchCurl.
+// @ts-ignore — intentionally kept as reference, not used at runtime
 
 async function redditPublicFetchOld(path: string, cookies: Record<string, string>): Promise<any> {
   const cookieStr = Object.entries(cookies)
@@ -225,6 +225,7 @@ async function redditPublicFetchOld(path: string, cookies: Record<string, string
       "Accept": "application/json",
       "Cookie": cookieStr,
     },
+    // @ts-ignore — Bun-specific tls option
     tls: { rejectUnauthorized: false },
   });
   if (!res.ok) {

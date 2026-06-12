@@ -12,7 +12,7 @@
  * After migration, sets a "migrated" flag so data won't be re-imported.
  */
 import { join } from "path";
-import { existsSync, mkdirSync } from "fs";
+import { existsSync } from "fs";
 import { initCrypto } from "./crypto";
 import { loadConfig, loadOrGenerateKey, dataDir } from "./config";
 import { initPgPool, getPgPool } from "./db/connection";

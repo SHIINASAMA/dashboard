@@ -1,7 +1,7 @@
 import { eq, and, desc, sql, count, inArray, gte, like } from "drizzle-orm";
 import { getDb } from "../db/connection";
 import { tweets, user_stats } from "../../db/schema";
-import type { OverviewStats } from "../../../shared/types";
+import type { OverviewStats } from "../../shared/types";
 
 export const EMPTY_OVERVIEW: OverviewStats = {
   tweet_count: 0, tweet_likes: 0, tweet_retweets: 0, tweet_views: 0,

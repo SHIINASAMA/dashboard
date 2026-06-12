@@ -1,4 +1,4 @@
-import { eq, and, isNull, desc, sql, count } from "drizzle-orm";
+import { eq, and, isNull, sql, count } from "drizzle-orm";
 import { getDb } from "../db/connection";
 import { users, accounts } from "../../db/schema";
 

@@ -5,10 +5,10 @@ import {
   upsertGitlabProjectSnapshot,
   upsertGitlabContribution,
   upsertGitlabRelease,
-  insertGitlabReleaseAsset,
   updateAccount,
 } from "../db";
 import { getLogger } from "../logger";
+import { fetchWithConfig } from "../http";
 
 function getApiBase(account: AccountRow): string {
   if (account.instance_url) {
@@ -24,12 +24,11 @@ interface GlApiResponse<T> {
 
 async function glFetch<T>(apiBase: string, path: string, token: string): Promise<GlApiResponse<T>> {
   const url = `${apiBase}${path}`;
-  const res = await fetch(url, {
+  const res = await fetchWithConfig(url, {
     headers: {
       "PRIVATE-TOKEN": token,
       "User-Agent": "dashboard",
     },
-    tls: { rejectUnauthorized: false },
   }).catch((e: any) => {
     throw new Error(`GitLab network error: ${e.message || e}`);
   });
@@ -89,7 +88,6 @@ function sleep(ms: number) {
 export async function fetchGitlabAccount(account: AccountRow) {
   const apiBase = getApiBase(account);
   const token = account.auth_token;
-  const today = new Date().toISOString().slice(0, 10);
   let errorMessages: string[] = [];
 
   try {
@@ -172,11 +170,6 @@ export async function fetchGitlabAccount(account: AccountRow) {
 
         for (const rel of releases) {
           if (!rel.tag_name) continue;
-          // Compute total download count from assets (link assets + source downloads)
-          const downloadCount = ((rel.assets?.sources || []) as any[]).reduce(
-            (s: number, src: any) => s + (src.download_count || 0),
-            0,
-          );
 
           await upsertGitlabRelease({
             account_id: account.id,

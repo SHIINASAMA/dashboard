@@ -6,10 +6,11 @@ function getProxyUrl(): string | undefined {
 }
 
 export const _xClient = async (TOKEN: string) => {
-  console.log("🚀 ~ const_xClient= ~ TOKEN:", TOKEN)
+//   console.log("🚀 ~ const_xClient= ~ TOKEN:", TOKEN)
   const proxy = getProxyUrl();
   const resp = await fetch("https://x.com/manifest.json", {
     headers: { cookie: `auth_token=${TOKEN}`, "User-Agent": "dashboard" },
+    // @ts-ignore — Bun-specific options
     tls: { rejectUnauthorized: false },
     proxy: proxy,
   });
@@ -22,7 +23,7 @@ export const _xClient = async (TOKEN: string) => {
     return acc;
   }, {});
 
-  console.log("🚀 ~ cookieObj ~ cookieObj:", JSON.stringify(cookieObj, null, 2))
+//   console.log("🚀 ~ cookieObj ~ cookieObj:", JSON.stringify(cookieObj, null, 2))
 
   const api = new TwitterOpenApi();
   const client = await api.getClientFromCookies({...cookieObj, auth_token: TOKEN});
@@ -37,6 +38,7 @@ export const login = async (AUTH_TOKEN: string) => {
   const proxy = getProxyUrl();
   const resp = await fetch("https://x.com/manifest.json", {
     headers: { cookie: `auth_token=${AUTH_TOKEN}`, "User-Agent": "dashboard" },
+    // @ts-ignore — Bun-specific options
     tls: { rejectUnauthorized: false },
     proxy: proxy,
   });

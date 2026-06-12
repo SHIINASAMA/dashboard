@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeAll, afterAll } from "bun:test";
-import { password } from "bun";
 import { resetTestDb, getTestPool, closeTestPool } from "./setup";
 import * as usersQ from "../repositories/users";
 import * as accountsQ from "../repositories/accounts";

@@ -189,18 +189,16 @@ function AccountFormPanel({
   const editing = !!account;
 
   const [screenName, setScreenName] = useState(account?.screen_name ?? "");
-  const [authToken, setAuthToken] = useState(() => {
-    // pre-fill token for non-cookie editing so password input shows ****
-    if (account && account.auth_type !== "reddit_public") return account.auth_token ?? "";
-    return "";
-  });
+  const originalToken = account?.auth_token ?? "";
+  const [authToken, setAuthToken] = useState(originalToken);
+  const [showToken, setShowToken] = useState(false);
   const [fetchInterval, setFetchInterval] = useState(account?.fetch_interval ?? 30);
   const [platform, setPlatform] = useState<Platform>(account?.platform as Platform ?? defaultPlatform);
   const [instanceUrl, setInstanceUrl] = useState(account?.instance_url ?? "");
   const [authType, setAuthType] = useState<string | null>(account?.auth_type ?? null);
   const [error, setError] = useState("");
 
-  // cookie table state — parsed from authToken. Pre-fill from account in edit mode.
+  // cookie table state — parsed from authToken
   const [cookieEntries, setCookieEntries] = useState<{ key: string; value: string }[]>(() => {
     const src = account?.auth_token ?? "";
     if (!src) return [];
@@ -228,7 +226,7 @@ function AccountFormPanel({
     mutationFn: () => {
       const d: Record<string, string | number | boolean | null> = {};
       if (screenName !== account!.screen_name) d.screenName = screenName;
-      if (authToken) d.authToken = authToken;
+      if (authToken !== originalToken) d.authToken = authToken;
       if (fetchInterval !== account!.fetch_interval) d.fetchInterval = fetchInterval;
       if (isReddit && authType !== (account!.auth_type || null)) d.authType = authType || null;
       if (platform === "gitlab" && instanceUrl !== (account!.instance_url || "")) d.instanceUrl = instanceUrl || null;
@@ -312,9 +310,30 @@ function AccountFormPanel({
             <CookieTable entries={cookieEntries} onChange={syncCookieToken} t={t} />
           ) : (
             <div>
-              <input type="password" value={authToken} onChange={(e) => setAuthToken(e.target.value)}
-                placeholder={platform === "github" ? "ghp_..." : platform === "gitlab" ? "glpat-..." : platform === "reddit" ? "your Reddit password" : "Your X auth_token cookie"}
-                className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] font-mono text-xs" />
+              <div className="relative">
+                <input
+                  type={editing && !showToken && authToken === originalToken ? "password" : "text"}
+                  value={editing && !showToken && authToken === originalToken ? "••••••••••••••••" : authToken}
+                  onChange={(e) => setAuthToken(e.target.value)}
+                  onFocus={() => { if (editing && !showToken && authToken === originalToken) setShowToken(true); }}
+                  placeholder={platform === "github" ? "ghp_..." : platform === "gitlab" ? "glpat-..." : platform === "reddit" ? "your Reddit password" : "Your X auth_token cookie"}
+                  className="w-full px-3 py-2 pr-16 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] font-mono text-xs" />
+                {editing && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (showToken) {
+                        setShowToken(false);
+                        setAuthToken(originalToken);
+                      } else {
+                        setShowToken(true);
+                      }
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] px-1.5 py-0.5 rounded hover:bg-[var(--muted)]">
+                    {showToken ? "Hide" : "Show"}
+                  </button>
+                )}
+              </div>
               <p className="text-[12px] text-[var(--muted-foreground)] mt-1">
                 {editing ? t("editAccountForm.tokenHint") : (
                   platform === "github" ? t("addAccountForm.helpGithubToken")

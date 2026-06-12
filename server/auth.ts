@@ -1,5 +1,5 @@
 import { password } from "bun";
-import { getUserByUsername, getUserById, updateUserPassword } from "./repositories/users";
+import { getUserByUsername, updateUserPassword } from "./repositories/users";
 
 // ── Multi-user auth ──────────────────────────────────────────────
 
@@ -23,7 +23,7 @@ export async function setUserPassword(userId: number, pw: string): Promise<void>
 
 export async function verifyPassword(input: string): Promise<boolean> {
   const user = await getUserByUsername("admin");
-  if (!user || !user.password_hash) return true;
+  if (!user || !user.password_hash) return false;
   try {
     return password.verify(input, user.password_hash);
   } catch {

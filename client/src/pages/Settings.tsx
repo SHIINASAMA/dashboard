@@ -1,7 +1,7 @@
 import { Sun, Moon, Monitor, Key, Clock } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../components/useTheme";
-import { themes } from "../lib/themes";
+import { themes, type Theme } from "../lib/themes";
 import { api } from "../api";
 import { getTimezone, setTimezone } from "../lib/datetime";
 import { useState } from "react";

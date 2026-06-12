@@ -1,4 +1,4 @@
-import { eq, and, desc, sql, count } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { getDb } from "../db/connection";
 import {
   github_stats, github_repos, github_contributions,
@@ -14,10 +14,10 @@ export async function getGithubOverview(accountId: number) {
     .where(eq(github_repos.account_id, accountId)).orderBy(desc(github_repos.stars));
   const pinnedRepos = allRepos.filter(r => r.pinned);
   const repos = pinnedRepos.length > 0 ? pinnedRepos : allRepos;
-  const totalStars = allRepos.reduce((s, r) => s + r.stars, 0);
-  const totalForks = allRepos.reduce((s, r) => s + r.forks, 0);
+  const totalStars = allRepos.reduce((s, r) => s + (r.stars ?? 0), 0);
+  const totalForks = allRepos.reduce((s, r) => s + (r.forks ?? 0), 0);
   const languages = allRepos.filter(r => r.language).reduce((acc: Record<string, number>, r) => { acc[r.language!] = (acc[r.language!] || 0) + 1; return acc; }, {});
-  const topRepos = [...allRepos].sort((a, b) => b.stars - a.stars).slice(0, 10);
+  const topRepos = [...allRepos].sort((a, b) => (b.stars ?? 0) - (a.stars ?? 0)).slice(0, 10);
   return { stats: latest, repos, allRepos, totalStars, totalForks, totalRepos: allRepos.length, languages, topRepos };
 }
 
@@ -116,7 +116,7 @@ export async function getGithubReferrers(accountId: number, repoId: number) {
     .orderBy(desc(github_referrers.count));
   const latest = new Map<string, typeof all[0]>();
   for (const r of all) { if (!latest.has(r.referrer) || r.snapshot_date > latest.get(r.referrer)!.snapshot_date) latest.set(r.referrer, r); }
-  return [...latest.values()].sort((a, b) => b.count - a.count);
+  return [...latest.values()].sort((a, b) => (b.count ?? 0) - (a.count ?? 0));
 }
 
 export async function getGithubReferrerHistory(accountId: number, repoId: number) {
@@ -138,7 +138,7 @@ export async function getGithubPaths(accountId: number, repoId: number) {
     .orderBy(desc(github_paths.count));
   const latest = new Map<string, typeof all[0]>();
   for (const r of all) { if (!latest.has(r.path) || r.snapshot_date > latest.get(r.path)!.snapshot_date) latest.set(r.path, r); }
-  return [...latest.values()].sort((a, b) => b.count - a.count);
+  return [...latest.values()].sort((a, b) => (b.count ?? 0) - (a.count ?? 0));
 }
 
 export async function getGithubPathHistory(accountId: number, repoId: number) {

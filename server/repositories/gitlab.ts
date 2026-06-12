@@ -1,4 +1,4 @@
-import { eq, and, desc, sql, count } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { getDb } from "../db/connection";
 import {
   gitlab_stats, gitlab_projects, gitlab_project_snapshots,
@@ -12,10 +12,10 @@ export async function getGitlabOverview(accountId: number) {
     .where(eq(gitlab_projects.account_id, accountId)).orderBy(desc(gitlab_projects.stars));
   const pinnedProjects = allProjects.filter(r => r.pinned);
   const projects = pinnedProjects.length > 0 ? pinnedProjects : allProjects;
-  const totalStars = allProjects.reduce((s, r) => s + r.stars, 0);
-  const totalForks = allProjects.reduce((s, r) => s + r.forks, 0);
+  const totalStars = allProjects.reduce((s, r) => s + (r.stars ?? 0), 0);
+  const totalForks = allProjects.reduce((s, r) => s + (r.forks ?? 0), 0);
   const languages = allProjects.filter(r => r.language).reduce((acc: Record<string, number>, r) => { acc[r.language!] = (acc[r.language!] || 0) + 1; return acc; }, {});
-  const topProjects = [...allProjects].sort((a, b) => b.stars - a.stars).slice(0, 10);
+  const topProjects = [...allProjects].sort((a, b) => (b.stars ?? 0) - (a.stars ?? 0)).slice(0, 10);
   return { stats: latest, projects, allProjects, totalStars, totalForks, totalProjects: allProjects.length, languages, topProjects };
 }
 

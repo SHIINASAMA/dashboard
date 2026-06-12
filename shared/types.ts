@@ -11,6 +11,7 @@ export interface Account {
   last_fetched_at: string | null;
   error_message: string | null;
   auth_type: string | null;
+  auth_token?: string;
   created_at: string;
   updated_at: string;
   stats?: {

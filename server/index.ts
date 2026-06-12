@@ -17,9 +17,8 @@ import { fetchGithubAccount } from "./fetchers/github";
 import { fetchGitlabAccount } from "./fetchers/gitlab";
 import { fetchRedditAccount, fetchRedditPublicAccount } from "./fetchers/reddit";
 import { getJwtSecret } from "./crypto";
-import { verifyPassword, verifyCredentials, setNewPassword, changePassword } from "./auth";
+import { verifyPassword, verifyCredentials, changePassword } from "./auth";
 import { getUsers, createUser, deleteUser } from "./services/users";
-import { getUserByUsername } from "./repositories/users";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { readFileSync, existsSync } from "fs";
@@ -108,7 +107,14 @@ async function validateSession(token: string): Promise<{ username: string; role:
 
 // ── App setup ────────────────────────────────────────────────────
 
-const app = new Hono();
+type AppEnv = {
+  Variables: {
+    sessionUser: string;
+    sessionRole: string;
+  };
+};
+
+const app = new Hono<AppEnv>();
 
 // CORS — controlled by config.allowedOrigins.
 // Default empty = no cross-origin access. Set to ["*"] to allow all,

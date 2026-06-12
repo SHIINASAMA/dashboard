@@ -3,7 +3,6 @@
  * using the same SQL as db/migrate.ts.
  */
 import { Pool } from "pg";
-import { initCrypto } from "../crypto";
 
 let _pool: Pool | null = null;
 

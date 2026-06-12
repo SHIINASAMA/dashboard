@@ -222,7 +222,7 @@ const SCHEMA = [
 ];
 
 export async function createMissingTables(pool: Pool) {
-  for (const { table, sql } of SCHEMA) {
+  for (const { sql } of SCHEMA) {
     await pool.query(sql);
   }
 }
