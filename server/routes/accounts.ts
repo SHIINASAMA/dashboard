@@ -17,7 +17,8 @@ accountsRouter.get("/", async (c) => {
   const accounts = await accountsService.getAccounts(ownerId);
   const twitterIds = accounts.filter((a) => a.platform === "twitter").map((a) => a.id);
   const overview = await twitterRepo.getOverviewStats(twitterIds.length > 0 ? twitterIds : [-1]);
-  return c.json({ accounts, overview });
+  const accountsOut = accounts.map(({ auth_token, ...pub }) => pub);
+  return c.json({ accounts: accountsOut, overview });
 });
 
 accountsRouter.get("/:id", async (c) => {
@@ -25,8 +26,7 @@ accountsRouter.get("/:id", async (c) => {
   const account = await accountsService.getAccountById(id);
   if (!account) return c.json({ error: "Not found" }, 404);
   const stats = await twitterRepo.getLatestUserStats(id);
-  const { auth_token, ...pub } = account;
-  return c.json({ ...pub, stats });
+  return c.json({ ...account, stats });
 });
 
 accountsRouter.post("/", async (c) => {
@@ -60,7 +60,7 @@ accountsRouter.put("/:id", async (c) => {
 
   const updates: any = {};
   if (body.screenName !== undefined) updates.screen_name = body.screenName;
-  if (body.authToken !== undefined) updates.auth_token = body.authToken;
+  if (body.authToken !== undefined && body.authToken !== "") updates.auth_token = body.authToken;
   if (body.fetchInterval !== undefined) updates.fetch_interval = body.fetchInterval;
   if (body.isActive !== undefined) updates.is_active = body.isActive ? 1 : 0;
   if (body.instanceUrl !== undefined) updates.instance_url = body.instanceUrl;

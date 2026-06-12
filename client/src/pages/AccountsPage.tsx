@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -189,22 +189,46 @@ function AccountFormPanel({
   const editing = !!account;
 
   const [screenName, setScreenName] = useState(account?.screen_name ?? "");
-  const originalToken = account?.auth_token ?? "";
-  const [authToken, setAuthToken] = useState(originalToken);
-  const [showToken, setShowToken] = useState(false);
+  const [authToken, setAuthToken] = useState("");
   const [fetchInterval, setFetchInterval] = useState(account?.fetch_interval ?? 30);
   const [platform, setPlatform] = useState<Platform>(account?.platform as Platform ?? defaultPlatform);
   const [instanceUrl, setInstanceUrl] = useState(account?.instance_url ?? "");
   const [authType, setAuthType] = useState<string | null>(account?.auth_type ?? null);
   const [error, setError] = useState("");
 
-  // cookie table state — parsed from authToken
-  const [cookieEntries, setCookieEntries] = useState<{ key: string; value: string }[]>(() => {
-    const src = account?.auth_token ?? "";
-    if (!src) return [];
-    try { const obj = JSON.parse(src); return Object.entries(obj).map(([k, v]) => ({ key: k, value: String(v) })); }
-    catch { return []; }
-  });
+  const isReddit = platform === "reddit";
+  const isRedditPublic = isReddit && authType === "reddit_public";
+
+  // Load reddit cookie details on edit — the list API no longer returns auth_token
+  const [cookieLoading, setCookieLoading] = useState(false);
+  const cookieInitDone = useRef(false);
+
+  useEffect(() => {
+    // reset on each edit session open
+    cookieInitDone.current = false;
+    setCookieEntries([]);
+    setAuthToken("");
+  }, [account?.id]);
+
+  useEffect(() => {
+    if (!editing || !isReddit || !isRedditPublic || !account || cookieInitDone.current) return;
+    setCookieLoading(true);
+    api.getAccount(account.id).then(detail => {
+      cookieInitDone.current = true;
+      if (detail?.auth_token) {
+        try {
+          const obj = JSON.parse(detail.auth_token);
+          const entries = Object.entries(obj).map(([k, v]) => ({ key: k, value: String(v) }));
+          setCookieEntries(entries);
+          setAuthToken(JSON.stringify(obj));
+        } catch { /* ignore */ }
+      }
+      setCookieLoading(false);
+    }).catch(() => setCookieLoading(false));
+  }, [editing, isReddit, isRedditPublic, account?.id]);
+
+  // cookie table state
+  const [cookieEntries, setCookieEntries] = useState<{ key: string; value: string }[]>([]);
 
   const syncCookieToken = (entries: { key: string; value: string }[]) => {
     setCookieEntries(entries);
@@ -212,9 +236,6 @@ function AccountFormPanel({
     for (const { key, value } of entries) { if (key.trim()) obj[key.trim()] = value; }
     setAuthToken(JSON.stringify(obj));
   };
-
-  const isReddit = platform === "reddit";
-  const isRedditPublic = isReddit && authType === "reddit_public";
 
   const addMutation = useMutation({
     mutationFn: () => api.createAccount({ screenName, authToken, fetchInterval, platform, instanceUrl: instanceUrl || undefined, authType: authType || undefined }),
@@ -226,7 +247,7 @@ function AccountFormPanel({
     mutationFn: () => {
       const d: Record<string, string | number | boolean | null> = {};
       if (screenName !== account!.screen_name) d.screenName = screenName;
-      if (authToken !== originalToken) d.authToken = authToken;
+      if (authToken !== "") d.authToken = authToken;
       if (fetchInterval !== account!.fetch_interval) d.fetchInterval = fetchInterval;
       if (isReddit && authType !== (account!.auth_type || null)) d.authType = authType || null;
       if (platform === "gitlab" && instanceUrl !== (account!.instance_url || "")) d.instanceUrl = instanceUrl || null;
@@ -307,26 +328,16 @@ function AccountFormPanel({
           </legend>
 
           {isRedditPublic ? (
+            cookieLoading ? <p className="text-sm text-[var(--muted-foreground)]">Loading...</p> :
             <CookieTable entries={cookieEntries} onChange={syncCookieToken} t={t} />
           ) : (
             <div>
-              <div className="relative">
-                <input
-                  type={editing && !showToken && authToken === originalToken ? "password" : "text"}
-                  value={editing && !showToken && authToken === originalToken ? "••••••••••••••••" : authToken}
-                  onChange={(e) => setAuthToken(e.target.value)}
-                  onFocus={() => { if (editing && !showToken && authToken === originalToken) setShowToken(true); }}
-                  placeholder={platform === "github" ? "ghp_..." : platform === "gitlab" ? "glpat-..." : platform === "reddit" ? "your Reddit password" : "Your X auth_token cookie"}
-                  className="w-full px-3 py-2 pr-16 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] font-mono text-xs" />
-                {editing && (
-                  <button
-                    type="button"
-                    onClick={() => setShowToken(!showToken)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] px-1.5 py-0.5 rounded hover:bg-[var(--muted)]">
-                    {showToken ? "Hide" : "Show"}
-                  </button>
-                )}
-              </div>
+              <input
+                type="password"
+                value={authToken}
+                onChange={(e) => setAuthToken(e.target.value)}
+                placeholder={platform === "github" ? "ghp_..." : platform === "gitlab" ? "glpat-..." : platform === "reddit" ? "your Reddit password" : "Your X auth_token cookie"}
+                className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] font-mono text-xs" />
               <p className="text-[12px] text-[var(--muted-foreground)] mt-1">
                 {editing ? t("editAccountForm.tokenHint") : (
                   platform === "github" ? t("addAccountForm.helpGithubToken")

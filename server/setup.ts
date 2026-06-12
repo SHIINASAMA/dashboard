@@ -1,19 +1,6 @@
-/**
- * Bootstrap — runs every time the server starts.
- *
- * Flow:
- *   1. Parse DATABASE_URL → PostgreSQL config
- *   2. Connect to PostgreSQL
- *   3. Detect if SQLite data exists and needs migration
- *   4. Auto-create missing tables in PostgreSQL
- *   5. Auto-migrate data from SQLite → PostgreSQL (one-time)
- *   6. Bootstrap admin user (first run only)
- *
- * After migration, sets a "migrated" flag so data won't be re-imported.
- */
 import { join } from "path";
 import { existsSync } from "fs";
-import { initCrypto } from "./crypto";
+import { initCrypto, encrypt, decrypt } from "./crypto";
 import { loadConfig, loadOrGenerateKey, dataDir } from "./config";
 import { initPgPool, getPgPool } from "./db/connection";
 
@@ -43,7 +30,10 @@ export async function bootstrap() {
   // 5. Check for SQLite → PG migration
   await autoMigrate();
 
-  // 6. Bootstrap admin user
+  // 6. Re-encrypt any tokens that were stored in plaintext
+  await reEncryptPlaintextTokens();
+
+  // 7. Bootstrap admin user
   await bootstrapAdminUser();
 
   console.log("[Bootstrap] Ready");
@@ -243,8 +233,8 @@ async function bootstrapAdminUser(): Promise<void> {
 
     console.log("");
     console.log("╔══════════════════════════════════════════════════════╗");
-    console.log("║  🔐  Initial admin password                          ║");
-    console.log("║     Change it after your first login.                ║");
+    console.log("║  🔐  Initial admin password                         ║");
+    console.log("║     Change it after your first login.               ║");
     console.log("║                                                      ║");
     console.log(`║  Username: admin                                     ║`);
     console.log(`║  Password: ${generated.padEnd(41)}║`);
@@ -252,5 +242,32 @@ async function bootstrapAdminUser(): Promise<void> {
     console.log(`║  Login:   ${url.padEnd(43)}║`);
     console.log("╚══════════════════════════════════════════════════════╝");
     console.log("");
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Re-encrypt plaintext auth tokens (backwards compatibility)
+// ═══════════════════════════════════════════════════════════════════
+
+async function reEncryptPlaintextTokens(): Promise<void> {
+  const pool = getPgPool()!;
+  const { rows } = await pool.query(
+    "SELECT id, screen_name, platform, auth_token FROM accounts WHERE deleted_at IS NULL"
+  );
+
+  let fixed = 0;
+  for (const row of rows) {
+    try {
+      decrypt(row.auth_token);
+    } catch {
+      const encrypted = encrypt(row.auth_token);
+      await pool.query("UPDATE accounts SET auth_token = $1 WHERE id = $2", [encrypted, row.id]);
+      console.log(`[Bootstrap] Re-encrypted token for ${row.platform}:${row.screen_name} (id=${row.id})`);
+      fixed++;
+    }
+  }
+
+  if (fixed > 0) {
+    console.log(`[Bootstrap] Re-encrypted ${fixed} plaintext token(s)`);
   }
 }
