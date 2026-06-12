@@ -13,6 +13,7 @@ import { validateConfirmToken } from "./routes/confirm";
 import { startScheduler } from "./scheduler";
 import { getAccountById, updateAccount } from "./services/accounts";
 import { fetchAccount } from "./fetcher";
+import { fetchWithConfig } from "./http";
 import { fetchGithubAccount } from "./fetchers/github";
 import { fetchGitlabAccount } from "./fetchers/gitlab";
 import { fetchRedditAccount, fetchRedditPublicAccount } from "./fetchers/reddit";
@@ -107,7 +108,7 @@ async function validateSession(token: string): Promise<{ username: string; role:
 
 // ── App setup ────────────────────────────────────────────────────
 
-type AppEnv = {
+export type AppEnv = {
   Variables: {
     sessionUser: string;
     sessionRole: string;
@@ -300,7 +301,7 @@ app.get("/api/health", (c) => c.json({ status: "ok" }));
 // The browser loads the image from bing.com directly via the redirect.
 app.get("/api/bing-wallpaper", async (c) => {
   try {
-    const res = await fetch("https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1");
+    const res = await fetchWithConfig("https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1");
     if (!res.ok) return c.json({ error: "Failed to fetch wallpaper" }, 502);
     const data = await res.json() as { images?: { url: string }[] };
     const img = data.images?.[0];

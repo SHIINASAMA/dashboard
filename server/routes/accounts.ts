@@ -1,17 +1,11 @@
 import { Hono } from "hono";
+import type { AppEnv } from "../index";
 import * as accountsService from "../services/accounts";
 import * as twitterRepo from "../repositories/twitter";
 import * as usersRepo from "../repositories/users";
 import { validateConfirmToken } from "./confirm";
 
-type AccountEnv = {
-  Variables: {
-    sessionUser: string;
-    sessionRole: string;
-  };
-};
-
-const accountsRouter = new Hono<AccountEnv>();
+const accountsRouter = new Hono<AppEnv>();
 
 accountsRouter.get("/", async (c) => {
   let ownerId: number | undefined;
@@ -31,7 +25,8 @@ accountsRouter.get("/:id", async (c) => {
   const account = await accountsService.getAccountById(id);
   if (!account) return c.json({ error: "Not found" }, 404);
   const stats = await twitterRepo.getLatestUserStats(id);
-  return c.json({ ...account, stats });
+  const { auth_token, ...pub } = account;
+  return c.json({ ...pub, stats });
 });
 
 accountsRouter.post("/", async (c) => {

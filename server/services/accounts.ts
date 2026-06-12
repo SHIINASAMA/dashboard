@@ -11,7 +11,10 @@ function encToken(plain: string): string {
 }
 
 function decToken(cipher: string): string {
-  try { return decrypt(cipher); } catch { return cipher; }
+  try { return decrypt(cipher); } catch (e) {
+    getLogger().warn("Service", "decToken: decryption failed (ENCRYPTION_KEY may have changed): %s", e instanceof Error ? e.message : String(e));
+    return cipher;
+  }
 }
 
 export async function getAccounts(ownerId?: number) {

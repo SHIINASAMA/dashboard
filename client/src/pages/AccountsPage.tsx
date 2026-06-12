@@ -321,14 +321,7 @@ function AccountFormPanel({
                 {editing && (
                   <button
                     type="button"
-                    onClick={() => {
-                      if (showToken) {
-                        setShowToken(false);
-                        setAuthToken(originalToken);
-                      } else {
-                        setShowToken(true);
-                      }
-                    }}
+                    onClick={() => setShowToken(!showToken)}
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] px-1.5 py-0.5 rounded hover:bg-[var(--muted)]">
                     {showToken ? "Hide" : "Show"}
                   </button>

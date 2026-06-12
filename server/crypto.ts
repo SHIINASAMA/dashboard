@@ -42,7 +42,7 @@ export function encrypt(plaintext: string): string {
   const cipher = createCipheriv(ALGO, toU8(key), toU8(iv), { authTagLength: TAG_LEN } as any);
   const encrypted = concatToU8(cipher.update(plaintext, "utf8"), cipher.final());
   const tag = toU8(cipher.getAuthTag());
-  return concatToU8(iv, tag, Buffer.from(encrypted)).reduce((s, b) => s + b.toString(16).padStart(2, "0"), "");
+  return Buffer.from(concatToU8(iv, tag, Buffer.from(encrypted))).toString("hex");
 }
 
 export function decrypt(ciphertext: string): string {
