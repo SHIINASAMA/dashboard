@@ -60,6 +60,16 @@ export async function upsertGitlabContribution(c: any) {
   });
 }
 
+export async function upsertGitlabContributions(accountId: number, contributions: { date: string; count: number }[]) {
+  if (contributions.length === 0) return;
+  await getDb().insert(gitlab_contributions).values(
+    contributions.map(c => ({ ...c, account_id: accountId, fetched_at: sql`NOW()` })),
+  ).onConflictDoUpdate({
+    target: [gitlab_contributions.account_id, gitlab_contributions.date],
+    set: { count: sql.raw("excluded.count") },
+  });
+}
+
 export async function upsertGitlabProjectSnapshot(s: any) {
   await getDb().insert(gitlab_project_snapshots).values(s).onConflictDoUpdate({
     target: [gitlab_project_snapshots.account_id, gitlab_project_snapshots.project_id, gitlab_project_snapshots.snapshot_date],

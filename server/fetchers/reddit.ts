@@ -11,6 +11,8 @@ async function getRedditAccessToken(refreshToken: string): Promise<string> {
   }
 
   const auth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15_000);
   const res = await fetchWithConfig("https://www.reddit.com/api/v1/access_token", {
     method: "POST",
     headers: {
@@ -19,7 +21,9 @@ async function getRedditAccessToken(refreshToken: string): Promise<string> {
       "User-Agent": "dashboard/1.0",
     },
     body: `grant_type=refresh_token&refresh_token=${encodeURIComponent(refreshToken)}`,
+    signal: controller.signal,
   });
+  clearTimeout(timer);
 
   if (!res.ok) {
     const body = await res.text().catch(() => "");
@@ -32,12 +36,16 @@ async function getRedditAccessToken(refreshToken: string): Promise<string> {
 }
 
 async function redditFetch(path: string, token: string): Promise<any> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 30_000);
   const res = await fetchWithConfig(`https://oauth.reddit.com${path}`, {
     headers: {
       Authorization: `Bearer ${token}`,
       "User-Agent": "dashboard/1.0",
     },
+    signal: controller.signal,
   });
+  clearTimeout(timer);
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     getLogger().error("Reddit", "OAuth API HTTP %d for %s: %s", res.status, path, body.slice(0, 300));
@@ -50,7 +58,14 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+const runningRedditAccounts = new Set<number>();
+
 export async function fetchRedditAccount(account: AccountRow) {
+  if (runningRedditAccounts.has(account.id)) {
+    getLogger().info("Reddit", "@%s: already running, skipping", account.screen_name);
+    return { posts: 0, comments: 0 };
+  }
+  runningRedditAccounts.add(account.id);
   const refreshToken = account.auth_token;
   const username = account.screen_name;
 
@@ -164,6 +179,8 @@ export async function fetchRedditAccount(account: AccountRow) {
     });
     getLogger().error("Reddit", "Fetch failed for @%s: %s", username, e.message);
     throw e;
+  } finally {
+    runningRedditAccounts.delete(account.id);
   }
 }
 
@@ -240,6 +257,11 @@ async function redditPublicFetchOld(path: string, cookies: Record<string, string
 }
 
 export async function fetchRedditPublicAccount(account: AccountRow) {
+  if (runningRedditAccounts.has(account.id)) {
+    getLogger().info("Reddit", "@%s (public): already running, skipping", account.screen_name);
+    return { posts: 0, comments: 0 };
+  }
+  runningRedditAccounts.add(account.id);
   let cookies: Record<string, string>;
   try {
     cookies = JSON.parse(account.auth_token);
@@ -353,5 +375,7 @@ export async function fetchRedditPublicAccount(account: AccountRow) {
     });
     getLogger().error("Reddit", "Fetch failed for @%s (public): %s", username, e.message);
     throw e;
+  } finally {
+    runningRedditAccounts.delete(account.id);
   }
 }

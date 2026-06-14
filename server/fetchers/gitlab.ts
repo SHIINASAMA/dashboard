@@ -3,7 +3,7 @@ import {
   insertGitlabStats,
   upsertGitlabProject,
   upsertGitlabProjectSnapshot,
-  upsertGitlabContribution,
+  upsertGitlabContributions,
   upsertGitlabRelease,
   updateAccount,
 } from "../db";
@@ -24,14 +24,19 @@ interface GlApiResponse<T> {
 
 async function glFetch<T>(apiBase: string, path: string, token: string): Promise<GlApiResponse<T>> {
   const url = `${apiBase}${path}`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 30_000);
   const res = await fetchWithConfig(url, {
     headers: {
       "PRIVATE-TOKEN": token,
       "User-Agent": "dashboard",
     },
+    signal: controller.signal,
   }).catch((e: any) => {
+    clearTimeout(timer);
     throw new Error(`GitLab network error: ${e.message || e}`);
   });
+  clearTimeout(timer);
 
   if (res.status === 429) {
     const retryAfter = parseInt(res.headers.get("Retry-After") || "60", 10);
@@ -85,7 +90,14 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+const runningGitlabAccounts = new Set<number>();
+
 export async function fetchGitlabAccount(account: AccountRow) {
+  if (runningGitlabAccounts.has(account.id)) {
+    getLogger().info("GitLab", "%s: already running, skipping", account.screen_name);
+    return 0;
+  }
+  runningGitlabAccounts.add(account.id);
   const apiBase = getApiBase(account);
   const token = account.auth_token;
   let errorMessages: string[] = [];
@@ -119,9 +131,11 @@ export async function fetchGitlabAccount(account: AccountRow) {
     let totalStars = 0;
     let totalForks = 0;
     let totalIssues = 0;
+    let projCount = 0;
 
     for (const p of projects) {
       if (!p.id) continue;
+      projCount++;
 
       const topics = JSON.stringify(p.topics || []);
       const snapDate = new Date().toISOString().slice(0, 10);
@@ -189,6 +203,10 @@ export async function fetchGitlabAccount(account: AccountRow) {
       } catch (e: any) {
         errorMessages.push(`Releases for ${p.name}: ${e.message}`);
       }
+
+      if (projCount % 10 === 0 || projCount === projects.length) {
+        getLogger().info("GitLab", "%s: projects %d/%d done", account.screen_name, projCount, projects.length);
+      }
     }
 
     // Update stats with accurate project count
@@ -218,13 +236,8 @@ export async function fetchGitlabAccount(account: AccountRow) {
         }
       }
 
-      for (const [date, count] of countByDate) {
-        await upsertGitlabContribution({
-          account_id: account.id,
-          date,
-          count,
-        });
-      }
+      const entries = Array.from(countByDate.entries()).map(([date, count]) => ({ date, count }));
+      await upsertGitlabContributions(account.id, entries);
 
       getLogger().info("GitLab", "Recorded %d contribution days for %s", countByDate.size, account.screen_name);
     } catch (e: any) {
@@ -247,5 +260,7 @@ export async function fetchGitlabAccount(account: AccountRow) {
     });
     getLogger().error("GitLab", "Fetch failed for %s: %s", account.screen_name, e.message);
     throw e;
+  } finally {
+    runningGitlabAccounts.delete(account.id);
   }
 }
