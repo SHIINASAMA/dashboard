@@ -2,15 +2,33 @@ stages:
   - build
   - deploy
 
+.build_template: &build_template
+  rules:
+    - changes:
+        - src/**/*
+        - client/**/*
+        - server/**/*
+        - shared/**/*
+        - db/**/*
+        - scripts/**/*
+        - Dockerfile
+        - package.json
+        - drizzle.config.ts
+        - tsconfig.json
+        - .gitlab-ci.yml
+
 build:
   stage: build
   image: reg.mikumikumi.xyz/base/kaniko-builder:latest
+  <<: *build_template
   script:
     - build
 
 deploy:
   stage: deploy
   image: reg.mikumikumi.xyz/base/kubectl:latest
+  needs: [build]
+  <<: *build_template
   script:
     - echo "${KUBECONFIG}" > ~/.kube/config
     - "kubectl set image -n kaoru statefulset/dashboard dashboard=reg.mikumikumi.xyz/kaoru/dashboard:${CI_COMMIT_SHORT_SHA} --kubeconfig ~/.kube/config"
