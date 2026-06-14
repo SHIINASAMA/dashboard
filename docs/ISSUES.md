@@ -44,49 +44,68 @@ Various calls to `deleteUser`, `deleteAccount`, `updateAccount`, `insertUserStat
 
 **Fix**: Added `await` to all async DB write calls across server routes and fetchers.
 
+### Zero test coverage (fixed 2026-06-14)
+
+No test files existed. Added test suite covering auth, crypto, and database query operations.
+
+**Fix**: Created `server/__tests__/` with `auth.test.ts`, `crypto.test.ts`, `db-queries.test.ts`.
+
+### No structured logging (fixed 2026-06-14)
+
+Only `console.log` / `console.error` throughout the project.
+
+**Fix**: Added `server/logger.ts` with file-based logging, rotation, configurable levels.
+
+### Fetcher hardening (fixed 2026-06-14)
+
+All four platform fetchers lacked request timeouts, concurrency guards, and progress logging.
+
+**Fix**: Added 30s timeouts, per-platform `Set<number>` concurrency guards, progress logging, and batch upserts for contribution records.
+
 ## Open
 
 ### High
 
-#### 1. Zero test coverage
-No test files in the entire project. Critical risk given the history of ORM + raw SQL mixing and the async DB operations.
+#### 1. Session token in cleartext (mitigated)
 
-#### 2. Session token in cleartext
-Cookie (`dash_session`) contains base64-encoded `username:role:expires:sig`. Username and role are in cleartext. No `__Host-` prefix. `Secure` flag only set in production mode (HTTPS). Should use encrypted JWT or server-stored sessions.
+Cookie (`dash_session`) previously contained base64-encoded `username:role:expires:sig`. Now uses JWT (HS256) signed tokens, but username and role are still in the JWT payload (readable if not encrypted). No `__Host-` prefix. `Secure` flag only set in production mode (HTTPS). Should consider encrypted JWT or server-stored sessions.
 
-#### 3. Duplicate client type declarations
+#### 2. Duplicate client type declarations
+
 `client/src/api.ts` has ~250 lines of interface definitions that duplicate server schema types with no sharing mechanism. Prone to drift. Could use `drizzle-kit` or `openapi-typescript` for code generation.
 
 ### Medium
 
-#### 4. No structured logging
-Only `console.log` / `console.error` throughout the project. No log levels, structured output, or log files. Fetcher run status has no persistent record.
+#### 3. Missing retry on fetchers
 
-#### 5. Missing retry on fetchers
 Only the Twitter fetcher handles 429 rate limits with retry. GitHub, GitLab, and Reddit fetchers throw immediately on API failure.
 
-#### 6. No fetcher monitoring
-No dashboard or metrics for fetcher success/failure rates or runtime. Scheduler runs every 60s with no observable output beyond logs.
+#### 4. Incomplete rate limiting
 
-#### 7. Incomplete rate limiting
 Only the login endpoint has in-memory rate limiting (10/min/IP), which resets on restart. No other API endpoints are rate-limited.
 
 ### Low
 
-#### 8. Low theme variety
+#### 5. Low theme variety
+
 Only 2 dark themes, visually near-identical.
 
-#### 9. i18n gaps
+#### 6. i18n gaps
+
 `Overview.tsx` occasionally references `redditDetail.noData` which may not exist in all locale files.
 
-#### 10. Fetcher runs in main process
+#### 7. Fetcher runs in main process
+
 Scheduler runs in-process via `startScheduler()`. Heavy fetcher loads may block API responses.
 
-#### 11. GraphQL string interpolation
-`server/fetchers/github.ts:278` interpolates `${username}` into a GraphQL query string. Low risk but technically not parameterized.
+#### 8. GraphQL string interpolation
 
-#### 12. `ownerId` default is 1
+`server/fetchers/github.ts` interpolates `${username}` into a GraphQL query string. Low risk but technically not parameterized.
+
+#### 9. `ownerId` default is 1
+
 `createAccount()` defaults `ownerId = 1` (admin). Route layer passes the correct user ID for non-admin requests, but the function signature encodes an admin-first assumption.
 
-#### 13. Vite plugin hack
+#### 10. Vite plugin hack
+
 `client/vite.config.ts` `suppressBaseHintPlugin()` monkey-patches Vite internals at runtime. May break on version upgrades.

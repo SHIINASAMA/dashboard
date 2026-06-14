@@ -18,7 +18,7 @@ This file defines behavior rules for AI coding assistants.
 
 ## Must Follow
 
-- `AGENTS.md` is the primary knowledge base — check it first
+- `CLAUDE.md` is the primary knowledge base — check it first
 - Plan mode for non-trivial tasks (3+ steps)
 - Verify changes by checking lint/types when relevant tooling is available
 - All `.md` files go in `docs/` except `AGENTS.md`, `CLAUDE.md`, `README.md`

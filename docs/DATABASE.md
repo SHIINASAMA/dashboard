@@ -18,6 +18,14 @@ All Drizzle ORM schemas live in `db/schema/`:
 
 Legacy migration system: `db/schema.legacy.ts` (reference only, not used for new tables).
 
+## Query Layer
+
+Database access is organized in three layers:
+
+- **Repositories** (`server/repositories/`) — Drizzle ORM queries per domain (users, accounts, twitter, github, gitlab, reddit, settings). Each file exports typed query functions.
+- **Services** (`server/services/`) — Business logic that orchestrates repository calls. Handles multi-user isolation, validation, and cross-domain operations.
+- **Connection** (`server/db/connection.ts`) — Singleton Drizzle client factory. `getDb()` returns a cached instance.
+
 ## Migrations
 
 ### One-shot (`db/migrate.ts`)
@@ -33,7 +41,8 @@ Run automatically via `bootstrap()` in `server/setup.ts`. Handles:
 
 1. Create a Drizzle schema file in `db/schema/`
 2. Export from `db/schema/index.ts`
-3. If the table needs to be created in existing databases, add a migration to `db/migrate.ts`
+3. Add corresponding repository in `server/repositories/`
+4. If the table needs to be created in existing databases, add a migration to `db/migrate.ts`
 
 ## Key Conventions
 

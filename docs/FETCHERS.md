@@ -4,6 +4,8 @@ The scheduler (`server/scheduler.ts`) runs every 60 seconds, dispatching a singl
 
 ## X (Twitter) — `server/fetcher.ts`
 
+Note: The X fetcher lives at `server/fetcher.ts` (not in `server/fetchers/`). It uses the `twitter-openapi-typescript` library.
+
 Uses `twitter-openapi-typescript` library (wraps `twitter-openapi-typescript-generated`). Auth token stored from X.com cookies.
 
 ### Fetch flow

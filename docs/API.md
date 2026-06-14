@@ -23,7 +23,19 @@ Base path: `/api` (configurable via `BASE` in server config)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/confirm/token` | Get a 6-character HMAC-signed one-time token (5-minute TTL) |
+| POST | `/confirm/token` | Get a 6-character random one-time token (5-minute TTL) |
+
+## Health
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | Server health check → `{ status: "ok" }` |
+
+## Bing Wallpaper
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/bing-wallpaper` | Proxies Bing daily wallpaper, returns 302 redirect to image URL |
 
 ## Accounts
 
