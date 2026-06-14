@@ -61,6 +61,16 @@ export async function upsertGithubContribution(c: any) {
   });
 }
 
+export async function upsertGithubContributions(accountId: number, contributions: { date: string; count: number; level: number }[]) {
+  if (contributions.length === 0) return;
+  await getDb().insert(github_contributions).values(
+    contributions.map(c => ({ ...c, account_id: accountId, fetched_at: sql`NOW()` })),
+  ).onConflictDoUpdate({
+    target: [github_contributions.account_id, github_contributions.date],
+    set: { count: sql.raw("excluded.count"), level: sql.raw("excluded.level") },
+  });
+}
+
 export async function upsertGithubRepoSnapshot(s: any) {
   await getDb().insert(github_repo_snapshots).values(s).onConflictDoUpdate({
     target: [github_repo_snapshots.account_id, github_repo_snapshots.repo_id, github_repo_snapshots.snapshot_date],

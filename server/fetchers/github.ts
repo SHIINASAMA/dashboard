@@ -1,6 +1,6 @@
 import type { AccountRow } from "../repositories/accounts";
 import {
-  upsertGithubRepo, insertGithubStats, upsertGithubContribution, updateAccount,
+  upsertGithubRepo, insertGithubStats, upsertGithubContributions, updateAccount,
   upsertGithubRepoSnapshot,
   upsertGithubTrafficClones, upsertGithubTrafficViews,
   upsertGithubReferrer, upsertGithubPath,
@@ -21,7 +21,10 @@ async function ghFetch(path: string, token?: string) {
   };
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetchWithConfig(`${GITHUB_API}${path}`, { headers });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 30_000);
+  const res = await fetchWithConfig(`${GITHUB_API}${path}`, { headers, signal: controller.signal });
+  clearTimeout(timer);
   if (res.status === 403) {
     const body = await res.text().catch(() => "");
     const err = new Error(`GitHub API 403: ${body.slice(0, 200)}`);
@@ -37,7 +40,14 @@ function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+const runningAccounts = new Set<number>();
+
 export async function fetchGithubAccount(account: AccountRow) {
+  if (runningAccounts.has(account.id)) {
+    getLogger().info("GitHub", "@%s: already running, skipping", account.screen_name);
+    return false;
+  }
+  runningAccounts.add(account.id);
   getLogger().info("GitHub", "Fetching @%s...", account.screen_name);
 
   try {
@@ -103,12 +113,16 @@ export async function fetchGithubAccount(account: AccountRow) {
 
     // 3. Fetch traffic & releases for each repo (requires classic PAT with repo scope)
     if (token) {
+      let repoCount = 0;
       for (const repo of repos) {
-        await sleep(800);
+        repoCount++;
         const err = await fetchRepoTraffic(account.id, repo.id, repo.full_name, token);
         if (err && !trafficError) trafficError = err;
-        await sleep(600);
         await fetchRepoReleases(account.id, repo.id, repo.full_name, token);
+        if (repoCount % 5 === 0 || repoCount === repos.length) {
+          getLogger().info("GitHub", "@%s: traffic/releases %d/%d done", username, repoCount, repos.length);
+        }
+        await sleep(200);
       }
       if (trafficError) {
         getLogger().warn("GitHub", "@%s: traffic fetch issue — %s", username, trafficError);
@@ -124,9 +138,7 @@ export async function fetchGithubAccount(account: AccountRow) {
     try {
       const year = new Date().getFullYear();
       const contributions = await fetchContributions(username, token, year);
-      for (const c of contributions) {
-        await upsertGithubContribution({ account_id: account.id, ...c });
-      }
+      await upsertGithubContributions(account.id, contributions);
       getLogger().info("GitHub", "@%s: %d contributions saved", username, contributions.length);
     } catch (e: any) {
       getLogger().warn("GitHub", "@%s: contributions fetch skipped (%s)", username, e.message);
@@ -144,6 +156,8 @@ export async function fetchGithubAccount(account: AccountRow) {
     getLogger().error("GitHub", "@%s error: %s", account.screen_name, msg);
     await updateAccount(account.id, { error_message: msg, last_fetched_at: new Date().toISOString() });
     return false;
+  } finally {
+    runningAccounts.delete(account.id);
   }
 }
 
@@ -326,7 +340,7 @@ async function fetchContributions(username: string, token: string | undefined, y
       days.push({
         date: day.date,
         count: day.contributionCount || 0,
-        level: day.contributionLevel || 0,
+        level: { NONE: 0, FIRST_QUARTILE: 1, SECOND_QUARTILE: 2, THIRD_QUARTILE: 3, FOURTH_QUARTILE: 4 }[day.contributionLevel as string] ?? 0,
       });
     }
   }
