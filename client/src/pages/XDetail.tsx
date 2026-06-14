@@ -6,6 +6,7 @@ import { api, type TimelineData, type PaginatedTweets, type Tweet } from "../api
 import { formatDateTime, formatDate } from "../lib/datetime";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import {
   ArrowLeft, Play, RefreshCw, Trash2, AlertCircle,
   MessageSquare, Heart, Repeat2, Eye, ExternalLink,
@@ -22,6 +23,7 @@ export function XDetail() {
   const queryClient = useQueryClient();
   const accountId = Number(id);
   const [tab, setTab] = useState<"tweets" | "replies">("tweets");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const { data: account, isLoading } = useQuery({
     queryKey: ["account", accountId],
@@ -107,8 +109,8 @@ export function XDetail() {
             <RefreshCw size={16} />
           </button>
           <button
-            onClick={() => { if (confirm(t("xDetail.deleteConfirm", { name: account.screen_name }))) deleteMutation.mutate(); }}
-            className="p-2 rounded-lg bg-[var(--muted)] hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors text-red-500"
+            onClick={() => setShowDeleteDialog(true)}
+            className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--danger)]/10 transition-colors text-[var(--danger)]"
             title={t("xDetail.delete")}
             aria-label={t("xDetail.delete")}
           >
@@ -118,7 +120,7 @@ export function XDetail() {
       </div>
 
       {account.error_message && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-[var(--danger)]/5 text-[var(--danger)] text-sm">
           <AlertCircle size={14} /> {account.error_message}
         </div>
       )}
@@ -159,7 +161,7 @@ export function XDetail() {
                   <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                   <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
                   <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }} />
-                  <Area type="monotone" dataKey="total_views" stroke="#10b981" fill="#10b98120" name={t("xDetail.views")} />
+                  <Area type="monotone" dataKey="total_views" stroke="var(--chart-2)" fill="color-mix(in oklch, var(--chart-2) 12%, transparent)" name={t("xDetail.views")} />
                 </AreaChart>
               </ResponsiveContainer>
               </div>
@@ -179,8 +181,8 @@ export function XDetail() {
                   <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                   <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
                   <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }} />
-                  <Area type="monotone" dataKey="total_likes" stroke="#ec4899" fill="#ec489920" name={t("xDetail.likes")} />
-                  <Area type="monotone" dataKey="total_retweets" stroke="#3b82f6" fill="#3b82f620" name={t("xDetail.retweets")} />
+                  <Area type="monotone" dataKey="total_likes" stroke="var(--chart-5)" fill="color-mix(in oklch, var(--chart-5) 12%, transparent)" name={t("xDetail.likes")} />
+                  <Area type="monotone" dataKey="total_retweets" stroke="var(--chart-1)" fill="color-mix(in oklch, var(--chart-1) 12%, transparent)" name={t("xDetail.retweets")} />
                 </AreaChart>
               </ResponsiveContainer>
               </div>
@@ -253,6 +255,13 @@ export function XDetail() {
           </CardContent>
         </Card>
       )}
+      <ConfirmDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title={t("xDetail.delete")}
+        description={t("xDetail.deleteConfirm", { name: account.screen_name })}
+        onConfirm={async () => deleteMutation.mutate()}
+      />
     </div>
   );
 }

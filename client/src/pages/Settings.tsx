@@ -167,8 +167,8 @@ export function Settings() {
                 className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] text-sm"
               />
             </div>
-            {pwError && <p className="text-xs text-red-500">{pwError}</p>}
-            {pwSuccess && <p className="text-xs text-green-500">{pwSuccess}</p>}
+            {pwError && <p className="text-xs text-[var(--danger)]">{pwError}</p>}
+            {pwSuccess && <p className="text-xs text-[var(--success)]">{pwSuccess}</p>}
             <button
               type="submit" disabled={pwLoading}
               className="self-start px-4 py-2 rounded-lg bg-[var(--primary)] text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-40 text-sm"

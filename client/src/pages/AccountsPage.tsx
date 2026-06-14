@@ -8,6 +8,7 @@ import { Badge } from "../components/ui/badge";
 import { GithubIcon, GitlabIcon, RedditIcon, XIcon } from "../components/BrandIcons";
 import { formatDateTime } from "../lib/datetime";
 import { Pencil, Plus, PlayCircle, PauseCircle, Trash2, AlertCircle, ArrowUpRight } from "lucide-react";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 
 const TABS = [
   { key: "twitter", headingKey: "nav.x", basePath: "/x", Icon: XIcon, formatUsername: (a: Account) => `@${a.screen_name}` },
@@ -25,6 +26,7 @@ export default function AccountsPage() {
   const [tab, setTab] = useState<Platform>("twitter");
   const [editing, setEditing] = useState<Account | null>(null);
   const [adding, setAdding] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Account | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["accounts"],
@@ -116,10 +118,10 @@ export default function AccountsPage() {
                           <ArrowUpRight size={14} className="text-[var(--muted-foreground)] opacity-0 group-hover:opacity-100 transition-opacity" />
                           {!account.is_active && <Badge>{t("badge.inactive")}</Badge>}
                           {account.error_message && (
-                            <Badge className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">{t("badge.error")}</Badge>
+                            <Badge className="bg-[var(--danger)]/10 text-[var(--danger)]">{t("badge.error")}</Badge>
                           )}
                           {isStale && account.is_active && (
-                            <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">{t("badge.stale")}</Badge>
+                            <Badge className="bg-[var(--warn)]/10 text-[var(--warn)]">{t("badge.stale")}</Badge>
                           )}
                         </div>
                         <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-[var(--muted-foreground)]">
@@ -127,7 +129,7 @@ export default function AccountsPage() {
                           {lastFetched && <span>{t("settings.lastFetched", { date: formatDateTime(lastFetched) })}</span>}
                         </div>
                         {account.error_message && (
-                          <div className="flex items-center gap-1.5 mt-2 text-xs text-red-500">
+                          <div className="flex items-center gap-1.5 mt-2 text-xs text-[var(--danger)]">
                             <AlertCircle size={12} /> {account.error_message}
                           </div>
                         )}
@@ -145,9 +147,9 @@ export default function AccountsPage() {
                           title={account.is_active ? t("settings.disable") : t("settings.enable")}
                         >{account.is_active ? <PauseCircle size={16} /> : <PlayCircle size={16} />}</button>
                         <button
-                          onClick={(e) => { e.stopPropagation(); if (confirm(t("settings.deleteConfirm", { name: account.screen_name }))) deleteMutation.mutate(account.id); }}
+                          onClick={(e) => { e.stopPropagation(); setDeleteTarget(account); }}
                           disabled={deleteMutation.isPending}
-                          className="p-2 rounded-lg bg-[var(--muted)] hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 transition-colors"
+                          className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--danger)]/10 text-[var(--danger)] transition-colors"
                           title={t("settings.delete")}
                         ><Trash2 size={16} /></button>
                       </div>
@@ -171,6 +173,13 @@ export default function AccountsPage() {
           </Card>
         )}
       </div>
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
+        title={t("settings.delete")}
+        description={t("settings.deleteConfirm", { name: deleteTarget?.screen_name ?? "" })}
+        onConfirm={async () => { deleteMutation.mutate(deleteTarget!.id); }}
+      />
     </div>
   );
 }
@@ -268,7 +277,7 @@ function AccountFormPanel({
           {t("addAccountForm.cancel")}
         </button>
       </div>
-      {error && <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">{error}</div>}
+      {error && <div className="p-3 rounded-lg bg-[var(--danger)]/5 text-[var(--danger)] text-sm">{error}</div>}
 
       {/* platform selector — add mode only */}
       {!editing && (
@@ -419,7 +428,7 @@ function CookieTable({
                   className="w-full px-2 py-1.5 rounded border border-[var(--border)] bg-transparent focus:outline-none focus:ring-1 focus:ring-[var(--ring)] font-mono text-xs" />
               </td>
               <td className="py-1">
-                <button onClick={() => removeRow(i)} className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-red-400 hover:text-red-600 transition-colors text-xs">
+                <button onClick={() => removeRow(i)} className="p-1 rounded hover:bg-[var(--danger)]/10 text-[var(--danger)]/60 hover:text-[var(--danger)] transition-colors text-xs">
                   &times;
                 </button>
               </td>

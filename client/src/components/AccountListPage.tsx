@@ -18,6 +18,7 @@ export interface AccountListPageProps {
   renderBadge?: (account: Account) => React.ReactNode;
   renderMeta?: (account: Account) => React.ReactNode;
   formatUsername?: (account: Account) => string;
+  cardBorderAccent?: string;
 }
 
 const PLATFORM_PREFIX: Record<string, string> = {
@@ -38,6 +39,7 @@ export default function AccountListPage({
   renderBadge,
   renderMeta,
   formatUsername,
+  cardBorderAccent,
 }: AccountListPageProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -84,10 +86,15 @@ export default function AccountListPage({
                 <Card
                   key={account.id}
                   className={
-                    "group " +
+                    "group border-l-2 " +
                     (!account.is_active ? "opacity-60 " : "") +
-                    "cursor-pointer hover:border-[var(--primary)]/50 transition-colors"
+                    "cursor-pointer transition-all duration-200 hover:shadow-sm"
                   }
+                  style={cardBorderAccent ? {
+                    borderLeftColor: `color-mix(in oklch, ${cardBorderAccent} 30%, transparent)`,
+                  } as React.CSSProperties : {
+                    borderLeftColor: "transparent",
+                  } as React.CSSProperties}
                   onClick={() => navigate(`/${urlPrefix}/${account.id}`)}
                 >
                   <CardContent className="p-5">
@@ -101,12 +108,12 @@ export default function AccountListPage({
                           {renderBadge?.(account)}
                           {!account.is_active && <Badge>{t("badge.inactive")}</Badge>}
                           {account.error_message && (
-                            <Badge className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
+                            <Badge className="bg-[var(--danger)]/10 text-[var(--danger)]">
                               {t("badge.error")}
                             </Badge>
                           )}
                           {isStale && account.is_active ? (
-                            <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                            <Badge className="bg-[var(--warn)]/10 text-[var(--warn)]">
                               {t("badge.stale")}
                             </Badge>
                           ) : null}
@@ -119,7 +126,7 @@ export default function AccountListPage({
                           {renderMeta?.(account)}
                         </div>
                         {account.error_message && (
-                          <div className="flex items-center gap-1.5 mt-2 text-xs text-red-500">
+                          <div className="flex items-center gap-1.5 mt-2 text-xs text-[var(--danger)]">
                             <AlertCircle size={12} /> {account.error_message}
                           </div>
                         )}

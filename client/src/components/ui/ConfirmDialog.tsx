@@ -80,7 +80,7 @@ export function ConfirmDialog({ open, onOpenChange, title, description, confirmL
           <button
             onClick={handleConfirm}
             disabled={!match || loading}
-            className="px-3 py-1.5 text-xs rounded-lg bg-red-500 text-white hover:bg-red-600 disabled:opacity-40"
+            className="px-3 py-1.5 text-xs rounded-lg bg-[var(--danger)] text-white hover:brightness-110 disabled:opacity-40"
           >
             {loading ? "..." : label}
           </button>

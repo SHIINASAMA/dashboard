@@ -109,15 +109,20 @@ export default function Layout() {
                   to={to}
                   end={to === "/"}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    `relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                       isActive
-                        ? "bg-[var(--primary)]/10 text-[var(--primary)]"
+                        ? "bg-[var(--primary)]/8 text-[var(--foreground)] font-semibold shadow-sm"
                         : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
                     }`
                   }
                 >
-                  <Icon size={18} />
-                  <span className="truncate">{label}</span>
+                  {({ isActive }) => (
+                    <>
+                      {isActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-[var(--primary)]" />}
+                      <Icon size={18} />
+                      <span className="truncate">{label}</span>
+                    </>
+                  )}
                 </NavLink>
               ))}
             </nav>
@@ -126,47 +131,62 @@ export default function Layout() {
                 <NavLink
                   to="/admin"
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    `relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                       isActive
-                        ? "bg-[var(--primary)]/10 text-[var(--primary)]"
+                        ? "bg-[var(--primary)]/8 text-[var(--foreground)] font-semibold shadow-sm"
                         : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
                     }`
                   }
                 >
-                  <Shield size={18} />
-                  {t("nav.admin")}
+                  {({ isActive }) => (
+                    <>
+                      {isActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-[var(--primary)]" />}
+                      <Shield size={18} />
+                      {t("nav.admin")}
+                    </>
+                  )}
                 </NavLink>
               )}
               <NavLink
                 to="/accounts"
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  `relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isActive
-                      ? "bg-[var(--primary)]/10 text-[var(--primary)]"
+                      ? "bg-[var(--primary)]/8 text-[var(--foreground)] font-semibold shadow-sm"
                       : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
                   }`
                 }
               >
-                <Users size={18} />
-                {t("nav.accounts")}
+                {({ isActive }) => (
+                  <>
+                    {isActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-[var(--primary)]" />}
+                    <Users size={18} />
+                    {t("nav.accounts")}
+                  </>
+                )}
               </NavLink>
               <NavLink
                 to="/settings"
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  `relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isActive
-                      ? "bg-[var(--primary)]/10 text-[var(--primary)]"
+                      ? "bg-[var(--primary)]/8 text-[var(--foreground)] font-semibold shadow-sm"
                       : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
                   }`
                 }
               >
-                <Settings size={18} />
-                {t("nav.settings")}
+                {({ isActive }) => (
+                  <>
+                    {isActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-[var(--primary)]" />}
+                    <Settings size={18} />
+                    {t("nav.settings")}
+                  </>
+                )}
               </NavLink>
               <button
                 onClick={handleLogout}
                 disabled={loggingOut}
-                className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-[var(--muted-foreground)] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40 w-full text-left"
+                className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-[var(--muted-foreground)] hover:text-[var(--danger)] hover:bg-[var(--danger)]/5 transition-colors disabled:opacity-40 w-full text-left"
               >
                 <LogOut size={18} />
                 {loggingOut ? "…" : t("nav.logout")}
@@ -182,7 +202,7 @@ export default function Layout() {
               alt=""
               className="fixed inset-0 w-full h-full object-cover pointer-events-none"
             />
-            <div className="fixed inset-0 bg-[var(--background)]/70" />
+            <div className="fixed inset-0 bg-[var(--background)]/85" />
             <div className="max-w-6xl mx-auto px-8 py-8 relative z-10">
               {!visible && (
                 <button

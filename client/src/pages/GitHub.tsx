@@ -17,8 +17,9 @@ export function GitHub() {
       icon={GithubIcon}
       emptyIcon={<GithubIcon size={32} />}
       emptyText={t("github.emptyState")}
+      cardBorderAccent="var(--chart-1)"
       renderBadge={() => (
-        <Badge className="bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-800">
+        <Badge className="bg-[var(--chart-1)]/15 text-[var(--chart-1)] font-medium">
           {t("badge.github")}
         </Badge>
       )}

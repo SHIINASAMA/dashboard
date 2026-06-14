@@ -6,6 +6,7 @@ import { api, type GithubOverview, type GithubContribution, type GithubRepo } fr
 import { formatDateTime } from "../lib/datetime";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { StatCard } from "../components/StatCard";
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { ArrowLeft, ArrowUpRight, Play, RefreshCw, Trash2, AlertCircle, Star, GitFork, Code, Users, BookOpen, Settings2 } from "lucide-react";
@@ -33,10 +34,10 @@ function GithubHeatmap({ data }: { data: GithubContribution[] }) {
   const getColor = (count: number) => {
     if (count === 0) return "bg-[var(--muted)]";
     const intensity = Math.min(count / maxCount, 1);
-    if (intensity < 0.25) return "bg-green-200 dark:bg-green-900";
-    if (intensity < 0.5) return "bg-green-400 dark:bg-green-700";
-    if (intensity < 0.75) return "bg-green-500 dark:bg-green-500";
-    return "bg-green-700 dark:bg-green-400";
+    if (intensity < 0.25) return "bg-[var(--chart-4)]/40";
+    if (intensity < 0.5) return "bg-[var(--chart-4)]/60";
+    if (intensity < 0.75) return "bg-[var(--chart-4)]/80";
+    return "bg-[var(--chart-4)]";
   };
 
   return (
@@ -54,17 +55,17 @@ function GithubHeatmap({ data }: { data: GithubContribution[] }) {
       <div className="flex items-center gap-1 mt-2 justify-end text-xs text-[var(--muted-foreground)]">
         <span>{t("githubDetail.less")}</span>
         <div className="w-3 h-3 rounded-sm bg-[var(--muted)]" />
-        <div className="w-3 h-3 rounded-sm bg-green-200 dark:bg-green-900" />
-        <div className="w-3 h-3 rounded-sm bg-green-400 dark:bg-green-700" />
-        <div className="w-3 h-3 rounded-sm bg-green-500 dark:bg-green-500" />
-        <div className="w-3 h-3 rounded-sm bg-green-700 dark:bg-green-400" />
+        <div className="w-3 h-3 rounded-sm bg-[var(--chart-4)]/25" />
+        <div className="w-3 h-3 rounded-sm bg-[var(--chart-4)]/50" />
+        <div className="w-3 h-3 rounded-sm bg-[var(--chart-4)]/75" />
+        <div className="w-3 h-3 rounded-sm bg-[var(--chart-4)]" />
         <span>{t("githubDetail.more")}</span>
       </div>
     </div>
   );
 }
 
-const COLORS = ["#3b82f6", "#ec4899", "#f59e0b", "#10b981", "#8b5cf6", "#14b8a6", "#f97316", "#6366f1"];
+const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)", "var(--chart-3)", "var(--chart-4)", "var(--chart-1)"];
 
 export function GitHubDetail() {
   const { t } = useTranslation();
@@ -73,6 +74,7 @@ export function GitHubDetail() {
   const queryClient = useQueryClient();
   const accountId = Number(id);
   const [showPinDialog, setShowPinDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [pinnedIds, setPinnedIds] = useState<Set<number>>(new Set());
 
   const openPinDialog = () => {
@@ -158,15 +160,15 @@ export function GitHubDetail() {
             className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors" title={account.is_active ? t("githubDetail.disable") : t("githubDetail.enable")} aria-label={account.is_active ? t("githubDetail.disable") : t("githubDetail.enable")}>
             <RefreshCw size={16} />
           </button>
-          <button onClick={() => { if (confirm(t("githubDetail.deleteConfirm", { name: account.screen_name }))) deleteMutation.mutate(); }}
-            className="p-2 rounded-lg bg-[var(--muted)] hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors text-red-500" title={t("githubDetail.delete")} aria-label={t("githubDetail.delete")}>
+          <button onClick={() => setShowDeleteDialog(true)}
+            className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--danger)]/10 transition-colors text-[var(--danger)]" title={t("githubDetail.delete")} aria-label={t("githubDetail.delete")}>
             <Trash2 size={16} />
           </button>
         </div>
       </div>
 
       {account.error_message && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-[var(--danger)]/5 text-[var(--danger)] text-sm">
           <AlertCircle size={14} /> {account.error_message}
         </div>
       )}
@@ -283,7 +285,7 @@ export function GitHubDetail() {
             <CardContent>
               <div className="flex flex-wrap justify-center gap-6">
                 <img
-                  src={`https://github-readme-stats-fast.vercel.app/api?username=${account.screen_name}&show_icons=true&hide_border=true&bg_color=00000000&text_color=666&title_color=3b82f6&icon_color=3b82f6`}
+                  src={`https://github-readme-stats-fast.vercel.app/api?username=${account.screen_name}&show_icons=true&hide_border=true&bg_color=00000000&text_color=666&title_color=3b5998&icon_color=3b5998`}
                   alt={t("githubDetail.statsImgAlt")}
                   className="max-w-full h-auto"
                   loading="lazy"
@@ -340,6 +342,13 @@ export function GitHubDetail() {
           </CardContent>
         </Card>
       )}
+      <ConfirmDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title={t("githubDetail.delete")}
+        description={t("githubDetail.deleteConfirm", { name: account.screen_name })}
+        onConfirm={async () => deleteMutation.mutate()}
+      />
     </div>
   );
 }

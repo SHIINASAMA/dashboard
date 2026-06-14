@@ -1,10 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useState } from "react";
 import { api, type RedditOverview, type RedditPost, type RedditComment } from "../api";
 import { formatDateTime, formatDate } from "../lib/datetime";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { StatCard } from "../components/StatCard";
 import { ArrowLeft, ArrowUpRight, Play, RefreshCw, Trash2, AlertCircle, ThumbsUp, MessageSquare, TrendingUp, FileText } from "lucide-react";
 import { RedditIcon } from "../components/BrandIcons";
@@ -68,6 +70,8 @@ export function RedditDetail() {
     onSuccess: () => navigate("/reddit"),
   });
 
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
   const _triggerMutation = useMutation({
     mutationFn: () => api.triggerFetch(accountId),
     onSuccess: () => queryClient.invalidateQueries(),
@@ -114,15 +118,15 @@ export function RedditDetail() {
             className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors" title={account.is_active ? t("redditDetail.disable") : t("redditDetail.enable")} aria-label={account.is_active ? t("redditDetail.disable") : t("redditDetail.enable")}>
             <RefreshCw size={16} />
           </button>
-          <button onClick={() => { if (confirm(t("redditDetail.deleteConfirm", { name: account.screen_name }))) deleteMutation.mutate(); }}
-            className="p-2 rounded-lg bg-[var(--muted)] hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors text-red-500" title={t("redditDetail.delete")} aria-label={t("redditDetail.delete")}>
+          <button onClick={() => setShowDeleteDialog(true)}
+            className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--danger)]/10 transition-colors text-[var(--danger)]" title={t("redditDetail.delete")} aria-label={t("redditDetail.delete")}>
             <Trash2 size={16} />
           </button>
         </div>
       </div>
 
       {account.error_message && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-[var(--danger)]/5 text-[var(--danger)] text-sm">
           <AlertCircle size={14} /> {account.error_message}
         </div>
       )}
@@ -154,8 +158,8 @@ export function RedditDetail() {
                     <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
                     <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }} />
                     <Legend />
-                    <Line type="monotone" dataKey="post_karma" stroke="#f97316" name={t("redditDetail.postKarma")} dot={false} />
-                    <Line type="monotone" dataKey="comment_karma" stroke="#3b82f6" name={t("redditDetail.commentKarma")} dot={false} />
+                    <Line type="monotone" dataKey="post_karma" stroke="var(--chart-4)" name={t("redditDetail.postKarma")} dot={false} />
+                    <Line type="monotone" dataKey="comment_karma" stroke="var(--chart-1)" name={t("redditDetail.commentKarma")} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
                 </div>
@@ -188,8 +192,8 @@ export function RedditDetail() {
                       <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
                       <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }} />
                       <Legend />
-                      <Bar dataKey="posts" fill="#f97316" name={t("redditDetail.totalPosts")} radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="comments" fill="#3b82f6" name={t("redditDetail.recentComments")} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="posts" fill="var(--chart-4)" name={t("redditDetail.totalPosts")} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="comments" fill="var(--chart-1)" name={t("redditDetail.recentComments")} radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                   </div>
@@ -208,7 +212,7 @@ export function RedditDetail() {
                     <PieChart>
                       <Pie data={subreddits} dataKey="count" nameKey="subreddit" cx="50%" cy="50%" outerRadius={80} label={(props: { name?: string; value?: number }) => `r/${props.name ?? ""} (${props.value ?? 0})`}>
                         {subreddits.map((_, i) => (
-                          <Cell key={i} fill={["#f97316", "#3b82f6", "#22c55e", "#ef4444", "#a855f7", "#ec4899", "#14b8a6", "#eab308", "#6366f1", "#84cc16"][i % 10]} />
+                          <Cell key={i} fill={`var(--chart-${(i % 5) + 1})`} />
                         ))}
                       </Pie>
                       <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }} />
@@ -230,7 +234,7 @@ export function RedditDetail() {
                 <div className="space-y-2">
                   {postsData.data.slice(0, 10).map((post: RedditPost) => (
                     <div key={post.id} className="flex items-start gap-3 p-3 rounded-lg bg-[var(--muted)]">
-                      <ThumbsUp size={16} className="text-orange-500 mt-1 shrink-0" />
+                      <ThumbsUp size={16} className="text-[var(--chart-4)] mt-1 shrink-0" />
                       <div className="min-w-0 flex-1">
                         <a href={`https://reddit.com${post.permalink}`} target="_blank" rel="noopener noreferrer" className="text-sm font-medium hover:underline line-clamp-2">{post.title}</a>
                         <div className="flex items-center gap-3 text-xs text-[var(--muted-foreground)] mt-1">
@@ -260,7 +264,7 @@ export function RedditDetail() {
                 <div className="space-y-2">
                   {commentsData.data.slice(0, 10).map((comment: RedditComment) => (
                     <div key={comment.id} className="flex items-start gap-3 p-3 rounded-lg bg-[var(--muted)]">
-                      <MessageSquare size={16} className="text-blue-500 mt-1 shrink-0" />
+                      <MessageSquare size={16} className="text-[var(--chart-1)] mt-1 shrink-0" />
                       <div className="min-w-0 flex-1">
                         <p className="text-sm line-clamp-3">{comment.body}</p>
                         <div className="flex items-center gap-3 text-xs text-[var(--muted-foreground)] mt-1">
@@ -286,6 +290,13 @@ export function RedditDetail() {
           </CardContent>
         </Card>
       )}
+      <ConfirmDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title={t("redditDetail.delete")}
+        description={t("redditDetail.deleteConfirm", { name: account.screen_name })}
+        onConfirm={async () => deleteMutation.mutate()}
+      />
     </div>
   );
 }

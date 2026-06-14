@@ -6,6 +6,7 @@ import { api, type GitlabOverview, type GitlabContribution, type GitlabProject }
 import { formatDateTime } from "../lib/datetime";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { StatCard } from "../components/StatCard";
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { ArrowLeft, ArrowUpRight, Play, RefreshCw, Trash2, AlertCircle, Star, GitFork, Code, Users, BookOpen, Settings2 } from "lucide-react";
@@ -33,10 +34,10 @@ function ContributionHeatmap({ data, tNamespace }: { data: GitlabContribution[];
   const getColor = (count: number) => {
     if (count === 0) return "bg-[var(--muted)]";
     const intensity = Math.min(count / maxCount, 1);
-    if (intensity < 0.25) return "bg-orange-200 dark:bg-orange-900";
-    if (intensity < 0.5) return "bg-orange-400 dark:bg-orange-700";
-    if (intensity < 0.75) return "bg-orange-500 dark:bg-orange-500";
-    return "bg-orange-700 dark:bg-orange-400";
+    if (intensity < 0.25) return "bg-[var(--chart-4)]/40";
+    if (intensity < 0.5) return "bg-[var(--chart-4)]/60";
+    if (intensity < 0.75) return "bg-[var(--chart-4)]/80";
+    return "bg-[var(--chart-4)]";
   };
 
   return (
@@ -54,17 +55,17 @@ function ContributionHeatmap({ data, tNamespace }: { data: GitlabContribution[];
       <div className="flex items-center gap-1 mt-2 justify-end text-xs text-[var(--muted-foreground)]">
         <span>{t(`${tNamespace}.less`)}</span>
         <div className="w-3 h-3 rounded-sm bg-[var(--muted)]" />
-        <div className="w-3 h-3 rounded-sm bg-orange-200 dark:bg-orange-900" />
-        <div className="w-3 h-3 rounded-sm bg-orange-400 dark:bg-orange-700" />
-        <div className="w-3 h-3 rounded-sm bg-orange-500 dark:bg-orange-500" />
-        <div className="w-3 h-3 rounded-sm bg-orange-700 dark:bg-orange-400" />
+        <div className="w-3 h-3 rounded-sm bg-[var(--chart-4)]/25" />
+        <div className="w-3 h-3 rounded-sm bg-[var(--chart-4)]/50" />
+        <div className="w-3 h-3 rounded-sm bg-[var(--chart-4)]/75" />
+        <div className="w-3 h-3 rounded-sm bg-[var(--chart-4)]" />
         <span>{t(`${tNamespace}.more`)}</span>
       </div>
     </div>
   );
 }
 
-const COLORS = ["#3b82f6", "#ec4899", "#f59e0b", "#10b981", "#8b5cf6", "#14b8a6", "#f97316", "#6366f1"];
+const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)", "var(--chart-3)", "var(--chart-4)", "var(--chart-1)"];
 
 export function GitLabDetail() {
   const { t } = useTranslation();
@@ -73,6 +74,7 @@ export function GitLabDetail() {
   const queryClient = useQueryClient();
   const accountId = Number(id);
   const [showPinDialog, setShowPinDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [pinnedIds, setPinnedIds] = useState<Set<number>>(new Set());
 
   const openPinDialog = () => {
@@ -158,15 +160,15 @@ export function GitLabDetail() {
             className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors" title={account.is_active ? t("gitlabDetail.disable") : t("gitlabDetail.enable")} aria-label={account.is_active ? t("gitlabDetail.disable") : t("gitlabDetail.enable")}>
             <RefreshCw size={16} />
           </button>
-          <button onClick={() => { if (confirm(t("gitlabDetail.deleteConfirm", { name: account.screen_name }))) deleteMutation.mutate(); }}
-            className="p-2 rounded-lg bg-[var(--muted)] hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors text-red-500" title={t("gitlabDetail.delete")} aria-label={t("gitlabDetail.delete")}>
+          <button onClick={() => setShowDeleteDialog(true)}
+            className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--danger)]/10 transition-colors text-[var(--danger)]" title={t("gitlabDetail.delete")} aria-label={t("gitlabDetail.delete")}>
             <Trash2 size={16} />
           </button>
         </div>
       </div>
 
       {account.error_message && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-[var(--danger)]/5 text-[var(--danger)] text-sm">
           <AlertCircle size={14} /> {account.error_message}
         </div>
       )}
@@ -321,6 +323,13 @@ export function GitLabDetail() {
           </CardContent>
         </Card>
       )}
+      <ConfirmDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title={t("gitlabDetail.delete")}
+        description={t("gitlabDetail.deleteConfirm", { name: account.screen_name })}
+        onConfirm={async () => deleteMutation.mutate()}
+      />
     </div>
   );
 }

@@ -78,7 +78,7 @@ export function Admin() {
                 <option value="user">{t("admin.roleUser")}</option>
               </select>
             </div>
-            {createError && <p className="text-xs text-red-500">{createError}</p>}
+            {createError && <p className="text-xs text-[var(--danger)]">{createError}</p>}
             <button
               type="submit"
               className="self-start px-4 py-2 rounded-lg bg-[var(--primary)] text-white font-medium hover:opacity-90 text-sm"
@@ -107,7 +107,7 @@ export function Admin() {
                   {u.id !== 1 && (
                     <button
                       onClick={() => setDeleteUserId(u.id)}
-                      className="text-xs text-red-500 hover:underline flex items-center gap-1"
+                      className="text-xs text-[var(--danger)] hover:underline flex items-center gap-1"
                     >
                       <Trash2 size={12} /> {t("common.delete")}
                     </button>

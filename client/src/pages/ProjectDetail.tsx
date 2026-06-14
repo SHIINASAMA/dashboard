@@ -95,7 +95,7 @@ export function ProjectDetail() {
                 <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                 <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
                 <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }} />
-                <Area type="monotone" dataKey="stars" stroke="#f59e0b" fill="#f59e0b20" name={t("projectDetail.stars")} />
+                <Area type="monotone" dataKey="stars" stroke="var(--chart-3)" fill="color-mix(in oklch, var(--chart-3) 12%, transparent)" name={t("projectDetail.stars")} />
               </AreaChart>
             </ResponsiveContainer>
             </div>
@@ -127,7 +127,7 @@ export function ProjectDetail() {
                     return rel ? `${rel.name || rel.release_tag} — ${rel.released_at ? formatDate(rel.released_at) : ""}` : label;
                   }}
                 />
-                <Bar dataKey="total_downloads" fill="#8b5cf6" radius={[0, 4, 4, 0]} name={t("projectDetail.releases")} />
+                <Bar dataKey="total_downloads" fill="var(--chart-3)" radius={[0, 4, 4, 0]} name={t("projectDetail.releases")} />
               </BarChart>
             </ResponsiveContainer>
             </div>

@@ -107,7 +107,7 @@ export function Login() {
             </div>
 
             {error && (
-              <p className="text-xs text-red-300 bg-red-500/20 px-3 py-2 rounded-lg">{error}</p>
+              <p className="text-xs bg-[var(--danger)]/20 text-[var(--danger)] px-3 py-2 rounded-lg">{error}</p>
             )}
 
             <button

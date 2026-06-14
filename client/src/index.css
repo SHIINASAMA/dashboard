@@ -6,17 +6,26 @@
   --radius: 0.5rem;
 }
 
+/* ── Default ─────────────────────────────────────────────── */
 [data-theme="default-light"] {
   --background: #ffffff;
   --foreground: #0f172a;
   --muted: #f1f5f9;
   --muted-foreground: #64748b;
   --border: #e2e8f0;
-  --primary: #3b82f6;
+  --primary: #3b5998;
   --primary-foreground: #ffffff;
   --card: #ffffff;
   --card-foreground: #0f172a;
-  --ring: #3b82f6;
+  --ring: #3b5998;
+  --success: #16a34a;
+  --warn:    #d97706;
+  --danger:  #dc2626;
+  --chart-1: #3b5998;
+  --chart-2: #0891b2;
+  --chart-3: #7c3aed;
+  --chart-4: #d97706;
+  --chart-5: #e11d48;
 }
 
 [data-theme="default-dark"] {
@@ -25,13 +34,22 @@
   --muted: #1e293b;
   --muted-foreground: #94a3b8;
   --border: #334155;
-  --primary: #3b82f6;
+  --primary: #5b82c8;
   --primary-foreground: #ffffff;
   --card: #1e293b;
   --card-foreground: #f8fafc;
-  --ring: #3b82f6;
+  --ring: #5b82c8;
+  --success: #22c55e;
+  --warn:    #f59e0b;
+  --danger:  #ef4444;
+  --chart-1: #5b82c8;
+  --chart-2: #22d3d8;
+  --chart-3: #a78bfa;
+  --chart-4: #f59e0b;
+  --chart-5: #fb7185;
 }
 
+/* ── Sepia ───────────────────────────────────────────────── */
 [data-theme="sepia-light"] {
   --background: #fdf6e3;
   --foreground: #5c4b2e;
@@ -43,6 +61,14 @@
   --card: #fdf6e3;
   --card-foreground: #5c4b2e;
   --ring: #b58900;
+  --success: #4d8c36;
+  --warn:    #b45309;
+  --danger:  #b91c1c;
+  --chart-1: #b58900;
+  --chart-2: #cb7310;
+  --chart-3: #8b4518;
+  --chart-4: #6b8e23;
+  --chart-5: #c04040;
 }
 
 [data-theme="sepia-dark"] {
@@ -56,19 +82,36 @@
   --card: #3d3428;
   --card-foreground: #e8d5b7;
   --ring: #cb9b00;
+  --success: #6ab04c;
+  --warn:    #f0a040;
+  --danger:  #f07070;
+  --chart-1: #cb9b00;
+  --chart-2: #e0a030;
+  --chart-3: #c08050;
+  --chart-4: #8cb04c;
+  --chart-5: #e07060;
 }
 
+/* ── Cyber ───────────────────────────────────────────────── */
 [data-theme="cyber-light"] {
   --background: #f0f4ff;
   --foreground: #0a0f2e;
   --muted: #e4eaff;
   --muted-foreground: #5a6a9e;
   --border: #c8d6f5;
-  --primary: #6366f1;
+  --primary: #4b5cc4;
   --primary-foreground: #ffffff;
   --card: #ffffff;
   --card-foreground: #0a0f2e;
-  --ring: #6366f1;
+  --ring: #4b5cc4;
+  --success: #16a34a;
+  --warn:    #d97706;
+  --danger:  #dc2626;
+  --chart-1: #4b5cc4;
+  --chart-2: #0ea5b9;
+  --chart-3: #8b5cf6;
+  --chart-4: #f59e0b;
+  --chart-5: #ec4899;
 }
 
 [data-theme="cyber-dark"] {
@@ -82,8 +125,17 @@
   --card: #151d3a;
   --card-foreground: #e0e8ff;
   --ring: #818cf8;
+  --success: #4ade80;
+  --warn:    #fbbf24;
+  --danger:  #f87171;
+  --chart-1: #818cf8;
+  --chart-2: #38bdf8;
+  --chart-3: #a78bfa;
+  --chart-4: #fbbf24;
+  --chart-5: #f472b6;
 }
 
+/* ── Forest ───────────────────────────────────────────────── */
 [data-theme="forest-light"] {
   --background: #f6faf3;
   --foreground: #1a2e12;
@@ -95,6 +147,14 @@
   --card: #ffffff;
   --card-foreground: #1a2e12;
   --ring: #4d8c36;
+  --success: #4d8c36;
+  --warn:    #b45309;
+  --danger:  #b91c1c;
+  --chart-1: #4d8c36;
+  --chart-2: #0891b2;
+  --chart-3: #6d28d9;
+  --chart-4: #d97706;
+  --chart-5: #db2777;
 }
 
 [data-theme="forest-dark"] {
@@ -108,8 +168,17 @@
   --card: #1d3016;
   --card-foreground: #dcecd0;
   --ring: #6ab04c;
+  --success: #6ab04c;
+  --warn:    #f59e0b;
+  --danger:  #f87171;
+  --chart-1: #6ab04c;
+  --chart-2: #22d3d8;
+  --chart-3: #a78bfa;
+  --chart-4: #fbbf24;
+  --chart-5: #f472b6;
 }
 
+/* ── Sky ──────────────────────────────────────────────────── */
 [data-theme="sky-light"] {
   --background: #f0f9ff;
   --foreground: #0c2d48;
@@ -121,6 +190,14 @@
   --card: #ffffff;
   --card-foreground: #0c2d48;
   --ring: #0284c7;
+  --success: #16a34a;
+  --warn:    #d97706;
+  --danger:  #dc2626;
+  --chart-1: #0284c7;
+  --chart-2: #0d9488;
+  --chart-3: #6d28d9;
+  --chart-4: #d97706;
+  --chart-5: #e11d48;
 }
 
 [data-theme="sky-dark"] {
@@ -134,8 +211,17 @@
   --card: #152a40;
   --card-foreground: #d0e8f8;
   --ring: #38bdf8;
+  --success: #4ade80;
+  --warn:    #fbbf24;
+  --danger:  #f87171;
+  --chart-1: #38bdf8;
+  --chart-2: #2dd4bf;
+  --chart-3: #a78bfa;
+  --chart-4: #fbbf24;
+  --chart-5: #fb7185;
 }
 
+/* ── Rose ─────────────────────────────────────────────────── */
 [data-theme="rose-light"] {
   --background: #fff5f6;
   --foreground: #3d1218;
@@ -147,6 +233,14 @@
   --card: #ffffff;
   --card-foreground: #3d1218;
   --ring: #e11d48;
+  --success: #16a34a;
+  --warn:    #d97706;
+  --danger:  #e11d48;
+  --chart-1: #e11d48;
+  --chart-2: #d9468f;
+  --chart-3: #7c3aed;
+  --chart-4: #f59e0b;
+  --chart-5: #0891b2;
 }
 
 [data-theme="rose-dark"] {
@@ -160,6 +254,14 @@
   --card: #301a20;
   --card-foreground: #f8d8de;
   --ring: #fb7185;
+  --success: #4ade80;
+  --warn:    #fbbf24;
+  --danger:  #fb7185;
+  --chart-1: #fb7185;
+  --chart-2: #f472b6;
+  --chart-3: #a78bfa;
+  --chart-4: #fbbf24;
+  --chart-5: #38bdf8;
 }
 
 body {

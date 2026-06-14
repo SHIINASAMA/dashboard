@@ -11,7 +11,7 @@ import {
 } from "recharts";
 import { ArrowLeft, Star, GitFork, Download, ExternalLink, Globe, TrendingUp, Eye, Activity, FileText } from "lucide-react";
 
-const COLORS = ["#3b82f6", "#ec4899", "#f59e0b", "#10b981", "#8b5cf6"];
+const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
 
 type HistoryPoint = Record<string, string | number>;
 
@@ -163,7 +163,7 @@ export function RepoDetail() {
                 <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                 <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
                 <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }} />
-                <Area type="monotone" dataKey="stars" stroke="#f59e0b" fill="#f59e0b20" name={t("repoDetail.stars")} />
+                <Area type="monotone" dataKey="stars" stroke="var(--chart-3)" fill="color-mix(in oklch, var(--chart-3) 12%, transparent)" name={t("repoDetail.stars")} />
               </AreaChart>
             </ResponsiveContainer>
             </div>
@@ -190,8 +190,8 @@ export function RepoDetail() {
                   <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                   <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
                   <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }} />
-                  <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} name={t("repoDetail.clones")} />
-                  <Bar dataKey="uniques" fill="#6366f1" radius={[4, 4, 0, 0]} name={t("repoDetail.uniqueCloners")} />
+                  <Bar dataKey="count" fill="var(--chart-1)" radius={[4, 4, 0, 0]} name={t("repoDetail.clones")} />
+                  <Bar dataKey="uniques" fill="var(--chart-3)" radius={[4, 4, 0, 0]} name={t("repoDetail.uniqueCloners")} />
                 </BarChart>
               </ResponsiveContainer>
               </div>
@@ -217,8 +217,8 @@ export function RepoDetail() {
                   <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                   <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
                   <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }} />
-                  <Bar dataKey="count" fill="#10b981" radius={[4, 4, 0, 0]} name={t("repoDetail.views")} />
-                  <Bar dataKey="uniques" fill="#14b8a6" radius={[4, 4, 0, 0]} name={t("repoDetail.uniqueVisitors")} />
+                  <Bar dataKey="count" fill="var(--chart-2)" radius={[4, 4, 0, 0]} name={t("repoDetail.views")} />
+                  <Bar dataKey="uniques" fill="var(--chart-5)" radius={[4, 4, 0, 0]} name={t("repoDetail.uniqueVisitors")} />
                 </BarChart>
               </ResponsiveContainer>
               </div>
@@ -308,7 +308,7 @@ export function RepoDetail() {
                     return rel ? `${rel.name || rel.tag_name} — ${rel.published_at ? formatDate(rel.published_at) : ""}` : label;
                   }}
                 />
-                <Bar dataKey="total_downloads" fill="#8b5cf6" radius={[0, 4, 4, 0]} name={t("repoDetail.downloads")} />
+                <Bar dataKey="total_downloads" fill="var(--chart-3)" radius={[0, 4, 4, 0]} name={t("repoDetail.downloads")} />
               </BarChart>
             </ResponsiveContainer>
             </div>

@@ -18,11 +18,12 @@ export function Reddit() {
       icon={RedditIcon}
       emptyIcon={<RedditIcon size={32} />}
       emptyText={t("reddit.emptyState")}
+      cardBorderAccent="var(--chart-4)"
       renderBadge={(account: Account) => (
         <>
-          <Badge className="text-[10px] px-1.5">{t("badge.reddit")}</Badge>
+          <Badge className="text-[10px] px-1.5 bg-[var(--chart-4)]/15 text-[var(--chart-4)]">{t("badge.reddit")}</Badge>
           {account.auth_type === "reddit_public" && (
-            <Badge className="text-[10px] px-1.5 bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400">
+            <Badge className="text-[10px] px-1.5 bg-[var(--success)]/10 text-[var(--success)]">
               {t("badge.redditPublic")}
             </Badge>
           )}
