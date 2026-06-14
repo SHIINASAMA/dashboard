@@ -98,3 +98,59 @@ Supports two auth modes:
 - `reddit_stats` (post_karma, comment_karma)
 - `reddit_posts` (title, score, subreddit, etc.)
 - `reddit_comments` (body, score, subreddit, etc.)
+
+## Fetcher hardening (2026-06-14)
+
+All four platform fetchers were audited and hardened against the same class of issues discovered in GitHub.
+
+### Request timeouts
+
+Every HTTP request now has a 30-second timeout (curl: `--max-time`; fetch: `AbortController`), preventing fetchers from hanging indefinitely on unresponsive API endpoints.
+
+| Fetcher | Mechanism |
+|---------|-----------|
+| X (Twitter) | Client library — no timeout added (library handles internally) |
+| GitHub | `AbortController` / 30s per `ghFetch` call |
+| GitLab | `AbortController` / 30s per `glFetch` call |
+| Reddit OAuth | `AbortController` / 30s per `redditFetch`, 15s for token exchange |
+| Reddit Public | `curl --max-time 30` |
+
+### Concurrency guards
+
+A per-platform `Set<number>` of in-flight account IDs prevents the same account from being fetched concurrently (e.g., scheduler and manual trigger overlapping). If an account fetch is already running, subsequent calls log a skip and return immediately.
+
+```
+if (runningAccounts.has(account.id)) {
+  getLogger().info(...);
+  return;
+}
+runningAccounts.add(account.id);
+// ... fetch ...
+finally { runningAccounts.delete(account.id); }
+```
+
+### Progress logging
+
+Long-running loops (GitHub traffic/releases per repo, GitLab projects) now log progress every 5–10 items so operators can distinguish "slow" from "stuck":
+
+```
+GitHub:    @user: traffic/releases 20/44 done
+GitLab:    user: projects 10/30 done
+```
+
+### Batch upserts
+
+Contribution records were previously inserted one-by-one in a loop (365 round-trips for GitHub contributions, potentially hundreds for GitLab). New batch functions send all records in a single `INSERT ... ON CONFLICT DO UPDATE`:
+
+| Platform | Batch function | Records |
+|----------|---------------|---------|
+| GitHub | `upsertGithubContributions(accountId, contributions[])` | Up to 365 contributions |
+| GitLab | `upsertGitlabContributions(accountId, contributions[])` | Variable, one per event-day |
+
+### Type conversion bug (GitHub GraphQL)
+
+GitHub's GraphQL API returns `contributionLevel` as a string enum (`"FIRST_QUARTILE"`, `"SECOND_QUARTILE"`, etc.), but the database column expects an integer. The code previously passed the string through as-is (`day.contributionLevel || 0`), which never triggered the fallback because non-empty strings are truthy. Now mapped explicitly:
+
+```typescript
+level: { NONE: 0, FIRST_QUARTILE: 1, SECOND_QUARTILE: 2, THIRD_QUARTILE: 3, FOURTH_QUARTILE: 4 }[day.contributionLevel] ?? 0
+```
