@@ -15,6 +15,8 @@ async function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+const runningXAccounts = new Set<number>();
+
 async function apiCall<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
   for (let i = 0; i < retries; i++) {
     try {
@@ -69,6 +71,11 @@ function extractTweet(tweetObj: any, accountId: number) {
 }
 
 export async function fetchAccount(account: AccountRow) {
+  if (runningXAccounts.has(account.id)) {
+    getLogger().info(LOG_TAG, "@%s: already running, skipping", account.screen_name);
+    return 0;
+  }
+  runningXAccounts.add(account.id);
   const logger = getLogger();
   logger.info("Fetcher", "Fetching @%s...", account.screen_name);
 
@@ -193,6 +200,8 @@ export async function fetchAccount(account: AccountRow) {
     getLogger().error("Fetcher", "@%s error: %s", account.screen_name, msg);
     await updateAccount(account.id, { error_message: msg, last_fetched_at: new Date().toISOString() });
     return 0;
+  } finally {
+    runningXAccounts.delete(account.id);
   }
 }
 
