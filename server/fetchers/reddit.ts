@@ -198,6 +198,7 @@ async function redditPublicFetchCurl(path: string, cookies: Record<string, strin
     "curl",
     "-sS",
     "--http1.1",
+    "--max-time", "30",
     "-w", "\n%{http_code}",
     url,
     "-H", "User-Agent: Safari/537.36",
