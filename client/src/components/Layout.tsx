@@ -1,15 +1,15 @@
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { Allotment } from "allotment";
-import "allotment/dist/style.css";
 import { useTranslation } from "react-i18next";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-import { LayoutDashboard, PanelLeft, Settings, LogOut, Shield, Users } from "lucide-react";
+import { LayoutDashboard, PanelLeftClose, Settings, LogOut, Shield, Users, Menu } from "lucide-react";
 import { XIcon, GithubIcon, GitlabIcon, RedditIcon } from "./BrandIcons";
 import { api } from "../api";
 import { useBingWallpaper } from "../lib/useBingWallpaper";
 
 const SIDEBAR_KEY = "sidebar-state";
+const SIDEBAR_WIDTH = 240;
+const TITLEBAR_H = 48;
 
 function loadVisible(): boolean {
   try { return JSON.parse(localStorage.getItem(SIDEBAR_KEY) ?? "true"); } catch { return true; }
@@ -24,8 +24,24 @@ export default function Layout() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { url } = useBingWallpaper();
-  const [visible, setVisible] = useState(loadVisible);
+  const [isOpen, setIsOpen] = useState(loadVisible);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const handler = (e: MediaQueryListEvent | MediaQueryList) => {
+      const mobile = e.matches;
+      setIsMobile(mobile);
+      if (mobile) {
+        setIsOpen(false);
+        saveVisible(false);
+      }
+    };
+    handler(mq);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   const { data: authData } = useQuery({
     queryKey: ["auth", "me"],
@@ -42,7 +58,6 @@ export default function Layout() {
       queryClient.setQueryData(["auth", "me"], { authenticated: false });
       navigate("/login", { replace: true });
     } catch {
-      // Force logout even if API fails
       queryClient.setQueryData(["auth", "me"], { authenticated: false });
       navigate("/login", { replace: true });
     } finally {
@@ -50,17 +65,19 @@ export default function Layout() {
     }
   };
 
-  const handleVisibleChange = useCallback((_index: number, v: boolean) => {
-    setVisible(v);
-    saveVisible(v);
-  }, []);
-
-  const toggle = () => {
-    setVisible((prev) => {
+  const toggle = useCallback(() => {
+    setIsOpen((prev) => {
       saveVisible(!prev);
       return !prev;
     });
-  };
+  }, []);
+
+  const closeMobile = useCallback(() => {
+    if (isMobile) {
+      setIsOpen(false);
+      saveVisible(false);
+    }
+  }, [isMobile]);
 
   const NAV_ITEMS = [
     { to: "/", label: t("nav.overview"), icon: LayoutDashboard },
@@ -72,35 +89,20 @@ export default function Layout() {
 
   return (
     <div className="h-screen flex overflow-hidden bg-[var(--background)]">
-      <Allotment
-        proportionalLayout
-        onChange={(sizes) => {
-          if (sizes.length === 2 && sizes[0] <= 0 !== !visible) {
-            setVisible(sizes[0] > 0);
-            saveVisible(sizes[0] > 0);
-          }
-        }}
-        onVisibleChange={handleVisibleChange}
-      >
-        <Allotment.Pane
-          preferredSize="18%"
-          minSize={200}
-          maxSize={400}
-          visible={visible}
-          snap
+      {/* Desktop sidebar */}
+      {!isMobile && (
+        <aside
+          className="h-full border-r border-[var(--border)] bg-[var(--card)] flex flex-col overflow-y-auto relative z-20 shrink-0"
+          style={{
+            width: isOpen ? SIDEBAR_WIDTH : 0,
+            transition: "width 0.3s ease",
+            overflow: "hidden",
+          }}
         >
-          <aside className="h-full border-r border-[var(--border)] bg-[var(--card)] flex flex-col overflow-y-auto relative z-10">
+          <div style={{ width: SIDEBAR_WIDTH }} className="flex flex-col h-full">
             <div className="flex items-center gap-3 px-5 py-4 border-b border-[var(--border)] shrink-0">
               <LayoutDashboard size={20} className="shrink-0" />
               <h1 className="text-lg font-semibold truncate">{t("common.dashboard")}</h1>
-              <button
-                onClick={toggle}
-                className="ml-auto p-1 rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] shrink-0"
-                title={t("common.collapseSidebar")}
-                aria-label={t("common.collapseSidebar")}
-              >
-                <PanelLeft size={16} />
-              </button>
             </div>
             <nav className="flex flex-col gap-1 p-3">
               {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
@@ -193,32 +195,176 @@ export default function Layout() {
               </button>
               <p className="text-xs text-[var(--muted-foreground)] px-3">{t("common.copyright")}</p>
             </div>
-          </aside>
-        </Allotment.Pane>
-        <Allotment.Pane minSize={300}>
-          <main className="h-full overflow-auto relative">
-            <img
-              src={url}
-              alt=""
-              className="fixed inset-0 w-full h-full object-cover pointer-events-none"
-            />
-            <div className="fixed inset-0 bg-[var(--background)]/85" />
-            <div className="max-w-6xl mx-auto px-8 py-8 relative z-10">
-              {!visible && (
-                <button
-                  onClick={toggle}
-                  className="fixed left-3 top-1/2 -translate-y-1/2 z-10 p-1.5 rounded-r-md bg-[var(--card)] border border-[var(--border)] border-l-0 text-[var(--muted-foreground)] hover:text-[var(--foreground)] shadow-sm"
-                  title={t("common.expandSidebar")}
-                  aria-label={t("common.expandSidebar")}
-                >
-                  <PanelLeft size={18} />
-                </button>
-              )}
-              <Outlet />
+          </div>
+        </aside>
+      )}
+
+      {/* Mobile sidebar overlay */}
+      {isMobile && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 z-30"
+            style={{
+              opacity: isOpen ? 1 : 0,
+              pointerEvents: isOpen ? "auto" : "none",
+              transition: "opacity 0.3s ease",
+            }}
+            onClick={closeMobile}
+          />
+          <aside
+            className="fixed inset-y-0 left-0 z-40 border-r border-[var(--border)] bg-[var(--card)] flex flex-col overflow-y-auto"
+            style={{
+              width: SIDEBAR_WIDTH,
+              transform: isOpen ? "translateX(0)" : "translateX(-100%)",
+              transition: "transform 0.3s ease",
+            }}
+          >
+            <div className="flex items-center gap-3 px-5 py-4 border-b border-[var(--border)] shrink-0">
+              <LayoutDashboard size={20} className="shrink-0" />
+              <h1 className="text-lg font-semibold truncate">{t("common.dashboard")}</h1>
             </div>
-          </main>
-        </Allotment.Pane>
-      </Allotment>
+            <nav className="flex flex-col gap-1 p-3">
+              {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  end={to === "/"}
+                  onClick={closeMobile}
+                  className={({ isActive }) =>
+                    `relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      isActive
+                        ? "bg-[var(--primary)]/8 text-[var(--foreground)] font-semibold shadow-sm"
+                        : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+                    }`
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      {isActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-[var(--primary)]" />}
+                      <Icon size={18} />
+                      <span className="truncate">{label}</span>
+                    </>
+                  )}
+                </NavLink>
+              ))}
+            </nav>
+            <div className="mt-auto p-3 border-t border-[var(--border)] space-y-3">
+              {isAdmin && (
+                <NavLink
+                  to="/admin"
+                  onClick={closeMobile}
+                  className={({ isActive }) =>
+                    `relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      isActive
+                        ? "bg-[var(--primary)]/8 text-[var(--foreground)] font-semibold shadow-sm"
+                        : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+                    }`
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      {isActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-[var(--primary)]" />}
+                      <Shield size={18} />
+                      {t("nav.admin")}
+                    </>
+                  )}
+                </NavLink>
+              )}
+              <NavLink
+                to="/accounts"
+                onClick={closeMobile}
+                className={({ isActive }) =>
+                  `relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? "bg-[var(--primary)]/8 text-[var(--foreground)] font-semibold shadow-sm"
+                      : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    {isActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-[var(--primary)]" />}
+                    <Users size={18} />
+                    {t("nav.accounts")}
+                  </>
+                )}
+              </NavLink>
+              <NavLink
+                to="/settings"
+                onClick={closeMobile}
+                className={({ isActive }) =>
+                  `relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? "bg-[var(--primary)]/8 text-[var(--foreground)] font-semibold shadow-sm"
+                      : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    {isActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-[var(--primary)]" />}
+                    <Settings size={18} />
+                    {t("nav.settings")}
+                  </>
+                )}
+              </NavLink>
+              <button
+                onClick={handleLogout}
+                disabled={loggingOut}
+                className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-[var(--muted-foreground)] hover:text-[var(--danger)] hover:bg-[var(--danger)]/5 transition-colors disabled:opacity-40 w-full text-left"
+              >
+                <LogOut size={18} />
+                {loggingOut ? "…" : t("nav.logout")}
+              </button>
+              <p className="text-xs text-[var(--muted-foreground)] px-3">{t("common.copyright")}</p>
+            </div>
+          </aside>
+        </>
+      )}
+
+      {/* Main content */}
+      <main className="flex-1 min-w-0 h-full overflow-hidden flex flex-col relative">
+        <img
+          src={url}
+          alt=""
+          className="fixed inset-0 w-full h-full object-cover pointer-events-none"
+        />
+        <div className="fixed inset-0 bg-[var(--background)]/85" />
+
+        {/* Title bar */}
+        <div
+          className="relative z-10 shrink-0 flex items-center gap-3 border-b border-[var(--border)] bg-[var(--card)]/80 backdrop-blur-sm"
+          style={{ height: TITLEBAR_H }}
+        >
+          <button
+            onClick={toggle}
+            className="p-2 ml-2 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+            title={isOpen ? t("common.collapseSidebar") : t("common.expandSidebar")}
+            aria-label={isOpen ? t("common.collapseSidebar") : t("common.expandSidebar")}
+          >
+            <span
+              className="block transition-transform duration-300"
+              style={{ transform: isOpen ? "rotate(0deg)" : "rotate(180deg)" }}
+            >
+              {isMobile ? <Menu size={20} /> : <PanelLeftClose size={20} />}
+            </span>
+          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <LayoutDashboard size={18} className="text-[var(--primary)]" />
+            <span className="text-sm font-semibold">{t("common.dashboard")}</span>
+          </div>
+        </div>
+
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-auto relative z-10">
+          <div
+            className="max-w-6xl mx-auto transition-all duration-300"
+            style={{ padding: isMobile ? "12px 16px" : "24px 32px" }}
+          >
+            <Outlet />
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

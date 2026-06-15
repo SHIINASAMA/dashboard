@@ -15,6 +15,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area,
 } from "recharts";
+import { useIsMobile } from "../lib/useIsMobile";
 
 export function XDetail() {
   const { t } = useTranslation();
@@ -59,6 +60,10 @@ export function XDetail() {
     onSuccess: () => queryClient.invalidateQueries(),
   });
 
+  const isMobile = useIsMobile();
+  const CHART_H = isMobile ? 180 : 250;
+  const MARGIN = isMobile ? { top: 5, right: 5, left: -15, bottom: 5 } : { top: 5, right: 5, left: 0, bottom: 5 };
+
   if (isLoading) {
     return <div className="text-center py-12 text-[var(--muted-foreground)]">{t("common.loading")}</div>;
   }
@@ -74,12 +79,12 @@ export function XDetail() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <button onClick={() => navigate("/x")} className="p-2 rounded-lg hover:bg-[var(--muted)] transition-colors" title={t("xDetail.backToX")} aria-label={t("xDetail.backToX")}>
+      <div className="flex items-start gap-3">
+        <button onClick={() => navigate("/x")} className="p-2 rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("xDetail.backToX")} aria-label={t("xDetail.backToX")}>
           <ArrowLeft size={20} />
         </button>
-        <div>
-          <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-xl font-semibold">@{account.screen_name}</h2>
             {!account.is_active && <Badge>{t("badge.inactive")}</Badge>}
           </div>
@@ -88,13 +93,13 @@ export function XDetail() {
             {account.last_fetched_at && ` • ${t("xDetail.lastFetched", { date: formatDateTime(account.last_fetched_at) })}`}
           </p>
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
             onClick={() => triggerMutation.mutate()}
             disabled={triggerMutation.isPending}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-sm disabled:opacity-40"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-xs disabled:opacity-40"
           >
-            <Play size={14} /> {triggerMutation.isPending ? t("xDetail.fetching") : t("xDetail.fetchNow")}
+            <Play size={12} /> {triggerMutation.isPending ? t("xDetail.fetching") : t("xDetail.fetchNow")}
           </button>
           <button
             onClick={() => {
@@ -102,19 +107,19 @@ export function XDetail() {
                 queryClient.invalidateQueries({ queryKey: ["account", accountId] })
               );
             }}
-            className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors"
+            className="p-1.5 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors"
             title={account.is_active ? t("xDetail.disable") : t("xDetail.enable")}
             aria-label={account.is_active ? t("xDetail.disable") : t("xDetail.enable")}
           >
-            <RefreshCw size={16} />
+            <RefreshCw size={14} />
           </button>
           <button
             onClick={() => setShowDeleteDialog(true)}
-            className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--danger)]/10 transition-colors text-[var(--danger)]"
+            className="p-1.5 rounded-lg bg-[var(--muted)] hover:bg-[var(--danger)]/10 transition-colors text-[var(--danger)]"
             title={t("xDetail.delete")}
             aria-label={t("xDetail.delete")}
           >
-            <Trash2 size={16} />
+            <Trash2 size={14} />
           </button>
         </div>
       </div>
@@ -139,8 +144,8 @@ export function XDetail() {
             <CardHeader><CardTitle>{t("xDetail.tweetActivity")}</CardTitle></CardHeader>
             <CardContent>
               <div role="img" aria-label={t("xDetail.tweetActivity")}>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={timeline.dailyTweets}>
+              <ResponsiveContainer width="100%" height={CHART_H}>
+                <BarChart data={timeline.dailyTweets} margin={MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                   <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
@@ -155,8 +160,8 @@ export function XDetail() {
             <CardHeader><CardTitle>{t("xDetail.views")}</CardTitle></CardHeader>
             <CardContent>
               <div role="img" aria-label={t("xDetail.views")}>
-              <ResponsiveContainer width="100%" height={250}>
-                <AreaChart data={timeline.dailyTweets}>
+              <ResponsiveContainer width="100%" height={CHART_H}>
+                <AreaChart data={timeline.dailyTweets} margin={MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                   <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
@@ -175,8 +180,8 @@ export function XDetail() {
             <CardHeader><CardTitle>{t("xDetail.engagement")}</CardTitle></CardHeader>
             <CardContent>
               <div role="img" aria-label={t("xDetail.engagement")}>
-              <ResponsiveContainer width="100%" height={250}>
-                <AreaChart data={timeline.dailyTweets}>
+              <ResponsiveContainer width="100%" height={CHART_H}>
+                <AreaChart data={timeline.dailyTweets} margin={MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                   <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />

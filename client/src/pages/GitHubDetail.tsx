@@ -9,7 +9,10 @@ import { Badge } from "../components/ui/badge";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { StatCard } from "../components/StatCard";
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { ArrowLeft, ArrowUpRight, Play, RefreshCw, Trash2, AlertCircle, Star, GitFork, Code, Users, BookOpen, Settings2 } from "lucide-react";
+import {
+  ArrowLeft, ArrowUpRight, Play, RefreshCw, Trash2, AlertCircle, Star, GitFork, Code, Users, BookOpen, Settings2
+} from "lucide-react";
+import { useIsMobile } from "../lib/useIsMobile";
 import { GithubIcon } from "../components/BrandIcons";
 
 function GithubHeatmap({ data }: { data: GithubContribution[] }) {
@@ -119,6 +122,9 @@ export function GitHubDetail() {
     onSuccess: () => queryClient.invalidateQueries(),
   });
 
+  const isMobile = useIsMobile();
+  const PIE_H = isMobile ? 200 : 300;
+
   if (accountLoading) {
     return <div className="text-center py-12 text-[var(--muted-foreground)]">{t("common.loading")}</div>;
   }
@@ -134,14 +140,14 @@ export function GitHubDetail() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <button onClick={() => navigate("/github")} className="p-2 rounded-lg hover:bg-[var(--muted)] transition-colors" title={t("githubDetail.backToGitHub")} aria-label={t("githubDetail.backToGitHub")}>
+      <div className="flex items-start gap-3">
+        <button onClick={() => navigate("/github")} className="p-2 rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("githubDetail.backToGitHub")} aria-label={t("githubDetail.backToGitHub")}>
           <ArrowLeft size={20} />
         </button>
-        <div className="flex items-center gap-2">
-          <GithubIcon size={18} />
-          <div>
-            <div className="flex items-center gap-2">
+        <div className="flex items-start gap-2 min-w-0 flex-1">
+          <GithubIcon size={18} className="shrink-0 mt-1" />
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-xl font-semibold">{account.screen_name}</h2>
               {!account.is_active && <Badge>{t("badge.inactive")}</Badge>}
             </div>
@@ -151,18 +157,18 @@ export function GitHubDetail() {
             </p>
           </div>
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0">
           <button onClick={() => triggerMutation.mutate()} disabled={triggerMutation.isPending}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-sm disabled:opacity-40">
-            <Play size={14} /> {triggerMutation.isPending ? t("githubDetail.fetching") : t("githubDetail.fetchNow")}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-xs disabled:opacity-40">
+            <Play size={12} /> {triggerMutation.isPending ? t("githubDetail.fetching") : t("githubDetail.fetchNow")}
           </button>
           <button onClick={() => { api.updateAccount(accountId, { isActive: !account.is_active }).then(() => queryClient.invalidateQueries({ queryKey: ["account", accountId] })); }}
-            className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors" title={account.is_active ? t("githubDetail.disable") : t("githubDetail.enable")} aria-label={account.is_active ? t("githubDetail.disable") : t("githubDetail.enable")}>
-            <RefreshCw size={16} />
+            className="p-1.5 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors" title={account.is_active ? t("githubDetail.disable") : t("githubDetail.enable")} aria-label={account.is_active ? t("githubDetail.disable") : t("githubDetail.enable")}>
+            <RefreshCw size={14} />
           </button>
           <button onClick={() => setShowDeleteDialog(true)}
-            className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--danger)]/10 transition-colors text-[var(--danger)]" title={t("githubDetail.delete")} aria-label={t("githubDetail.delete")}>
-            <Trash2 size={16} />
+            className="p-1.5 rounded-lg bg-[var(--muted)] hover:bg-[var(--danger)]/10 transition-colors text-[var(--danger)]" title={t("githubDetail.delete")} aria-label={t("githubDetail.delete")}>
+            <Trash2 size={14} />
           </button>
         </div>
       </div>
@@ -319,7 +325,7 @@ export function GitHubDetail() {
             <CardContent>
               {Object.keys(overview.languages).length > 0 ? (
                 <div role="img" aria-label={t("githubDetail.languages")}>
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={PIE_H}>
                   <PieChart>
                     <Pie data={Object.entries(overview.languages).map(([name, count]) => ({ name, count }))} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={100} label={({ name, percent = 0 }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                       {Object.keys(overview.languages).map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}

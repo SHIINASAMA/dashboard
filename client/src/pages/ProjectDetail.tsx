@@ -10,6 +10,7 @@ import {
   AreaChart, Area,
 } from "recharts";
 import { ArrowLeft, Star, GitFork, Download, ExternalLink, TrendingUp, Activity } from "lucide-react";
+import { useIsMobile } from "../lib/useIsMobile";
 
 export function ProjectDetail() {
   const { t } = useTranslation();
@@ -45,6 +46,10 @@ export function ProjectDetail() {
     enabled: !!aid && !!pid,
   });
 
+  const isMobile = useIsMobile();
+  const CHART_H = isMobile ? 200 : 300;
+  const MARGIN = isMobile ? { top: 5, right: 5, left: -15, bottom: 5 } : { top: 5, right: 5, left: 0, bottom: 5 };
+
   if (!project) {
     return (
       <div className="text-center py-12">
@@ -56,22 +61,22 @@ export function ProjectDetail() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <button onClick={() => navigate(`/gitlab/${aid}`)} className="p-2 rounded-lg hover:bg-[var(--muted)] transition-colors" title={t("projectDetail.backToAccount")} aria-label={t("projectDetail.backToAccount")}>
+      <div className="flex items-start gap-3">
+        <button onClick={() => navigate(`/gitlab/${aid}`)} className="p-2 rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("projectDetail.backToAccount")} aria-label={t("projectDetail.backToAccount")}>
           <ArrowLeft size={20} />
         </button>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <h2 className="text-xl font-semibold truncate">{project.path_with_namespace}</h2>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-xl font-semibold">{project.path_with_namespace}</h2>
             {project.language && <Badge>{project.language}</Badge>}
             {project.visibility !== "public" && <Badge>{project.visibility}</Badge>}
             {project.is_fork ? <Badge>{t("badge.fork")}</Badge> : null}
           </div>
-          {project.description && <p className="text-sm text-[var(--muted-foreground)]">{project.description}</p>}
+          {project.description && <p className="text-sm text-[var(--muted-foreground)] line-clamp-2">{project.description}</p>}
         </div>
         <a href={`${instanceUrl}/${project.path_with_namespace}`} target="_blank" rel="noopener noreferrer"
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-sm">
-          <ExternalLink size={14} /> {t("projectDetail.open")}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-xs shrink-0">
+          <ExternalLink size={12} /> {t("projectDetail.open")}
         </a>
       </div>
 
@@ -89,8 +94,8 @@ export function ProjectDetail() {
         <CardContent>
           {snapshots && snapshots.length > 1 ? (
             <div role="img" aria-label={t("projectDetail.starHistory")}>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={snapshots}>
+            <ResponsiveContainer width="100%" height={CHART_H}>
+              <AreaChart data={snapshots} margin={MARGIN}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                 <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
@@ -100,7 +105,7 @@ export function ProjectDetail() {
             </ResponsiveContainer>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-[300px] text-sm text-[var(--muted-foreground)]">
+            <div className="flex items-center justify-center text-sm text-[var(--muted-foreground)]" style={{ height: CHART_H }}>
               {snapshots?.length === 1 ? t("projectDetail.onlyOneDataPoint") : t("projectDetail.noStarHistory")}
             </div>
           )}
@@ -115,11 +120,11 @@ export function ProjectDetail() {
         <CardContent>
           {releases && releases.length > 0 ? (
             <div role="img" aria-label={t("projectDetail.releasesDownloads")}>
-            <ResponsiveContainer width="100%" height={Math.max(200, releases.length * 60)}>
-              <BarChart data={releases} layout="vertical" margin={{ left: 20, right: 40 }}>
+            <ResponsiveContainer width="100%" height={Math.max(isMobile ? 140 : 200, releases.length * (isMobile ? 40 : 60))}>
+              <BarChart data={releases} layout="vertical" margin={isMobile ? { left: 0, right: 10, top: 5, bottom: 5 } : { left: 20, right: 40, top: 5, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis type="number" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
-                <YAxis type="category" dataKey="release_tag" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} width={120} tickFormatter={(v: string) => v.length > 15 ? v.slice(0, 15) + "…" : v} />
+                <YAxis type="category" dataKey="release_tag" tick={{ fontSize: isMobile ? 9 : 11, fill: "var(--muted-foreground)" }} width={isMobile ? 70 : 120} tickFormatter={(v: string) => v.length > (isMobile ? 8 : 15) ? v.slice(0, isMobile ? 8 : 15) + "…" : v} />
                 <Tooltip
                   contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }}
                   labelFormatter={(label) => {

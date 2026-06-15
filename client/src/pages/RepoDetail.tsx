@@ -10,6 +10,7 @@ import {
   AreaChart, Area, Legend, LineChart, Line,
 } from "recharts";
 import { ArrowLeft, Star, GitFork, Download, ExternalLink, Globe, TrendingUp, Eye, Activity, FileText } from "lucide-react";
+import { useIsMobile } from "../lib/useIsMobile";
 
 const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
 
@@ -78,6 +79,11 @@ export function RepoDetail() {
     enabled: !!aid && !!rid,
   });
 
+  const isMobile = useIsMobile();
+  const CHART_H = isMobile ? 180 : 250;
+  const TALL_CHART_H = isMobile ? 200 : 300;
+  const MARGIN = isMobile ? { top: 5, right: 5, left: -15, bottom: 5 } : { top: 5, right: 5, left: 0, bottom: 5 };
+
   if (!repo) {
     return (
       <div className="text-center py-12">
@@ -125,21 +131,21 @@ export function RepoDetail() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <button onClick={() => navigate(`/github/${aid}`)} className="p-2 rounded-lg hover:bg-[var(--muted)] transition-colors" title={t("repoDetail.backToAccount")} aria-label={t("repoDetail.backToAccount")}>
+      <div className="flex items-start gap-3">
+        <button onClick={() => navigate(`/github/${aid}`)} className="p-2 rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("repoDetail.backToAccount")} aria-label={t("repoDetail.backToAccount")}>
           <ArrowLeft size={20} />
         </button>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <h2 className="text-xl font-semibold truncate">{repo.full_name}</h2>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-xl font-semibold">{repo.full_name}</h2>
             {repo.language && <Badge>{repo.language}</Badge>}
             {repo.is_fork ? <Badge>{t("badge.fork")}</Badge> : null}
           </div>
-          {repo.description && <p className="text-sm text-[var(--muted-foreground)]">{repo.description}</p>}
+          {repo.description && <p className="text-sm text-[var(--muted-foreground)] line-clamp-2">{repo.description}</p>}
         </div>
         <a href={`https://github.com/${repo.full_name}`} target="_blank" rel="noopener noreferrer"
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-sm">
-          <ExternalLink size={14} /> {t("repoDetail.open")}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-xs shrink-0">
+          <ExternalLink size={12} /> {t("repoDetail.open")}
         </a>
       </div>
 
@@ -157,8 +163,8 @@ export function RepoDetail() {
         <CardContent>
           {snapshots && snapshots.length > 1 ? (
             <div role="img" aria-label={t("repoDetail.starHistory")}>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={snapshots}>
+            <ResponsiveContainer width="100%" height={TALL_CHART_H}>
+              <AreaChart data={snapshots} margin={MARGIN}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                 <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
@@ -168,7 +174,7 @@ export function RepoDetail() {
             </ResponsiveContainer>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-[300px] text-sm text-[var(--muted-foreground)]">
+            <div className="flex items-center justify-center text-sm text-[var(--muted-foreground)]" style={{ height: TALL_CHART_H }}>
               {snapshots?.length === 1 ? t("repoDetail.onlyOneDataPoint") : t("repoDetail.noStarHistory")}
             </div>
           )}
@@ -184,8 +190,8 @@ export function RepoDetail() {
           <CardContent>
             {clones && clones.length > 0 ? (
               <div role="img" aria-label={t("repoDetail.gitClones")}>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={clones}>
+              <ResponsiveContainer width="100%" height={CHART_H}>
+                <BarChart data={clones} margin={MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                   <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
@@ -196,7 +202,7 @@ export function RepoDetail() {
               </ResponsiveContainer>
               </div>
             ) : (
-              <div className="flex items-center justify-center h-[250px] text-sm text-[var(--muted-foreground)]">
+              <div className="flex items-center justify-center text-sm text-[var(--muted-foreground)]" style={{ height: CHART_H }}>
                 {t("repoDetail.noCloneData")}
               </div>
             )}
@@ -211,8 +217,8 @@ export function RepoDetail() {
           <CardContent>
             {views && views.length > 0 ? (
               <div role="img" aria-label={t("repoDetail.visitors")}>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={views}>
+              <ResponsiveContainer width="100%" height={CHART_H}>
+                <BarChart data={views} margin={MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                   <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
@@ -223,7 +229,7 @@ export function RepoDetail() {
               </ResponsiveContainer>
               </div>
             ) : (
-              <div className="flex items-center justify-center h-[250px] text-sm text-[var(--muted-foreground)]">
+              <div className="flex items-center justify-center text-sm text-[var(--muted-foreground)]" style={{ height: CHART_H }}>
                 {t("repoDetail.noTrafficData")}
               </div>
             )}
@@ -240,8 +246,8 @@ export function RepoDetail() {
           <CardContent>
             {referrerHistoryChart && referrerHistoryChart.length > 1 ? (
               <div role="img" aria-label={t("repoDetail.referringSites")}>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={referrerHistoryChart}>
+              <ResponsiveContainer width="100%" height={TALL_CHART_H}>
+                <LineChart data={referrerHistoryChart} margin={MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                   <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
@@ -267,8 +273,8 @@ export function RepoDetail() {
           <CardContent>
             {pathHistoryChart && pathHistoryChart.length > 1 ? (
               <div role="img" aria-label={t("repoDetail.popularContent")}>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={pathHistoryChart}>
+              <ResponsiveContainer width="100%" height={TALL_CHART_H}>
+                <LineChart data={pathHistoryChart} margin={MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                   <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
@@ -295,11 +301,11 @@ export function RepoDetail() {
         <CardContent>
           {releases && releases.length > 0 ? (
             <div role="img" aria-label={t("repoDetail.releasesDownloads")}>
-            <ResponsiveContainer width="100%" height={Math.max(200, releases.length * 60)}>
-              <BarChart data={releases} layout="vertical" margin={{ left: 20, right: 40 }}>
+            <ResponsiveContainer width="100%" height={Math.max(isMobile ? 140 : 200, releases.length * (isMobile ? 40 : 60))}>
+              <BarChart data={releases} layout="vertical" margin={isMobile ? { left: 0, right: 10, top: 5, bottom: 5 } : { left: 20, right: 40, top: 5, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis type="number" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
-                <YAxis type="category" dataKey="tag_name" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} width={120} tickFormatter={(v: string) => v.length > 15 ? v.slice(0, 15) + "…" : v} />
+                <YAxis type="category" dataKey="tag_name" tick={{ fontSize: isMobile ? 9 : 11, fill: "var(--muted-foreground)" }} width={isMobile ? 70 : 120} tickFormatter={(v: string) => v.length > (isMobile ? 8 : 15) ? v.slice(0, isMobile ? 8 : 15) + "…" : v} />
                 <Tooltip
                   contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }}
                   formatter={(value) => [String(value).toLocaleString() ?? "", t("repoDetail.downloads")]}

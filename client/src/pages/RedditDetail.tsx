@@ -9,6 +9,7 @@ import { Badge } from "../components/ui/badge";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { StatCard } from "../components/StatCard";
 import { ArrowLeft, ArrowUpRight, Play, RefreshCw, Trash2, AlertCircle, ThumbsUp, MessageSquare, TrendingUp, FileText } from "lucide-react";
+import { useIsMobile } from "../lib/useIsMobile";
 import { RedditIcon } from "../components/BrandIcons";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
@@ -77,6 +78,10 @@ export function RedditDetail() {
     onSuccess: () => queryClient.invalidateQueries(),
   });
 
+  const isMobile = useIsMobile();
+  const CHART_H = isMobile ? 180 : 250;
+  const MARGIN = isMobile ? { top: 5, right: 5, left: -15, bottom: 5 } : { top: 5, right: 5, left: 0, bottom: 5 };
+
   if (accountLoading) {
     return <div className="text-center py-12 text-[var(--muted-foreground)]">{t("common.loading")}</div>;
   }
@@ -92,14 +97,14 @@ export function RedditDetail() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <button onClick={() => navigate("/reddit")} className="p-2 rounded-lg hover:bg-[var(--muted)] transition-colors" title={t("redditDetail.backToReddit")} aria-label={t("redditDetail.backToReddit")}>
+      <div className="flex items-start gap-3">
+        <button onClick={() => navigate("/reddit")} className="p-2 rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("redditDetail.backToReddit")} aria-label={t("redditDetail.backToReddit")}>
           <ArrowLeft size={20} />
         </button>
-        <div className="flex items-center gap-2">
-          <RedditIcon size={18} />
-          <div>
-            <div className="flex items-center gap-2">
+        <div className="flex items-start gap-2 min-w-0 flex-1">
+          <RedditIcon size={18} className="shrink-0 mt-1" />
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-xl font-semibold">{account.screen_name}</h2>
               {!account.is_active && <Badge>{t("badge.inactive")}</Badge>}
             </div>
@@ -109,18 +114,18 @@ export function RedditDetail() {
             </p>
           </div>
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0">
           <button onClick={() => _triggerMutation.mutate()} disabled={_triggerMutation.isPending}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-sm disabled:opacity-40">
-            <Play size={14} /> {_triggerMutation.isPending ? t("redditDetail.fetching") : t("redditDetail.fetchNow")}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-xs disabled:opacity-40">
+            <Play size={12} /> {_triggerMutation.isPending ? t("redditDetail.fetching") : t("redditDetail.fetchNow")}
           </button>
           <button onClick={() => { api.updateAccount(accountId, { isActive: !account.is_active }).then(() => queryClient.invalidateQueries({ queryKey: ["account", accountId] })); }}
-            className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors" title={account.is_active ? t("redditDetail.disable") : t("redditDetail.enable")} aria-label={account.is_active ? t("redditDetail.disable") : t("redditDetail.enable")}>
-            <RefreshCw size={16} />
+            className="p-1.5 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors" title={account.is_active ? t("redditDetail.disable") : t("redditDetail.enable")} aria-label={account.is_active ? t("redditDetail.disable") : t("redditDetail.enable")}>
+            <RefreshCw size={14} />
           </button>
           <button onClick={() => setShowDeleteDialog(true)}
-            className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--danger)]/10 transition-colors text-[var(--danger)]" title={t("redditDetail.delete")} aria-label={t("redditDetail.delete")}>
-            <Trash2 size={16} />
+            className="p-1.5 rounded-lg bg-[var(--muted)] hover:bg-[var(--danger)]/10 transition-colors text-[var(--danger)]" title={t("redditDetail.delete")} aria-label={t("redditDetail.delete")}>
+            <Trash2 size={14} />
           </button>
         </div>
       </div>
@@ -151,8 +156,8 @@ export function RedditDetail() {
               </CardHeader>
               <CardContent>
                 <div role="img" aria-label={t("redditDetail.karmaTimeline")}>
-                <ResponsiveContainer width="100%" height={250}>
-                  <LineChart data={timeline}>
+                <ResponsiveContainer width="100%" height={CHART_H}>
+                  <LineChart data={timeline} margin={MARGIN}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                     <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                     <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
@@ -177,7 +182,7 @@ export function RedditDetail() {
                 </CardHeader>
                 <CardContent>
                   <div role="img" aria-label={t("redditDetail.dailyActivity")}>
-                  <ResponsiveContainer width="100%" height={250}>
+                  <ResponsiveContainer width="100%" height={CHART_H}>
                     <BarChart data={(() => {
                       const map: Record<string, { date: string; posts: number; comments: number }> = {};
                       for (const p of activity.posts) map[p.date] = { ...map[p.date], date: p.date, posts: p.count, comments: 0 };
@@ -186,7 +191,7 @@ export function RedditDetail() {
                         else map[c.date] = { date: c.date, posts: 0, comments: c.count };
                       }
                       return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
-                    })()}>
+                    })()} margin={MARGIN}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                       <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                       <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
@@ -208,7 +213,7 @@ export function RedditDetail() {
                 </CardHeader>
                 <CardContent>
                   <div role="img" aria-label={t("redditDetail.topSubreddits")}>
-                  <ResponsiveContainer width="100%" height={250}>
+                  <ResponsiveContainer width="100%" height={CHART_H}>
                     <PieChart>
                       <Pie data={subreddits} dataKey="count" nameKey="subreddit" cx="50%" cy="50%" outerRadius={80} label={(props: { name?: string; value?: number }) => `r/${props.name ?? ""} (${props.value ?? 0})`}>
                         {subreddits.map((_, i) => (
