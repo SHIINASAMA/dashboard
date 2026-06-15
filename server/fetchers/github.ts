@@ -8,7 +8,7 @@ import {
 } from "../db";
 import { getDb } from "../db/connection";
 import { eq, and } from "drizzle-orm";
-import { github_releases } from "../../db/schema";
+import { github_releases, github_release_assets } from "../../db/schema";
 import { getLogger } from "../logger";
 import { fetchWithConfig } from "../http";
 
@@ -275,6 +275,9 @@ async function fetchRepoReleases(accountId: number, repoId: number, fullName: st
         ));
 
       if (releaseRow) {
+        await getDb().delete(github_release_assets)
+          .where(eq(github_release_assets.release_id, releaseRow.id));
+
         for (const asset of release.assets || []) {
           await insertGithubReleaseAsset({
             release_db_id: releaseRow.id,

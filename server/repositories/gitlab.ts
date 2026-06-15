@@ -94,9 +94,15 @@ export async function upsertGitlabRelease(r: any) {
 }
 
 export async function getGitlabReleases(accountId: number, projectId: number) {
-  return getDb().select().from(gitlab_releases)
-    .where(and(eq(gitlab_releases.account_id, accountId), eq(gitlab_releases.project_id, projectId)))
-    .orderBy(desc(gitlab_releases.released_at));
+  const all = await getDb().select().from(gitlab_releases)
+    .where(and(eq(gitlab_releases.account_id, accountId), eq(gitlab_releases.project_id, projectId)));
+  const latest = new Map<string, typeof all[0]>();
+  for (const r of all) {
+    if (!latest.has(r.release_tag) || r.id > latest.get(r.release_tag)!.id) {
+      latest.set(r.release_tag, r);
+    }
+  }
+  return [...latest.values()].sort((a, b) => (b.released_at ?? "").localeCompare(a.released_at ?? ""));
 }
 
 export async function insertGitlabReleaseAsset(a: any) {
