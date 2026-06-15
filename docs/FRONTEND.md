@@ -23,7 +23,7 @@ client/src/
 ├── main.tsx             # Entry point
 ├── index.css            # Tailwind imports + CSS variables (themes)
 ├── components/
-│   ├── Layout.tsx       # Main layout (sidebar + content area)
+│   ├── Layout.tsx       # Main layout (sidebar + title bar + content area)
 │   ├── AccountListPage.tsx  # Reusable account list component
 │   ├── BrandIcons.tsx   # Platform brand icons
 │   ├── StatCard.tsx     # Reusable stat display card
@@ -51,7 +51,8 @@ client/src/
 │   ├── datetime.ts      # Date formatting utilities
 │   ├── i18n.ts          # i18n hook and provider
 │   ├── themes.ts        # Theme definitions
-│   └── useBingWallpaper.ts # Bing wallpaper hook
+│   ├── useBingWallpaper.ts # Bing wallpaper hook
+│   └── useIsMobile.ts   # Responsive breakpoint detection hook
 └── locales/
     ├── en.json          # English translations
     └── zh.json          # Chinese translations
@@ -100,9 +101,27 @@ Custom implementation in `lib/i18n.ts`:
 - Hook-based: `const { t } = useI18n()`
 - Key format: `"section.subkey"` (e.g., `"nav.overview"`)
 
+## Layout & Sidebar
+
+The main layout (`Layout.tsx`) provides:
+
+- **Title bar** — fixed 48px header with sidebar toggle button and dashboard title
+- **Sidebar** — CSS-based with smooth width/transform transitions (0.3s ease)
+  - Desktop: push layout, sidebar slides in/out from left
+  - Mobile (<768px): overlay drawer with backdrop, hamburger menu in title bar
+- **State persistence** — sidebar open/closed state saved to localStorage
+- **Responsive detection** — `useIsMobile` hook for breakpoint-aware behavior
+
 ## Theming
 
 - Theme definitions in `lib/themes.ts`
 - CSS variables in `index.css` (`:root` and `[data-theme="..."]`)
 - `ThemeProvider` context + `useTheme` hook
-- 2 dark themes available
+- Multiple light and dark themes available (default, sepia, cyber, forest, sky, rose)
+
+## Responsive Design
+
+- Charts use responsive heights (180-200px mobile, 250-300px desktop)
+- Grid layouts adapt from single column (mobile) to multi-column (desktop)
+- Detail page headers wrap gracefully on small screens
+- Chart margins adjust to reduce Y-axis blank space on mobile
