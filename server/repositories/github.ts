@@ -165,9 +165,15 @@ export async function upsertGithubRelease(r: any) {
 }
 
 export async function getGithubReleases(accountId: number, repoId: number) {
-  return getDb().select().from(github_releases)
-    .where(and(eq(github_releases.account_id, accountId), eq(github_releases.repo_id, repoId)))
-    .orderBy(desc(github_releases.published_at));
+  const all = await getDb().select().from(github_releases)
+    .where(and(eq(github_releases.account_id, accountId), eq(github_releases.repo_id, repoId)));
+  const latest = new Map<string, typeof all[0]>();
+  for (const r of all) {
+    if (!latest.has(r.tag_name!) || r.release_id > latest.get(r.tag_name!)!.release_id) {
+      latest.set(r.tag_name!, r);
+    }
+  }
+  return [...latest.values()].sort((a, b) => (b.published_at ?? "").localeCompare(a.published_at ?? ""));
 }
 
 export async function insertGithubReleaseAsset(a: any) {

@@ -15,7 +15,7 @@ interface RepoLike {
   language: string | null;
   stars: number;
   forks: number;
-  pinned: boolean;
+  pinned: number | boolean;
 }
 
 interface Props {

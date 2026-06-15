@@ -1,6 +1,5 @@
-import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { api, type OverviewStats, type TimelineData, type Tweet, type Account } from "../../api";
+import { type OverviewStats, type TimelineData, type Tweet, type Account } from "../../api";
 import { StatCard } from "../../components/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { XIcon } from "../../components/BrandIcons";

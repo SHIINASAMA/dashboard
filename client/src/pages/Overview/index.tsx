@@ -24,12 +24,12 @@ export function Overview() {
     return <div className="text-center py-12 text-[var(--muted-foreground)]">{t("common.loading")}</div>;
   }
 
-  const ghFollowers = ghOverviews.reduce((s: number, o: { data?: { stats?: { followers?: number } } }) => s + (o.data?.stats?.followers ?? 0), 0);
-  const glFollowers = glOverviews.reduce((s: number, o: { data?: { stats?: { followers?: number } } }) => s + (o.data?.stats?.followers ?? 0), 0);
-  const redditPostKarma = redditOverviews.reduce((s: number, o: { data?: { stats?: { post_karma?: number } } }) => s + (o.data?.stats?.post_karma ?? 0), 0);
-  const redditCommentKarma = redditOverviews.reduce((s: number, o: { data?: { stats?: { comment_karma?: number } } }) => s + (o.data?.stats?.comment_karma ?? 0), 0);
-  const redditTotalPosts = redditOverviews.reduce((s: number, o: { data?: { totalPosts?: number } }) => s + (o.data?.totalPosts ?? 0), 0);
-  const redditTotalComments = redditOverviews.reduce((s: number, o: { data?: { totalComments?: number } }) => s + (o.data?.totalComments ?? 0), 0);
+  const ghFollowers = ghOverviews.reduce((s, o) => s + (o.data?.stats?.followers ?? 0), 0);
+  const glFollowers = glOverviews.reduce((s, o) => s + (o.data?.stats?.followers ?? 0), 0);
+  const redditPostKarma = redditOverviews.reduce((s, o) => s + (o.data?.stats?.post_karma ?? 0), 0);
+  const redditCommentKarma = redditOverviews.reduce((s, o) => s + (o.data?.stats?.comment_karma ?? 0), 0);
+  const redditTotalPosts = redditOverviews.reduce((s, o) => s + (o.data?.totalPosts ?? 0), 0);
+  const redditTotalComments = redditOverviews.reduce((s, o) => s + (o.data?.totalComments ?? 0), 0);
 
   const showSepX_GH = xAccounts.length > 0 && ghAccounts.length > 0;
   const showSepGH_GL = (xAccounts.length > 0 || ghAccounts.length > 0) && glAccounts.length > 0;

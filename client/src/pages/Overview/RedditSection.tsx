@@ -8,7 +8,6 @@ import {
   LineChart, Line, PieChart, Pie, Cell, Legend,
 } from "recharts";
 
-interface Datum { date: string; [k: string]: unknown }
 interface SubredditDatum { subreddit: string; count: number }
 
 interface Props {
