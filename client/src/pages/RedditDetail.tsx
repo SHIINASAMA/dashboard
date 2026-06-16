@@ -80,7 +80,7 @@ export function RedditDetail() {
 
   const isMobile = useIsMobile();
   const CHART_H = isMobile ? 180 : 250;
-  const MARGIN = isMobile ? { top: 5, right: 5, left: -15, bottom: 5 } : { top: 5, right: 5, left: 0, bottom: 5 };
+  const MARGIN = { top: 5, right: 5, left: 0, bottom: 5 };
 
   if (accountLoading) {
     return <div className="text-center py-12 text-[var(--muted-foreground)]">{t("common.loading")}</div>;
@@ -159,9 +159,9 @@ export function RedditDetail() {
                 <ResponsiveContainer width="100%" height={CHART_H}>
                   <LineChart data={timeline} margin={MARGIN}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                    <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                    <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
-                    <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }} />
+                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
+                    <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={30} />
+                    <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
                     <Legend />
                     <Line type="monotone" dataKey="post_karma" stroke="var(--chart-4)" name={t("redditDetail.postKarma")} dot={false} />
                     <Line type="monotone" dataKey="comment_karma" stroke="var(--chart-1)" name={t("redditDetail.commentKarma")} dot={false} />
@@ -194,8 +194,8 @@ export function RedditDetail() {
                     })()} margin={MARGIN}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                       <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                      <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
-                      <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }} />
+                      <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={30} />
+                      <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
                       <Legend />
                       <Bar dataKey="posts" fill="var(--chart-4)" name={t("redditDetail.totalPosts")} radius={[4, 4, 0, 0]} />
                       <Bar dataKey="comments" fill="var(--chart-1)" name={t("redditDetail.recentComments")} radius={[4, 4, 0, 0]} />
@@ -220,7 +220,7 @@ export function RedditDetail() {
                           <Cell key={i} fill={`var(--chart-${(i % 5) + 1})`} />
                         ))}
                       </Pie>
-                      <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "12px" }} />
+                      <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
                     </PieChart>
                   </ResponsiveContainer>
                   </div>

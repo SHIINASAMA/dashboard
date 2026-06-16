@@ -48,7 +48,7 @@ export function ProjectDetail() {
 
   const isMobile = useIsMobile();
   const CHART_H = isMobile ? 200 : 300;
-  const MARGIN = isMobile ? { top: 5, right: 5, left: -15, bottom: 5 } : { top: 5, right: 5, left: 0, bottom: 5 };
+  const MARGIN = { top: 5, right: 5, left: 0, bottom: 5 };
 
   if (!project) {
     return (
@@ -97,9 +97,9 @@ export function ProjectDetail() {
             <ResponsiveContainer width="100%" height={CHART_H}>
               <AreaChart data={snapshots} margin={MARGIN}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
-                <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }} />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
+                <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={30} />
+                <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
                 <Area type="monotone" dataKey="stars" stroke="var(--chart-3)" fill="color-mix(in oklch, var(--chart-3) 12%, transparent)" name={t("projectDetail.stars")} />
               </AreaChart>
             </ResponsiveContainer>
@@ -120,13 +120,13 @@ export function ProjectDetail() {
         <CardContent>
           {releases && releases.length > 0 ? (
             <div role="img" aria-label={t("projectDetail.releasesDownloads")}>
-            <ResponsiveContainer width="100%" height={Math.max(isMobile ? 140 : 200, releases.length * (isMobile ? 40 : 60))}>
-              <BarChart data={releases} layout="vertical" margin={isMobile ? { left: 0, right: 10, top: 5, bottom: 5 } : { left: 20, right: 40, top: 5, bottom: 5 }}>
+            <ResponsiveContainer width="100%" height={Math.max(isMobile ? 140 : 200, releases.length * (isMobile ? 36 : 60))}>
+              <BarChart data={releases} layout="vertical" margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis type="number" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
-                <YAxis type="category" dataKey="release_tag" tick={{ fontSize: isMobile ? 9 : 11, fill: "var(--muted-foreground)" }} width={isMobile ? 70 : 120} tickFormatter={(v: string) => v.length > (isMobile ? 8 : 15) ? v.slice(0, isMobile ? 8 : 15) + "…" : v} />
+                <XAxis type="number" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
+                <YAxis type="category" dataKey="release_tag" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={isMobile ? 50 : 120} tickFormatter={(v: string) => v.length > (isMobile ? 6 : 15) ? v.slice(0, isMobile ? 6 : 15) + "…" : v} />
                 <Tooltip
-                  contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "13px" }}
+                  contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }}
                   labelFormatter={(label) => {
                     const rel = releases.find((r) => r.release_tag === label);
                     return rel ? `${rel.name || rel.release_tag} — ${rel.released_at ? formatDate(rel.released_at) : ""}` : label;
