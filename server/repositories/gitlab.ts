@@ -1,4 +1,4 @@
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, type SQL } from "drizzle-orm";
 import { getDb } from "../db/connection";
 import {
   gitlab_stats, gitlab_projects, gitlab_project_snapshots,
@@ -27,13 +27,13 @@ export async function getGitlabTimeline(accountId: number) {
 }
 
 export async function getGitlabContributions(accountId: number, yr?: number) {
-  const conditions: any[] = [eq(gitlab_contributions.account_id, accountId)];
+  const conditions: SQL<unknown>[] = [eq(gitlab_contributions.account_id, accountId)];
   if (yr) conditions.push(sql`EXTRACT(YEAR FROM ${gitlab_contributions.date}) = ${String(yr)}`);
   return getDb().select({ date: gitlab_contributions.date, count: gitlab_contributions.count })
     .from(gitlab_contributions).where(and(...conditions)).orderBy(gitlab_contributions.date);
 }
 
-export async function upsertGitlabProject(project: any) {
+export async function upsertGitlabProject(project: { account_id: number; project_id: number; name: string; path_with_namespace: string; description: string | null; language: string | null; stars: number; forks: number; open_issues: number; topics: string; homepage: string | null; is_fork: number; visibility: string; created_at: string | null; updated_at: string | null; last_activity_at: string | null }) {
   await getDb().insert(gitlab_projects).values({ ...project, fetched_at: sql`NOW()` }).onConflictDoUpdate({
     target: [gitlab_projects.account_id, gitlab_projects.project_id],
     set: { stars: project.stars, forks: project.forks, open_issues: project.open_issues, topics: project.topics, language: project.language, description: project.description, visibility: project.visibility, updated_at: project.updated_at, last_activity_at: project.last_activity_at },
@@ -49,11 +49,11 @@ export async function setPinnedGitlabProjects(accountId: number, projectIds: num
   }
 }
 
-export async function insertGitlabStats(stats: any) {
+export async function insertGitlabStats(stats: { account_id: number; public_projects: number; followers: number; following: number }) {
   await getDb().insert(gitlab_stats).values({ ...stats, recorded_at: sql`NOW()` });
 }
 
-export async function upsertGitlabContribution(c: any) {
+export async function upsertGitlabContribution(c: { account_id: number; date: string; count: number }) {
   await getDb().insert(gitlab_contributions).values({ ...c, fetched_at: sql`NOW()` }).onConflictDoUpdate({
     target: [gitlab_contributions.account_id, gitlab_contributions.date],
     set: { count: c.count },
@@ -70,7 +70,7 @@ export async function upsertGitlabContributions(accountId: number, contributions
   });
 }
 
-export async function upsertGitlabProjectSnapshot(s: any) {
+export async function upsertGitlabProjectSnapshot(s: { account_id: number; project_id: number; stars: number; forks: number; open_issues: number; snapshot_date: string }) {
   await getDb().insert(gitlab_project_snapshots).values(s).onConflictDoUpdate({
     target: [gitlab_project_snapshots.account_id, gitlab_project_snapshots.project_id, gitlab_project_snapshots.snapshot_date],
     set: { stars: s.stars, forks: s.forks, open_issues: s.open_issues },
@@ -86,7 +86,7 @@ export async function getGitlabProjectSnapshots(accountId: number, projectId: nu
     .orderBy(gitlab_project_snapshots.snapshot_date);
 }
 
-export async function upsertGitlabRelease(r: any) {
+export async function upsertGitlabRelease(r: { account_id: number; project_id: number; release_tag: string; name: string | null; description: string | null; released_at: string | null; created_at: string | null }) {
   await getDb().insert(gitlab_releases).values({ ...r, fetched_at: sql`NOW()` }).onConflictDoUpdate({
     target: [gitlab_releases.account_id, gitlab_releases.project_id, gitlab_releases.release_tag],
     set: { name: r.name, description: r.description, released_at: r.released_at, created_at: r.created_at },
@@ -105,7 +105,7 @@ export async function getGitlabReleases(accountId: number, projectId: number) {
   return [...latest.values()].sort((a, b) => (b.released_at ?? "").localeCompare(a.released_at ?? ""));
 }
 
-export async function insertGitlabReleaseAsset(a: any) {
+export async function insertGitlabReleaseAsset(a: { release_db_id: number; name: string; download_count: number; size: number; file_type: string | null; url: string | null }) {
   await getDb().insert(gitlab_release_assets).values({
     release_id: a.release_db_id, name: a.name, download_count: a.download_count,
     size: a.size, file_type: a.file_type, url: a.url,

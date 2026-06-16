@@ -19,8 +19,8 @@ export async function bootstrap() {
   // 3. Connect to PostgreSQL
   try {
     await initPgPool();
-  } catch (e: any) {
-    console.error("❌ PostgreSQL unavailable:", e.message);
+  } catch (e: unknown) {
+    console.error("❌ PostgreSQL unavailable:", e instanceof Error ? e.message : String(e));
     process.exit(1);
   }
 
@@ -99,7 +99,7 @@ async function autoMigrate() {
 
     const cols = src.query(`PRAGMA table_info(${table})`).all() as { name: string }[];
     const colNames = cols.map(c => c.name);
-    const rows = src.query(`SELECT * FROM ${table}`).all() as Record<string, any>[];
+    const rows = src.query(`SELECT * FROM ${table}`).all() as Record<string, unknown>[];
     if (rows.length === 0) continue;
 
     const colQuoted = colNames.map(c => `"${c}"`).join(", ");
@@ -126,7 +126,7 @@ async function autoMigrate() {
     if (!tables.has(table)) continue;
     const cols = src.query(`PRAGMA table_info(${table})`).all() as { name: string }[];
     if (!cols.some(c => c.name === "id")) continue;
-    const maxRow = src.query(`SELECT MAX(id) as m FROM ${table}`).get() as any;
+    const maxRow = src.query(`SELECT MAX(id) as m FROM ${table}`).get() as { m: number } | null;
     const maxId = maxRow?.m || 0;
     if (maxId > 0) {
       try {
@@ -181,7 +181,7 @@ async function createMissingTables(): Promise<void> {
   const { rows: existing } = await pool.query(
     `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'`
   );
-  const existingSet = new Set(existing.map((r: any) => r.table_name));
+  const existingSet = new Set(existing.map((r: { table_name: string }) => r.table_name));
   const created: string[] = [];
   for (const { table, sql } of SCHEMA) {
     if (!existingSet.has(table)) {

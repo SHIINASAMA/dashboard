@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -5,6 +6,7 @@ import { api, type Account } from "../api";
 import { Card, CardContent } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { formatDateTime } from "../lib/datetime";
+import { useNow } from "../lib/use-now";
 import { AlertCircle, ArrowUpRight } from "lucide-react";
 
 export interface AccountListPageProps {
@@ -51,6 +53,16 @@ export default function AccountListPage({
   });
 
   const accounts = (data?.accounts || []).filter((a: Account) => a.platform === platform);
+  const now = useNow();
+
+  const staleMap = useMemo(() => {
+    const map = new Map<number, boolean>();
+    for (const a of accounts) {
+      const last = a.last_fetched_at ? new Date(a.last_fetched_at).getTime() : 0;
+      map.set(a.id, last > 0 && (now - last) > (a.fetch_interval || 30) * 60 * 1000);
+    }
+    return map;
+  }, [accounts, now]);
 
   if (isLoading) {
     return <div className="text-center py-12 text-[var(--muted-foreground)]">{t("common.loading")}</div>;
@@ -80,7 +92,7 @@ export default function AccountListPage({
           <div className="space-y-3">
             {accounts.map((account: Account) => {
               const lastFetched = account.last_fetched_at ? new Date(account.last_fetched_at) : null;
-              const isStale = lastFetched && (Date.now() - lastFetched.getTime()) > (account.fetch_interval || 30) * 60 * 1000;
+              const isStale = staleMap.get(account.id) ?? false;
 
               return (
                 <Card

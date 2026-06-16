@@ -1,4 +1,4 @@
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, type SQL } from "drizzle-orm";
 import { getDb } from "../db/connection";
 import {
   github_stats, github_repos, github_contributions,
@@ -29,12 +29,12 @@ export async function getGithubTimeline(accountId: number) {
 }
 
 export async function getGithubContributions(accountId: number, yr?: number) {
-  const conditions: any[] = [eq(github_contributions.account_id, accountId)];
+  const conditions: SQL<unknown>[] = [eq(github_contributions.account_id, accountId)];
   if (yr) conditions.push(sql`EXTRACT(YEAR FROM ${github_contributions.date}) = ${String(yr)}`);
   return getDb().select().from(github_contributions).where(and(...conditions)).orderBy(github_contributions.date);
 }
 
-export async function upsertGithubRepo(repo: any) {
+export async function upsertGithubRepo(repo: { account_id: number; repo_id: number; name: string; full_name: string; description: string | null; language: string | null; stars: number; forks: number; open_issues: number; topics: string; homepage: string | null; is_fork: number; created_at: string | null; updated_at: string | null; pushed_at: string | null }) {
   await getDb().insert(github_repos).values({ ...repo, fetched_at: sql`NOW()` }).onConflictDoUpdate({
     target: [github_repos.account_id, github_repos.repo_id],
     set: { stars: repo.stars, forks: repo.forks, open_issues: repo.open_issues, topics: repo.topics, language: repo.language, description: repo.description, pushed_at: repo.pushed_at, updated_at: repo.updated_at },
@@ -50,11 +50,11 @@ export async function setPinnedRepos(accountId: number, repoIds: number[]) {
   }
 }
 
-export async function insertGithubStats(stats: any) {
+export async function insertGithubStats(stats: { account_id: number; public_repos: number; public_gists: number; followers: number; following: number }) {
   await getDb().insert(github_stats).values({ ...stats, recorded_at: sql`NOW()` });
 }
 
-export async function upsertGithubContribution(c: any) {
+export async function upsertGithubContribution(c: { account_id: number; date: string; count: number; level: number }) {
   await getDb().insert(github_contributions).values({ ...c, fetched_at: sql`NOW()` }).onConflictDoUpdate({
     target: [github_contributions.account_id, github_contributions.date],
     set: { count: c.count, level: c.level },
@@ -71,7 +71,7 @@ export async function upsertGithubContributions(accountId: number, contributions
   });
 }
 
-export async function upsertGithubRepoSnapshot(s: any) {
+export async function upsertGithubRepoSnapshot(s: { account_id: number; repo_id: number; stars: number; forks: number; open_issues: number; snapshot_date: string }) {
   await getDb().insert(github_repo_snapshots).values(s).onConflictDoUpdate({
     target: [github_repo_snapshots.account_id, github_repo_snapshots.repo_id, github_repo_snapshots.snapshot_date],
     set: { stars: s.stars, forks: s.forks, open_issues: s.open_issues },
@@ -87,7 +87,7 @@ export async function getGithubRepoSnapshots(accountId: number, repoId: number) 
     .orderBy(github_repo_snapshots.snapshot_date);
 }
 
-export async function upsertGithubTrafficClones(t: any) {
+export async function upsertGithubTrafficClones(t: { account_id: number; repo_id: number; date: string; count: number; uniques: number }) {
   await getDb().insert(github_traffic_clones).values(t).onConflictDoUpdate({
     target: [github_traffic_clones.account_id, github_traffic_clones.repo_id, github_traffic_clones.date],
     set: { count: t.count, uniques: t.uniques },
@@ -100,7 +100,7 @@ export async function getGithubTrafficClones(accountId: number, repoId: number) 
     .orderBy(github_traffic_clones.date);
 }
 
-export async function upsertGithubTrafficViews(t: any) {
+export async function upsertGithubTrafficViews(t: { account_id: number; repo_id: number; date: string; count: number; uniques: number }) {
   await getDb().insert(github_traffic_views).values(t).onConflictDoUpdate({
     target: [github_traffic_views.account_id, github_traffic_views.repo_id, github_traffic_views.date],
     set: { count: t.count, uniques: t.uniques },
@@ -113,7 +113,7 @@ export async function getGithubTrafficViews(accountId: number, repoId: number) {
     .orderBy(github_traffic_views.date);
 }
 
-export async function upsertGithubReferrer(t: any) {
+export async function upsertGithubReferrer(t: { account_id: number; repo_id: number; referrer: string; count: number; uniques: number; snapshot_date: string }) {
   await getDb().insert(github_referrers).values(t).onConflictDoUpdate({
     target: [github_referrers.account_id, github_referrers.repo_id, github_referrers.referrer, github_referrers.snapshot_date],
     set: { count: t.count, uniques: t.uniques },
@@ -135,7 +135,7 @@ export async function getGithubReferrerHistory(accountId: number, repoId: number
     .orderBy(github_referrers.referrer, github_referrers.snapshot_date);
 }
 
-export async function upsertGithubPath(t: any) {
+export async function upsertGithubPath(t: { account_id: number; repo_id: number; path: string; title: string | null; count: number; uniques: number; snapshot_date: string }) {
   await getDb().insert(github_paths).values(t).onConflictDoUpdate({
     target: [github_paths.account_id, github_paths.repo_id, github_paths.path, github_paths.snapshot_date],
     set: { count: t.count, uniques: t.uniques, title: t.title },
@@ -157,7 +157,7 @@ export async function getGithubPathHistory(accountId: number, repoId: number) {
     .orderBy(github_paths.path, github_paths.snapshot_date);
 }
 
-export async function upsertGithubRelease(r: any) {
+export async function upsertGithubRelease(r: { account_id: number; repo_id: number; release_id: number; tag_name: string | null; name: string | null; body: string | null; prerelease: number; published_at: string | null; html_url: string | null; total_downloads: number }) {
   await getDb().insert(github_releases).values({ ...r, fetched_at: sql`NOW()` }).onConflictDoUpdate({
     target: [github_releases.account_id, github_releases.repo_id, github_releases.release_id],
     set: { tag_name: r.tag_name, name: r.name, body: r.body, prerelease: r.prerelease, published_at: r.published_at, html_url: r.html_url, total_downloads: r.total_downloads },
@@ -176,7 +176,7 @@ export async function getGithubReleases(accountId: number, repoId: number) {
   return [...latest.values()].sort((a, b) => (b.published_at ?? "").localeCompare(a.published_at ?? ""));
 }
 
-export async function insertGithubReleaseAsset(a: any) {
+export async function insertGithubReleaseAsset(a: { release_db_id: number; name: string; download_count: number; size: number; content_type: string | null; browser_download_url: string | null }) {
   await getDb().insert(github_release_assets).values({
     release_id: a.release_db_id, name: a.name, download_count: a.download_count,
     size: a.size, content_type: a.content_type, browser_download_url: a.browser_download_url,

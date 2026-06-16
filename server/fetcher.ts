@@ -21,24 +21,24 @@ async function apiCall<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
   for (let i = 0; i < retries; i++) {
     try {
       return await fn();
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (i >= retries - 1) throw err;
       const wait = (i + 1) * 10_000;
-      getLogger().warn(LOG_TAG, "API call failed (%s), retrying in %ds...", err.name || "Error", wait / 1000);
+      getLogger().warn(LOG_TAG, "API call failed (%s), retrying in %ds...", (err instanceof Error ? err.name : null) || "Error", wait / 1000);
       await sleep(wait);
     }
   }
   throw new Error("Unreachable");
 }
 
-function parseViews(views: any): number {
+function parseViews(views: Record<string, unknown> | null | undefined): number {
   if (!views) return 0;
   const c = views.count;
   if (c === undefined || c === null) return 0;
   return parseInt(String(c), 10) || 0;
 }
 
-function extractTweet(tweetObj: any, accountId: number) {
+function extractTweet(tweetObj: Record<string, unknown>, accountId: number) {
   const t = tweetObj.tweet || tweetObj;
   if (!t) return null;
   const legacy = t.legacy;
@@ -59,8 +59,8 @@ function extractTweet(tweetObj: any, accountId: number) {
     reply_count: legacy.replyCount || 0,
     view_count: parseViews(views),
     bookmark_count: legacy.bookmarkCount || 0,
-    is_quote: Boolean(legacy.isQuoteStatus) && !legacy.inReplyToStatusIdStr ? 1 : 0,
-    is_reply: Boolean(legacy.inReplyToStatusIdStr) ? 1 : 0,
+    is_quote: legacy.isQuoteStatus && !legacy.inReplyToStatusIdStr ? 1 : 0,
+    is_reply: legacy.inReplyToStatusIdStr ? 1 : 0,
     is_retweet: (legacy.fullText || "").startsWith("RT @") ? 1 : 0,
     media_urls: "[]",
     urls: "[]",
@@ -87,9 +87,9 @@ export async function fetchAccount(account: AccountRow) {
     const profileResp = await apiCall(() =>
       client.getUserApi().getUserByScreenName({ screenName: account.screen_name }),
     );
-    const userData = profileResp.data as any;
-    const legacy = userData.user?.legacy || {};
-    const userId = account.user_id || userData.user?.restId || userData.raw?.restId || "";
+    const userData = profileResp.data as Record<string, unknown>;
+    const legacy = (userData.user as Record<string, unknown>)?.legacy as Record<string, unknown> || {};
+    const userId = account.user_id || (userData.user as Record<string, unknown>)?.restId || (userData.raw as Record<string, unknown>)?.restId || "";
 
     if (!userId) {
       throw new Error(`Could not resolve user ID for @${account.screen_name}`);
@@ -102,12 +102,12 @@ export async function fetchAccount(account: AccountRow) {
     if (legacy && Object.keys(legacy).length > 0) {
       await insertUserStats({
         account_id: account.id,
-        followers_count: legacy.followersCount || 0,
-        following_count: legacy.friendsCount || 0,
-        tweet_count: legacy.statusesCount || 0,
-        listed_count: legacy.listedCount || 0,
+        followers_count: (legacy.followersCount as number) || 0,
+        following_count: (legacy.friendsCount as number) || 0,
+        tweet_count: (legacy.statusesCount as number) || 0,
+        listed_count: (legacy.listedCount as number) || 0,
       });
-      logger.info("Fetcher", "@%s: stats recorded (followers=%d)", account.screen_name, legacy.followersCount || 0);
+      logger.info("Fetcher", "@%s: stats recorded (followers=%d)", account.screen_name, (legacy.followersCount as number) || 0);
     }
 
     // Collect pinned IDs upfront
@@ -126,11 +126,11 @@ export async function fetchAccount(account: AccountRow) {
     let totalFetched = 0;
 
     while (totalFetched < maxTweets) {
-      const params = { userId, count: batchSize, ...(cursor ? { cursor } : {}) } as any;
+      const params = { userId, count: batchSize, ...(cursor ? { cursor } : {}) } as Record<string, unknown>;
       const resp = await apiCall(() =>
-        (client.getTweetApi() as any).getUserTweetsAndReplies(params),
-      ) as any;
-      const entries = ((resp.data as any).data || []) as any[];
+        (client.getTweetApi() as { getUserTweetsAndReplies: (p: Record<string, unknown>) => Promise<Record<string, unknown>> }).getUserTweetsAndReplies(params),
+      ) as Record<string, unknown>;
+      const entries = (((resp.data as Record<string, unknown>)?.data || []) as Array<Record<string, unknown>>);
 
       if (entries.length === 0) break;
 
@@ -139,7 +139,7 @@ export async function fetchAccount(account: AccountRow) {
       }
 
       totalFetched += entries.length;
-      const rawData = resp.data as any;
+      const rawData = resp.data as Record<string, unknown>;
       const cursorObj = rawData.cursor;
       cursor = cursorObj?.bottom?.value || cursorObj?.top?.value;
       if (!cursor) break;
@@ -161,7 +161,7 @@ export async function fetchAccount(account: AccountRow) {
         const detailResp = await apiCall(() =>
           client.getTweetApi().getTweetDetail({ focalTweetId: tid }),
         );
-        const entries = ((detailResp.data as any).data || []) as any[];
+        const entries = (((detailResp.data as Record<string, unknown>)?.data || []) as Array<Record<string, unknown>>);
 
         let found = false;
         for (const entry of entries) {
@@ -180,8 +180,8 @@ export async function fetchAccount(account: AccountRow) {
         }
 
         if (!found) errorCount++;
-      } catch (e: any) {
-        logger.warn("Fetcher", "@%s: detail error for %s: %s", account.screen_name, tid, e.message);
+      } catch (e: unknown) {
+        logger.warn("Fetcher", "@%s: detail error for %s: %s", account.screen_name, tid, e instanceof Error ? e.message : String(e));
         errorCount++;
       }
     }
@@ -195,8 +195,8 @@ export async function fetchAccount(account: AccountRow) {
 
     logger.info("Fetcher", "@%s: done", account.screen_name);
     return savedCount;
-  } catch (err: any) {
-    const msg = err.message || String(err);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
     getLogger().error("Fetcher", "@%s error: %s", account.screen_name, msg);
     await updateAccount(account.id, { error_message: msg, last_fetched_at: new Date().toISOString() });
     return 0;
@@ -207,7 +207,7 @@ export async function fetchAccount(account: AccountRow) {
 
 // ── Helper: recursively collect own tweet IDs from timeline entries ──
 
-function collectOwnTweets(entry: any, userId: string, out: Set<string>) {
+function collectOwnTweets(entry: Record<string, unknown>, userId: string, out: Set<string>) {
   collectFromEntry(entry, userId, out);
 
   // Walk nested replies (level 1)
@@ -228,7 +228,7 @@ function collectOwnTweets(entry: any, userId: string, out: Set<string>) {
   }
 }
 
-function collectFromEntry(entry: any, userId: string, out: Set<string>) {
+function collectFromEntry(entry: Record<string, unknown>, userId: string, out: Set<string>) {
   const t = entry.tweet || entry;
   if (!t) return;
   const legacy = t.legacy;

@@ -29,7 +29,7 @@ function formatLine(timestamp: string, level: LogLevel, component: string, messa
   return `[${timestamp}] [${LEVEL_LABEL[level]}] [${component}] ${message}\n`;
 }
 
-function interpolate(msg: string, args: any[]): string {
+function interpolate(msg: string, args: unknown[]): string {
   if (args.length === 0) return msg;
   let i = 0;
   return msg.replace(/%[sdifo]/g, () => {
@@ -44,10 +44,10 @@ function interpolate(msg: string, args: any[]): string {
 let _instance: Logger | null = null;
 
 export interface Logger {
-  info(component: string, msg: string, ...args: any[]): void;
-  warn(component: string, msg: string, ...args: any[]): void;
-  error(component: string, msg: string, ...args: any[]): void;
-  debug(component: string, msg: string, ...args: any[]): void;
+  info(component: string, msg: string, ...args: unknown[]): void;
+  warn(component: string, msg: string, ...args: unknown[]): void;
+  error(component: string, msg: string, ...args: unknown[]): void;
+  debug(component: string, msg: string, ...args: unknown[]): void;
 }
 
 class FileLogger implements Logger {
@@ -66,7 +66,7 @@ class FileLogger implements Logger {
     mkdirSync(this.dir, { recursive: true });
   }
 
-  private log(level: LogLevel, component: string, msg: string, args: any[]) {
+  private log(level: LogLevel, component: string, msg: string, args: unknown[]) {
     if (LEVEL_ORDER[level] < LEVEL_ORDER[this.level]) return;
     const ts = new Date().toISOString();
     const line = formatLine(ts, level, component, interpolate(msg, args));
@@ -90,10 +90,10 @@ class FileLogger implements Logger {
     renameSync(this.filePath, this.filePath + ".1");
   }
 
-  info(component: string, msg: string, ...args: any[]) { this.log("info", component, msg, args); }
-  warn(component: string, msg: string, ...args: any[]) { this.log("warn", component, msg, args); }
-  error(component: string, msg: string, ...args: any[]) { this.log("error", component, msg, args); }
-  debug(component: string, msg: string, ...args: any[]) { this.log("debug", component, msg, args); }
+  info(component: string, msg: string, ...args: unknown[]) { this.log("info", component, msg, args); }
+  warn(component: string, msg: string, ...args: unknown[]) { this.log("warn", component, msg, args); }
+  error(component: string, msg: string, ...args: unknown[]) { this.log("error", component, msg, args); }
+  debug(component: string, msg: string, ...args: unknown[]) { this.log("debug", component, msg, args); }
 }
 
 export function initLogger(opts: LoggerOptions): Logger {

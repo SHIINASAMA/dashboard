@@ -6,7 +6,7 @@ import type { AccountRow } from "../repositories/accounts";
 function encToken(plain: string): string {
   try { return encrypt(plain); } catch (e) {
     getLogger().error("Service", "encToken: encryption failed: %s", e instanceof Error ? e.message : String(e));
-    throw new Error("Encryption unavailable — cannot store credentials securely");
+    throw new Error("Encryption unavailable — cannot store credentials securely", { cause: e });
   }
 }
 

@@ -204,7 +204,7 @@ app.post("/api/auth/login", async (c) => {
       maxAge: SESSION_MAX_AGE,
     });
     return c.json({ ok: true, user: "admin", role: "admin" });
-  } catch (e) {
+  } catch {
     return c.json({ error: "Invalid request" }, 400);
   }
 });
@@ -235,7 +235,7 @@ app.post("/api/auth/change-password", async (c) => {
       return c.json({ error: "Current password is incorrect" }, 401);
     }
     return c.json({ ok: true });
-  } catch (e) {
+  } catch {
     return c.json({ error: "Invalid request" }, 400);
   }
 });
@@ -254,11 +254,12 @@ app.post("/api/users", async (c) => {
   if (password.length < 4) return c.json({ error: "Password must be at least 4 characters" }, 400);
   try {
     const user = await createUser(username, password, role || "user");
-    const { password_hash, ...pub } = user;
+    const pub = Object.fromEntries(Object.entries(user).filter(([k]) => k !== "password_hash"));
     return c.json(pub, 201);
-  } catch (e: any) {
-    if (e.message?.includes?.("UNIQUE")) return c.json({ error: "Username already exists" }, 409);
-    return c.json({ error: e.message }, 500);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes("UNIQUE")) return c.json({ error: "Username already exists" }, 409);
+    return c.json({ error: msg }, 500);
   }
 });
 
@@ -267,7 +268,7 @@ app.delete("/api/users/:id", async (c) => {
   const id = Number(c.req.param("id"));
   if (id === 1) return c.json({ error: "Cannot delete the bootstrap admin" }, 400);
   const body = await c.req.json().catch(() => ({}));
-  const { confirmToken } = body as any;
+  const { confirmToken } = body as { confirmToken?: string };
   if (!confirmToken || !validateConfirmToken(confirmToken)) {
     return c.json({ error: "Invalid or expired confirmation token" }, 400);
   }
@@ -307,8 +308,8 @@ app.get("/api/bing-wallpaper", async (c) => {
     const img = data.images?.[0];
     if (!img) return c.json({ error: "No image" }, 502);
     return c.redirect(`https://www.bing.com${img.url}`, 302);
-  } catch (e: any) {
-    return c.json({ error: e.message }, 500);
+  } catch (e: unknown) {
+    return c.json({ error: e instanceof Error ? e.message : String(e) }, 500);
   }
 });
 
@@ -318,7 +319,7 @@ app.post("/api/fetch/:id", async (c) => {
   const account = await getAccountById(id);
   if (!account) return c.json({ error: "Account not found" }, 404);
   if (!account.is_active) {
-    await updateAccount(id, { is_active: 1 } as any);
+    await updateAccount(id, { is_active: 1 } as Partial<import("./repositories/accounts").AccountRow>);
     account.is_active = 1;
   }
 
@@ -329,8 +330,8 @@ app.post("/api/fetch/:id", async (c) => {
     : fetchAccount;
 
   // Run in background to avoid proxy timeout on long fetches
-  fn(account).catch((e: any) =>
-    logger.error("Fetch", "Background error: %s", e.message)
+  fn(account).catch((e: unknown) =>
+    logger.error("Fetch", "Background error: %s", e instanceof Error ? e.message : String(e))
   );
   return c.json({ ok: true, message: `Fetch started for @${account.screen_name}` });
 });

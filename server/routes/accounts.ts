@@ -17,7 +17,7 @@ accountsRouter.get("/", async (c) => {
   const accounts = await accountsService.getAccounts(ownerId);
   const twitterIds = accounts.filter((a) => a.platform === "twitter").map((a) => a.id);
   const overview = await twitterRepo.getOverviewStats(twitterIds.length > 0 ? twitterIds : [-1]);
-  const accountsOut = accounts.map(({ auth_token, ...pub }) => pub);
+  const accountsOut = accounts.map((a) => Object.fromEntries(Object.entries(a).filter(([k]) => k !== "auth_token")));
   return c.json({ accounts: accountsOut, overview });
 });
 
@@ -44,11 +44,12 @@ accountsRouter.post("/", async (c) => {
       platform: platform || "twitter", instanceUrl: instanceUrl || null,
       authType: authType || null, ownerId,
     });
-    const { auth_token, ...pub } = account;
+    const pub = Object.fromEntries(Object.entries(account).filter(([k]) => k !== "auth_token"));
     return c.json(pub, 201);
-  } catch (e: any) {
-    if (e.message?.includes?.("UNIQUE")) return c.json({ error: "Account with this screen name already exists on this platform" }, 409);
-    return c.json({ error: e.message }, 500);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes("UNIQUE")) return c.json({ error: "Account with this screen name already exists on this platform" }, 409);
+    return c.json({ error: msg }, 500);
   }
 });
 
@@ -58,7 +59,7 @@ accountsRouter.put("/:id", async (c) => {
   const account = await accountsService.getAccountById(id);
   if (!account) return c.json({ error: "Not found" }, 404);
 
-  const updates: any = {};
+  const updates: Record<string, string | number | null> = {};
   if (body.screenName !== undefined) updates.screen_name = body.screenName;
   if (body.authToken !== undefined && body.authToken !== "") updates.auth_token = body.authToken;
   if (body.fetchInterval !== undefined) updates.fetch_interval = body.fetchInterval;
@@ -69,14 +70,14 @@ accountsRouter.put("/:id", async (c) => {
   await accountsService.updateAccount(id, updates);
   const updated = await accountsService.getAccountById(id);
   if (!updated) return c.json({ error: "Not found" }, 404);
-  const { auth_token, ...pub } = updated;
+  const pub = Object.fromEntries(Object.entries(updated).filter(([k]) => k !== "auth_token"));
   return c.json(pub);
 });
 
 accountsRouter.delete("/:id", async (c) => {
   const id = Number(c.req.param("id"));
   const body = await c.req.json().catch(() => ({}));
-  const { confirmToken } = body as any;
+  const { confirmToken } = body as { confirmToken?: string };
   if (!confirmToken || !validateConfirmToken(confirmToken)) {
     return c.json({ error: "Invalid or expired confirmation token" }, 400);
   }

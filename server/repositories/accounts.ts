@@ -1,4 +1,4 @@
-import { eq, and, desc, sql, isNull } from "drizzle-orm";
+import { eq, and, desc, sql, isNull, type SQL } from "drizzle-orm";
 import { getDb } from "../db/connection";
 import { accounts } from "../../db/schema";
 
@@ -23,7 +23,7 @@ export type AccountPublic = Omit<AccountRow, "auth_token">;
 
 export async function getAccounts(ownerId?: number) {
   const db = getDb();
-  const conditions: any[] = [isNull(accounts.deleted_at)];
+  const conditions: SQL<unknown>[] = [isNull(accounts.deleted_at)];
   if (ownerId !== undefined) conditions.push(eq(accounts.owner_id, ownerId));
   return db.select({
     id: accounts.id,
@@ -69,11 +69,11 @@ export async function createAccount(data: {
 }
 
 export async function updateAccount(id: number, updates: Partial<AccountRow>) {
-  await getDb().update(accounts).set({ ...updates, updated_at: sql`NOW()` } as any).where(eq(accounts.id, id));
+  await getDb().update(accounts).set({ ...updates, updated_at: sql`NOW()` }).where(eq(accounts.id, id));
 }
 
 export async function deleteAccount(id: number) {
   await getDb().update(accounts)
-    .set({ deleted_at: sql`NOW()` } as any)
+    .set({ deleted_at: sql`NOW()` })
     .where(eq(accounts.id, id));
 }

@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import type { Context } from "hono";
 import {
   getOverviewStats, getTimeline as getTimelineStats,
   getTopTweets, getCalendarData,
@@ -7,13 +8,13 @@ import {
 import { getAccounts } from "../services/accounts";
 import { getUserByUsername } from "../repositories/users";
 
-function parseAccountIds(c: any): number[] | undefined {
+function parseAccountIds(c: Context): number[] | undefined {
   const raw = c.req.query("accountIds");
   if (!raw) return undefined;
   return raw.split(",").map(Number).filter(Boolean);
 }
 
-async function getFilteredTwitterIds(c: any): Promise<number[]> {
+async function getFilteredTwitterIds(c: Context): Promise<number[]> {
   let ownerId: number | undefined;
   if (c.get("sessionRole") !== "admin") {
     const username = c.get("sessionUser") as string;

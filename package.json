@@ -6,6 +6,8 @@
     "server": "bun run server/index.ts",
     "client": "bun run --cwd client dev",
     "dev": "bun run server & bun run --cwd client dev",
+    "lint": "bun run --cwd client lint && bun run lint:server",
+    "lint:server": "bun run --cwd client eslint ../server/",
     "test": "bun test server/__tests__/",
     "typecheck": "bun run --cwd client tsc --noEmit"
   },
@@ -22,9 +24,12 @@
     "twitter-openapi-typescript": "^0.0.56"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/bun": "latest",
     "@types/lodash": "^4.17.0",
-    "@types/pg": "8.20.0"
+    "@types/pg": "8.20.0",
+    "eslint": "^10.3.0",
+    "typescript-eslint": "^8.59.2"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"

@@ -53,8 +53,8 @@ export async function updateUserPassword(id: number, passwordHash: string) {
 export async function deleteUser(id: number) {
   const db = getDb();
   await db.transaction(async (tx) => {
-    await tx.update(accounts).set({ deleted_at: sql`NOW()` } as any).where(eq(accounts.owner_id, id));
-    await tx.update(users).set({ deleted_at: sql`NOW()` } as any).where(eq(users.id, id));
+    await tx.update(accounts).set({ deleted_at: sql`NOW()` }).where(eq(accounts.owner_id, id));
+    await tx.update(users).set({ deleted_at: sql`NOW()` }).where(eq(users.id, id));
   });
 }
 

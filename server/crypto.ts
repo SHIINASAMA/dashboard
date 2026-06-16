@@ -39,7 +39,7 @@ function concatToU8(...bufs: (Buffer | Uint8Array)[]): Uint8Array {
 export function encrypt(plaintext: string): string {
   const key = getKey();
   const iv = randomBytes(IV_LEN);
-  const cipher = createCipheriv(ALGO, toU8(key), toU8(iv), { authTagLength: TAG_LEN } as any);
+  const cipher = createCipheriv(ALGO, toU8(key), toU8(iv), { authTagLength: TAG_LEN });
   const encrypted = concatToU8(cipher.update(plaintext, "utf8"), cipher.final());
   const tag = toU8(cipher.getAuthTag());
   return Buffer.from(concatToU8(iv, tag, Buffer.from(encrypted))).toString("hex");
@@ -52,8 +52,8 @@ export function decrypt(ciphertext: string): string {
   const iv = buf.subarray(0, IV_LEN);
   const tag = buf.subarray(IV_LEN, IV_LEN + TAG_LEN);
   const encrypted = buf.subarray(IV_LEN + TAG_LEN);
-  const decipher = createDecipheriv(ALGO, toU8(key), toU8(iv), { authTagLength: TAG_LEN } as any);
-  decipher.setAuthTag(tag as any);
+  const decipher = createDecipheriv(ALGO, toU8(key), toU8(iv), { authTagLength: TAG_LEN });
+  decipher.setAuthTag(tag);
   const decrypted = concatToU8(decipher.update(toU8(encrypted)), decipher.final());
   return Buffer.from(decrypted).toString("utf8");
 }
@@ -67,7 +67,7 @@ export function verifySignature(payload: string, signature: string): boolean {
     const expected = Buffer.from(sign(payload), "hex");
     const actual = Buffer.from(signature, "hex");
     if (expected.length !== actual.length) return false;
-    return timingSafeEqual(expected as any, actual as any);
+    return timingSafeEqual(expected, actual);
   } catch { return false; }
 }
 

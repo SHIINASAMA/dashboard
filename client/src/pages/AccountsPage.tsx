@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -7,6 +7,7 @@ import { Card, CardContent } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { GithubIcon, GitlabIcon, RedditIcon, XIcon } from "../components/BrandIcons";
 import { formatDateTime } from "../lib/datetime";
+import { useNow } from "../lib/use-now";
 import { Pencil, Plus, PlayCircle, PauseCircle, Trash2, AlertCircle, ArrowUpRight } from "lucide-react";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 
@@ -35,6 +36,16 @@ export default function AccountsPage() {
   });
 
   const accounts = (data?.accounts ?? []).filter((a: Account) => a.platform === tab);
+  const now = useNow();
+
+  const staleMap = useMemo(() => {
+    const map = new Map<number, boolean>();
+    for (const a of accounts) {
+      const last = a.last_fetched_at ? new Date(a.last_fetched_at).getTime() : 0;
+      map.set(a.id, last > 0 && (now - last) > (a.fetch_interval || 30) * 60 * 1000);
+    }
+    return map;
+  }, [accounts, now]);
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.deleteAccount(id),
@@ -103,7 +114,7 @@ export default function AccountsPage() {
           <div className="space-y-3">
             {accounts.map((account: Account) => {
               const lastFetched = account.last_fetched_at ? new Date(account.last_fetched_at) : null;
-              const isStale = lastFetched && (Date.now() - lastFetched.getTime()) > (account.fetch_interval || 30) * 60 * 1000;
+              const isStale = staleMap.get(account.id) ?? false;
 
               return (
                 <Card key={account.id}
@@ -212,12 +223,8 @@ function AccountFormPanel({
   const [cookieLoading, setCookieLoading] = useState(false);
   const cookieInitDone = useRef(false);
 
-  useEffect(() => {
-    // reset on each edit session open
-    cookieInitDone.current = false;
-    setCookieEntries([]);
-    setAuthToken("");
-  }, [account?.id]);
+  // cookie table state
+  const [cookieEntries, setCookieEntries] = useState<{ key: string; value: string }[]>([]);
 
   useEffect(() => {
     if (!editing || !isReddit || !isRedditPublic || !account || cookieInitDone.current) return;
@@ -234,10 +241,7 @@ function AccountFormPanel({
       }
       setCookieLoading(false);
     }).catch(() => setCookieLoading(false));
-  }, [editing, isReddit, isRedditPublic, account?.id]);
-
-  // cookie table state
-  const [cookieEntries, setCookieEntries] = useState<{ key: string; value: string }[]>([]);
+  }, [editing, isReddit, isRedditPublic, account]);
 
   const syncCookieToken = (entries: { key: string; value: string }[]) => {
     setCookieEntries(entries);

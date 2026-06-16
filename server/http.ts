@@ -5,5 +5,5 @@ export function fetchWithConfig(url: string, init?: RequestInit & { tls?: { reje
       rejectUnauthorized: process.env.TLS_REJECT_UNAUTHORIZED !== "false",
       ...init?.tls,
     },
-  } as any);
+  } as RequestInit & { tls?: { rejectUnauthorized: boolean } });
 }

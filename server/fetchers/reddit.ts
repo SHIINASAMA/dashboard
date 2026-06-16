@@ -31,11 +31,11 @@ async function getRedditAccessToken(refreshToken: string): Promise<string> {
     throw new Error(`Reddit OAuth error ${res.status}: ${body.slice(0, 200)}`);
   }
 
-  const data = await res.json() as any;
-  return data.access_token;
+  const data = await res.json() as Record<string, unknown>;
+  return data.access_token as string;
 }
 
-async function redditFetch(path: string, token: string): Promise<any> {
+async function redditFetch(path: string, token: string): Promise<Record<string, unknown>> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 30_000);
   const res = await fetchWithConfig(`https://oauth.reddit.com${path}`, {
@@ -172,12 +172,12 @@ export async function fetchRedditAccount(account: AccountRow) {
 
     getLogger().info("Reddit", "Fetch complete for @%s", username);
     return { posts: postCount, comments: commentCount };
-  } catch (e: any) {
+  } catch (e: unknown) {
     await updateAccount(account.id, {
       last_fetched_at: new Date().toISOString(),
-      error_message: e.message || "Reddit fetch failed",
+      error_message: e instanceof Error ? e.message : "Reddit fetch failed",
     });
-    getLogger().error("Reddit", "Fetch failed for @%s: %s", username, e.message);
+    getLogger().error("Reddit", "Fetch failed for @%s: %s", username, e instanceof Error ? e.message : String(e));
     throw e;
   } finally {
     runningRedditAccounts.delete(account.id);
@@ -188,7 +188,7 @@ export async function fetchRedditAccount(account: AccountRow) {
 // Uses curl subprocess to avoid Bun's TLS fingerprint detection by Reddit.
 // The old fetch()-based implementation is kept below as redditPublicFetchOld.
 
-async function redditPublicFetchCurl(path: string, cookies: Record<string, string>): Promise<any> {
+async function redditPublicFetchCurl(path: string, cookies: Record<string, string>): Promise<Record<string, unknown>> {
   const cookieStr = Object.entries(cookies)
     .map(([k, v]) => `${k}=${v}`)
     .join("; ");
@@ -226,35 +226,7 @@ async function redditPublicFetchCurl(path: string, cookies: Record<string, strin
     throw new Error(`Reddit public API ${status} for ${path}: ${body.slice(0, 200)}`);
   }
 
-  return JSON.parse(body);
-}
-
-// ── Public (cookie-based) fetcher (old, Bun fetch) ─────────────────
-// Kept as dead code reference. No longer used — replaced by redditPublicFetchCurl.
-// @ts-ignore — intentionally kept as reference, not used at runtime
-
-async function redditPublicFetchOld(path: string, cookies: Record<string, string>): Promise<any> {
-  const cookieStr = Object.entries(cookies)
-    .map(([k, v]) => `${k}=${v}`)
-    .join("; ");
-  const res = await fetch(`https://www.reddit.com${path}`, {
-    headers: {
-      "User-Agent": "Safari/537.36",
-      "Accept": "application/json",
-      "Cookie": cookieStr,
-    },
-    // @ts-ignore — Bun-specific tls option
-    tls: { rejectUnauthorized: false },
-  });
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    getLogger().error("Reddit", "Public API HTTP %d for %s: %s", res.status, path, body.slice(0, 300));
-    if (res.status === 403) {
-      throw new Error(`Reddit rejected the request (HTTP 403). This may be because: (1) your cookies have expired, or (2) the server IP is blocked by Reddit (common for datacenter/VPS IPs). Try from a residential IP or use OAuth instead. Body: ${body.slice(0, 200)}`);
-    }
-    throw new Error(`Reddit public API ${res.status} for ${path}: ${body.slice(0, 200)}`);
-  }
-  return res.json();
+  return JSON.parse(body) as Record<string, unknown>;
 }
 
 export async function fetchRedditPublicAccount(account: AccountRow) {
@@ -369,12 +341,12 @@ export async function fetchRedditPublicAccount(account: AccountRow) {
 
     getLogger().info("Reddit", "Fetch complete for @%s (public)", username);
     return { posts: postCount, comments: commentCount };
-  } catch (e: any) {
+  } catch (e: unknown) {
     await updateAccount(account.id, {
       last_fetched_at: new Date().toISOString(),
-      error_message: e.message || "Reddit public fetch failed",
+      error_message: e instanceof Error ? e.message : "Reddit public fetch failed",
     });
-    getLogger().error("Reddit", "Fetch failed for @%s (public): %s", username, e.message);
+    getLogger().error("Reddit", "Fetch failed for @%s (public): %s", username, e instanceof Error ? e.message : String(e));
     throw e;
   } finally {
     runningRedditAccounts.delete(account.id);

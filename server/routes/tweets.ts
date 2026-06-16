@@ -1,7 +1,8 @@
 import { Hono } from "hono";
+import type { Context } from "hono";
 import { getTweets, getTweetById } from "../repositories/twitter";
 
-function parseAccountIds(c: any): number[] | undefined {
+function parseAccountIds(c: Context): number[] | undefined {
   const raw = c.req.query("accountIds");
   if (!raw) return undefined;
   return raw.split(",").map(Number).filter(Boolean);

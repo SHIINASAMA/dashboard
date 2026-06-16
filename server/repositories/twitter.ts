@@ -1,4 +1,4 @@
-import { eq, and, desc, sql, count, inArray, gte, like } from "drizzle-orm";
+import { eq, and, desc, sql, count, inArray, gte, like, type SQL } from "drizzle-orm";
 import { getDb } from "../db/connection";
 import { tweets, user_stats } from "../../db/schema";
 import type { OverviewStats } from "../../shared/types";
@@ -17,7 +17,7 @@ export async function getOverviewStats(accountIds?: number[]) {
   if (isExplicitEmpty(accountIds)) return { ...EMPTY_OVERVIEW };
   const db = getDb();
   const tweetFilter = hasIds(accountIds) ? inArray(tweets.account_id, accountIds) : undefined;
-  const idsParam = tweetFilter as any;
+  const idsParam = tweetFilter;
 
   const tweetCond = and(eq(tweets.is_reply, 0), eq(tweets.is_retweet, 0), ...(idsParam ? [idsParam] : []));
   const [tw] = await db.select({
@@ -77,12 +77,12 @@ export async function getTweets(page: number, limit: number, sort: string, order
   if (isExplicitEmpty(accountIds)) return { data: [], total: 0, page, limit, totalPages: 0 };
   const db = getDb();
   const offset = (page - 1) * limit;
-  const conditions: any[] = [];
+  const conditions: SQL<unknown>[] = [];
   if (search) conditions.push(like(tweets.full_text, `%${search}%`));
   if (hasIds(accountIds)) conditions.push(inArray(tweets.account_id, accountIds));
   if (isReply !== undefined) conditions.push(eq(tweets.is_reply, isReply));
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-  const allowed: Record<string, any> = {
+  const allowed: Record<string, SQL<unknown>> = {
     created_at: tweets.created_at, favorite_count: tweets.favorite_count,
     retweet_count: tweets.retweet_count, reply_count: tweets.reply_count,
     view_count: tweets.view_count,
@@ -133,7 +133,7 @@ export async function getTimeline(months: number, accountIds?: number[]) {
 
 export async function getTopTweets(metric: string, limit: number, accountIds?: number[]) {
   if (isExplicitEmpty(accountIds)) return [];
-  const allowed: Record<string, any> = {
+  const allowed: Record<string, SQL<unknown>> = {
     favorite_count: tweets.favorite_count, retweet_count: tweets.retweet_count,
     reply_count: tweets.reply_count, view_count: tweets.view_count,
     bookmark_count: tweets.bookmark_count,
@@ -145,7 +145,7 @@ export async function getTopTweets(metric: string, limit: number, accountIds?: n
 
 export async function getCalendarData(yr: number, accountIds?: number[]) {
   if (isExplicitEmpty(accountIds)) return [];
-  const conditions: any[] = [sql`EXTRACT(YEAR FROM ${tweets.created_at}) = ${String(yr)}`];
+  const conditions: SQL<unknown>[] = [sql`EXTRACT(YEAR FROM ${tweets.created_at}) = ${String(yr)}`];
   if (hasIds(accountIds)) conditions.push(inArray(tweets.account_id, accountIds));
   return getDb().select({
     date: sql`DATE(${tweets.created_at})`.as<string>(),
@@ -157,7 +157,7 @@ export async function getCalendarData(yr: number, accountIds?: number[]) {
 }
 
 export async function upsertTweet(tweet: { id: string; account_id: number; full_text: string; created_at: string; favorite_count: number; retweet_count: number; reply_count: number; view_count: number; bookmark_count: number; is_quote: number; is_reply: number; is_retweet: number; media_urls: string; urls: string; hashtags: string; mentions: string; lang: string }) {
-  await getDb().insert(tweets).values({ ...tweet, fetched_at: sql`NOW()` } as any).onConflictDoUpdate({
+  await getDb().insert(tweets).values({ ...tweet, fetched_at: sql`NOW()` }).onConflictDoUpdate({
     target: tweets.id,
     set: {
       favorite_count: tweet.favorite_count,

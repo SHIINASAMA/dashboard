@@ -1,4 +1,4 @@
-import { eq, desc, sql, count } from "drizzle-orm";
+import { eq, desc, sql, count, type SQL } from "drizzle-orm";
 import { getDb } from "../db/connection";
 import { reddit_stats, reddit_posts, reddit_comments } from "../../db/schema";
 
@@ -13,14 +13,14 @@ export async function getRedditTimeline(accountId: number) {
   }).from(reddit_stats).where(eq(reddit_stats.account_id, accountId)).orderBy(reddit_stats.recorded_at);
 }
 
-export async function upsertRedditPost(post: any) {
+export async function upsertRedditPost(post: { id: string; account_id: number; title: string; selftext: string; subreddit: string; score: number; upvote_ratio: number; num_comments: number; permalink: string; url: string; is_self: number; created_utc: number }) {
   await getDb().insert(reddit_posts).values({ ...post, fetched_at: sql`NOW()` }).onConflictDoUpdate({
     target: reddit_posts.id,
     set: { score: post.score, upvote_ratio: post.upvote_ratio, num_comments: post.num_comments },
   });
 }
 
-export async function upsertRedditComment(comment: any) {
+export async function upsertRedditComment(comment: { id: string; account_id: number; body: string; subreddit: string; score: number; link_id: string; parent_id: string | null; depth: number; permalink: string; created_utc: number; is_submitter: number }) {
   await getDb().insert(reddit_comments).values({ ...comment, fetched_at: sql`NOW()` }).onConflictDoUpdate({
     target: reddit_comments.id,
     set: { score: comment.score },
@@ -29,7 +29,7 @@ export async function upsertRedditComment(comment: any) {
 
 export async function getRedditPosts(accountId: number, page: number, limit: number, sort = "score") {
   const offset = (page - 1) * limit;
-  const allowed: Record<string, any> = { score: reddit_posts.score, num_comments: reddit_posts.num_comments, created_utc: reddit_posts.created_utc };
+  const allowed: Record<string, SQL<unknown>> = { score: reddit_posts.score, num_comments: reddit_posts.num_comments, created_utc: reddit_posts.created_utc };
   const sortCol = allowed[sort] || reddit_posts.score;
   const [total] = await getDb().select({ count: count() }).from(reddit_posts).where(eq(reddit_posts.account_id, accountId));
   const data = await getDb().select().from(reddit_posts)

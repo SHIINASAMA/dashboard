@@ -32,9 +32,9 @@ async function glFetch<T>(apiBase: string, path: string, token: string): Promise
       "User-Agent": "dashboard",
     },
     signal: controller.signal,
-  }).catch((e: any) => {
+  }).catch((e: unknown) => {
     clearTimeout(timer);
-    throw new Error(`GitLab network error: ${e.message || e}`);
+    throw new Error(`GitLab network error: ${e instanceof Error ? e.message : String(e)}`);
   });
   clearTimeout(timer);
 
@@ -100,12 +100,12 @@ export async function fetchGitlabAccount(account: AccountRow) {
   runningGitlabAccounts.add(account.id);
   const apiBase = getApiBase(account);
   const token = account.auth_token;
-  let errorMessages: string[] = [];
+  const errorMessages: string[] = [];
 
   try {
     // 1. Fetch authenticated user profile
     getLogger().info("GitLab", "Fetching user profile from %s...", apiBase);
-    const { data: user } = await glFetch<any>(apiBase, "/user", token);
+    const { data: user } = await glFetch<Record<string, unknown>>(apiBase, "/user", token);
 
     if (!user || !user.id) {
       throw new Error("Invalid GitLab token or user not found");
@@ -121,61 +121,54 @@ export async function fetchGitlabAccount(account: AccountRow) {
 
     // 2. Fetch all projects for this user (membership=true for owned+contributed projects)
     getLogger().info("GitLab", "Fetching projects for %s...", account.screen_name);
-    const projects = await fetchAllPages<any>(
+    const projects = await fetchAllPages<Record<string, unknown>>(
       apiBase,
       `/users/${user.id}/projects?membership=true&order_by=updated_at`,
       token,
     );
 
     getLogger().info("GitLab", "Found %d projects for %s", projects.length, account.screen_name);
-    let totalStars = 0;
-    let totalForks = 0;
-    let totalIssues = 0;
     let projCount = 0;
 
     for (const p of projects) {
       if (!p.id) continue;
       projCount++;
 
-      const topics = JSON.stringify(p.topics || []);
+      const topics = JSON.stringify((p.topics as unknown[]) || []);
       const snapDate = new Date().toISOString().slice(0, 10);
 
       await upsertGitlabProject({
         account_id: account.id,
-        project_id: p.id,
-        name: p.name,
-        path_with_namespace: p.path_with_namespace || p.path,
-        description: p.description || null,
-        language: p.language || null,
-        stars: p.star_count ?? 0,
-        forks: p.forks_count ?? 0,
-        open_issues: p.open_issues_count ?? 0,
+        project_id: p.id as number,
+        name: p.name as string,
+        path_with_namespace: (p.path_with_namespace as string) || (p.path as string),
+        description: (p.description as string) || null,
+        language: (p.language as string) || null,
+        stars: (p.star_count as number) ?? 0,
+        forks: (p.forks_count as number) ?? 0,
+        open_issues: (p.open_issues_count as number) ?? 0,
         topics,
-        homepage: p.homepage || null,
+        homepage: (p.homepage as string) || null,
         is_fork: p.forked_from_project ? 1 : 0,
-        visibility: p.visibility || "public",
-        created_at: p.created_at || null,
-        updated_at: p.updated_at || null,
-        last_activity_at: p.last_activity_at || null,
+        visibility: (p.visibility as string) || "public",
+        created_at: (p.created_at as string) || null,
+        updated_at: (p.updated_at as string) || null,
+        last_activity_at: (p.last_activity_at as string) || null,
       });
 
       await upsertGitlabProjectSnapshot({
         account_id: account.id,
-        project_id: p.id,
-        stars: p.star_count ?? 0,
-        forks: p.forks_count ?? 0,
-        open_issues: p.open_issues_count ?? 0,
+        project_id: p.id as number,
+        stars: (p.star_count as number) ?? 0,
+        forks: (p.forks_count as number) ?? 0,
+        open_issues: (p.open_issues_count as number) ?? 0,
         snapshot_date: snapDate,
       });
-
-      totalStars += p.star_count ?? 0;
-      totalForks += p.forks_count ?? 0;
-      totalIssues += p.open_issues_count ?? 0;
 
       // 3. Fetch releases for this project
       try {
         await sleep(200);
-        const releases = await fetchAllPages<any>(
+        const releases = await fetchAllPages<Record<string, unknown>>(
           apiBase,
           `/projects/${p.id}/releases`,
           token,
@@ -187,12 +180,12 @@ export async function fetchGitlabAccount(account: AccountRow) {
 
           await upsertGitlabRelease({
             account_id: account.id,
-            project_id: p.id,
-            release_tag: rel.tag_name,
-            name: rel.name || null,
-            description: rel.description || null,
-            released_at: rel.released_at || null,
-            created_at: rel.created_at || null,
+            project_id: p.id as number,
+            release_tag: rel.tag_name as string,
+            name: (rel.name as string) || null,
+            description: (rel.description as string) || null,
+            released_at: (rel.released_at as string) || null,
+            created_at: (rel.created_at as string) || null,
           });
 
           // We'd need the release row id to insert assets, but since releases
@@ -200,8 +193,8 @@ export async function fetchGitlabAccount(account: AccountRow) {
           // store asset data at the same time. For now, we skip per-file assets
           // and just track the total download count on the release.
         }
-      } catch (e: any) {
-        errorMessages.push(`Releases for ${p.name}: ${e.message}`);
+      } catch (e: unknown) {
+        errorMessages.push(`Releases for ${p.name}: ${e instanceof Error ? e.message : String(e)}`);
       }
 
       if (projCount % 10 === 0 || projCount === projects.length) {
@@ -221,7 +214,7 @@ export async function fetchGitlabAccount(account: AccountRow) {
     try {
       getLogger().info("GitLab", "Fetching contribution events for %s...", account.screen_name);
       // We aggregate only push events (most likely to match GitHub-style contribution)
-      const events = await fetchAllPages<any>(
+      const events = await fetchAllPages<Record<string, unknown>>(
         apiBase,
         `/users/${user.id}/events?action=pushed&after=${new Date().getFullYear() - 1}-01-01`,
         token,
@@ -230,7 +223,7 @@ export async function fetchGitlabAccount(account: AccountRow) {
 
       const countByDate = new Map<string, number>();
       for (const event of events) {
-        const date = event.created_at?.slice(0, 10);
+        const date = (event.created_at as string)?.slice(0, 10);
         if (date) {
           countByDate.set(date, (countByDate.get(date) || 0) + 1);
         }
@@ -240,8 +233,8 @@ export async function fetchGitlabAccount(account: AccountRow) {
       await upsertGitlabContributions(account.id, entries);
 
       getLogger().info("GitLab", "Recorded %d contribution days for %s", countByDate.size, account.screen_name);
-    } catch (e: any) {
-      errorMessages.push(`Contributions: ${e.message}`);
+    } catch (e: unknown) {
+      errorMessages.push(`Contributions: ${e instanceof Error ? e.message : String(e)}`);
     }
 
     // Update account with success
@@ -253,12 +246,13 @@ export async function fetchGitlabAccount(account: AccountRow) {
 
     getLogger().info("GitLab", "Fetch complete for %s: %d projects", account.screen_name, projects.length);
     return projects.length;
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "GitLab fetch failed";
     await updateAccount(account.id, {
       last_fetched_at: new Date().toISOString(),
-      error_message: e.message || "GitLab fetch failed",
+      error_message: msg,
     });
-    getLogger().error("GitLab", "Fetch failed for %s: %s", account.screen_name, e.message);
+    getLogger().error("GitLab", "Fetch failed for %s: %s", account.screen_name, msg);
     throw e;
   } finally {
     runningGitlabAccounts.delete(account.id);

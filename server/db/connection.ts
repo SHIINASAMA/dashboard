@@ -16,8 +16,8 @@ export async function initPgPool(): Promise<void> {
     database: cfg.database,
     user: cfg.user,
     password: cfg.password,
-    max: (cfg as any).max ?? 5,
-    ssl: (cfg as any).ssl ? { rejectUnauthorized: false } : undefined,
+    max: cfg.max ?? 5,
+    ssl: cfg.ssl ? { rejectUnauthorized: false } : undefined,
   });
 
   const client = await _pgPool.connect();

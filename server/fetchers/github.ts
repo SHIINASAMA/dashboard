@@ -55,7 +55,7 @@ export async function fetchGithubAccount(account: AccountRow) {
     const username = account.screen_name;
 
     // 1. Fetch user profile
-    const userData: any = await ghFetch(`/users/${username}`, token);
+    const userData: Record<string, unknown> = await ghFetch(`/users/${username}`, token);
     await sleep(500);
 
     await insertGithubStats({
@@ -75,7 +75,7 @@ export async function fetchGithubAccount(account: AccountRow) {
 
     // 2. Fetch repos (up to 100)
     await sleep(1000);
-    const repos: any[] = await ghFetch(`/users/${username}/repos?per_page=100&sort=updated`, token);
+    const repos: Array<Record<string, unknown>> = await ghFetch(`/users/${username}/repos?per_page=100&sort=updated`, token);
 
     const today = new Date().toISOString().slice(0, 10);
     let trafficError: string | null = null;
@@ -140,8 +140,8 @@ export async function fetchGithubAccount(account: AccountRow) {
       const contributions = await fetchContributions(username, token, year);
       await upsertGithubContributions(account.id, contributions);
       getLogger().info("GitHub", "@%s: %d contributions saved", username, contributions.length);
-    } catch (e: any) {
-      getLogger().warn("GitHub", "@%s: contributions fetch skipped (%s)", username, e.message);
+    } catch (e: unknown) {
+      getLogger().warn("GitHub", "@%s: contributions fetch skipped (%s)", username, e instanceof Error ? e.message : String(e));
     }
 
     await updateAccount(account.id, {
@@ -151,8 +151,8 @@ export async function fetchGithubAccount(account: AccountRow) {
 
     getLogger().info("GitHub", "@%s: done", username);
     return true;
-  } catch (err: any) {
-    const msg = err.message || String(err);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
     getLogger().error("GitHub", "@%s error: %s", account.screen_name, msg);
     await updateAccount(account.id, { error_message: msg, last_fetched_at: new Date().toISOString() });
     return false;
@@ -166,7 +166,7 @@ async function fetchRepoTraffic(accountId: number, repoId: number, fullName: str
 
   // Clones
   try {
-    const clones: any = await ghFetch(`/repos/${owner}/${repo}/traffic/clones`, token);
+    const clones: Record<string, unknown> = await ghFetch(`/repos/${owner}/${repo}/traffic/clones`, token);
     if (clones?.clones) {
       for (const day of clones.clones) {
         await upsertGithubTrafficClones({
@@ -178,8 +178,8 @@ async function fetchRepoTraffic(accountId: number, repoId: number, fullName: str
         });
       }
     }
-  } catch (e: any) {
-    const msg = e.message || String(e);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
     if (msg.includes("403")) {
       if (msg.includes("blocked") || msg.includes("tos")) return null;
       return "GitHub API returned 403 — your PAT needs repo scope (classic token, not fine-grained)";
@@ -190,7 +190,7 @@ async function fetchRepoTraffic(accountId: number, repoId: number, fullName: str
 
   // Views
   try {
-    const views: any = await ghFetch(`/repos/${owner}/${repo}/traffic/views`, token);
+    const views: Record<string, unknown> = await ghFetch(`/repos/${owner}/${repo}/traffic/views`, token);
     if (views?.views) {
       for (const day of views.views) {
         await upsertGithubTrafficViews({
@@ -202,11 +202,11 @@ async function fetchRepoTraffic(accountId: number, repoId: number, fullName: str
         });
       }
     }
-  } catch (e) { /* views may be unavailable */ }
+  } catch { /* views may be unavailable */ }
 
   // Referrers
   try {
-    const referrers: any[] = await ghFetch(`/repos/${owner}/${repo}/traffic/popular/referrers`, token);
+    const referrers: Array<Record<string, unknown>> = await ghFetch(`/repos/${owner}/${repo}/traffic/popular/referrers`, token);
     const today = new Date().toISOString().slice(0, 10);
     if (referrers) {
       for (const r of referrers) {
@@ -220,11 +220,11 @@ async function fetchRepoTraffic(accountId: number, repoId: number, fullName: str
         });
       }
     }
-  } catch (e) { /* referrers may be unavailable */ }
+  } catch { /* referrers may be unavailable */ }
 
   // Popular paths
   try {
-    const paths: any[] = await ghFetch(`/repos/${owner}/${repo}/traffic/popular/paths`, token);
+    const paths: Array<Record<string, unknown>> = await ghFetch(`/repos/${owner}/${repo}/traffic/popular/paths`, token);
     const today = new Date().toISOString().slice(0, 10);
     if (paths) {
       for (const p of paths) {
@@ -239,18 +239,18 @@ async function fetchRepoTraffic(accountId: number, repoId: number, fullName: str
         });
       }
     }
-  } catch (e) { /* paths may be unavailable */ }
+  } catch { /* paths may be unavailable */ }
 
   return null;
 }
 
 async function fetchRepoReleases(accountId: number, repoId: number, fullName: string, token: string) {
   try {
-    const releases: any[] = await ghFetch(`/repos/${fullName}/releases?per_page=30`, token);
+    const releases: Array<Record<string, unknown>> = await ghFetch(`/repos/${fullName}/releases?per_page=30`, token);
     if (!releases) return;
 
     for (const release of releases) {
-      const totalDownloads = (release.assets || []).reduce((s: number, a: any) => s + (a.download_count || 0), 0);
+      const totalDownloads = (release.assets as Array<Record<string, unknown>> || []).reduce((s: number, a: Record<string, unknown>) => s + ((a.download_count as number) || 0), 0);
 
       await upsertGithubRelease({
         account_id: accountId,
@@ -278,19 +278,19 @@ async function fetchRepoReleases(accountId: number, repoId: number, fullName: st
         await getDb().delete(github_release_assets)
           .where(eq(github_release_assets.release_id, releaseRow.id));
 
-        for (const asset of release.assets || []) {
+        for (const asset of (release.assets as Array<Record<string, unknown>>) || []) {
           await insertGithubReleaseAsset({
             release_db_id: releaseRow.id,
-            name: asset.name,
-            download_count: asset.download_count || 0,
-            size: asset.size || 0,
-            content_type: asset.content_type || null,
-            browser_download_url: asset.browser_download_url || null,
+            name: asset.name as string,
+            download_count: (asset.download_count as number) || 0,
+            size: (asset.size as number) || 0,
+            content_type: (asset.content_type as string) || null,
+            browser_download_url: (asset.browser_download_url as string) || null,
           });
         }
       }
     }
-  } catch (e) { /* releases may be unavailable */ }
+  } catch { /* releases may be unavailable */ }
 }
 
 async function fetchContributions(username: string, token: string | undefined, year: number) {
@@ -332,10 +332,10 @@ async function fetchContributions(username: string, token: string | undefined, y
     }),
   });
 
-  const body: any = await res.json();
-  if (body.errors) throw new Error(body.errors[0].message);
+  const body: Record<string, unknown> = await res.json();
+  if (body.errors) throw new Error((body.errors as Array<Record<string, unknown>>)[0].message as string);
 
-  const weeks = body.data?.user?.contributionsCollection?.contributionCalendar?.weeks || [];
+  const weeks = ((((body.data as Record<string, unknown>)?.user as Record<string, unknown>)?.contributionsCollection as Record<string, unknown>)?.contributionCalendar as Record<string, unknown>)?.weeks || [];
   const days: { date: string; count: number; level: number }[] = [];
 
   for (const week of weeks) {
