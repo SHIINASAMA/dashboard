@@ -40,14 +40,14 @@ export function RedditSection({ postKarma, commentKarma, totalPosts, totalCommen
             {karmaTimeline.length > 0 ? (
               <div role="img" aria-label={t("overview.charts.redditKarma")}>
               <ResponsiveContainer width="100%" height={160}>
-                <LineChart data={karmaTimeline}>
+                <LineChart data={karmaTimeline} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v: string) => v.slice(5)} />
                   <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={30} />
                   <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
-                  <Line type="monotone" dataKey="post_karma" stroke="var(--primary)" strokeWidth={2} dot={false} name={t("overview.charts.redditPostKarma")} />
-                  <Line type="monotone" dataKey="comment_karma" stroke="var(--chart-1)" strokeWidth={2} dot={false} name={t("overview.charts.redditCommentKarma")} />
                   <Legend />
+                  <Line type="monotone" dataKey="post_karma" stroke="var(--chart-4)" name={t("overview.charts.redditPostKarma")} dot={false} />
+                  <Line type="monotone" dataKey="comment_karma" stroke="var(--chart-1)" name={t("overview.charts.redditCommentKarma")} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
               </div>

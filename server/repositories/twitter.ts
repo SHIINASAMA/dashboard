@@ -105,7 +105,6 @@ export async function getTimeline(months: number, accountIds?: number[]) {
   const since = new Date(); since.setMonth(since.getMonth() - months);
   const sinceStr = since.toISOString();
   const tweetFilter = hasIds(accountIds) ? inArray(tweets.account_id, accountIds) : undefined;
-  const statsFilter = hasIds(accountIds) ? inArray(user_stats.account_id, accountIds) : undefined;
 
   const dailyTweets = await db.select({
     date: sql`DATE(${tweets.created_at})`.as<string>(),
@@ -119,14 +118,20 @@ export async function getTimeline(months: number, accountIds?: number[]) {
     .groupBy(sql`DATE(${tweets.created_at})`)
     .orderBy(sql`DATE(${tweets.created_at})`);
 
-  const followerGrowth = await db.select({
-    date: user_stats.recorded_at,
-    followers_count: user_stats.followers_count,
-    following_count: user_stats.following_count,
-    tweet_count: user_stats.tweet_count,
-  }).from(user_stats)
-    .where(and(gte(user_stats.recorded_at, sinceStr), statsFilter))
-    .orderBy(user_stats.recorded_at);
+  const { rows: followerGrowth } = await db.execute<{
+    date: string;
+    followers_count: number;
+    following_count: number;
+    tweet_count: number;
+  }>(sql`SELECT DISTINCT ON (SUBSTRING(${user_stats.recorded_at}, 1, 10))
+    SUBSTRING(${user_stats.recorded_at}, 1, 10) AS date,
+    ${user_stats.followers_count},
+    ${user_stats.following_count},
+    ${user_stats.tweet_count}
+  FROM ${user_stats}
+  WHERE ${user_stats.account_id} = ANY(${accountIds && accountIds.length > 0 ? sql`ARRAY[${sql.join(accountIds.map(id => sql`${id}`), sql`, `)}]::int[]` : sql`ARRAY[]::int[]`})
+    AND ${user_stats.recorded_at} >= ${sinceStr}
+  ORDER BY SUBSTRING(${user_stats.recorded_at}, 1, 10), ${user_stats.recorded_at} DESC`);
 
   return { dailyTweets, followerGrowth };
 }

@@ -20,10 +20,20 @@ export async function getGitlabOverview(accountId: number) {
 }
 
 export async function getGitlabTimeline(accountId: number) {
-  return getDb().select({
-    date: gitlab_stats.recorded_at, public_projects: gitlab_stats.public_projects,
-    followers: gitlab_stats.followers, following: gitlab_stats.following,
-  }).from(gitlab_stats).where(eq(gitlab_stats.account_id, accountId)).orderBy(gitlab_stats.recorded_at);
+  const { rows } = await getDb().execute<{
+    date: string;
+    public_projects: number;
+    followers: number;
+    following: number;
+  }>(sql`SELECT DISTINCT ON (SUBSTRING(${gitlab_stats.recorded_at}, 1, 10))
+    SUBSTRING(${gitlab_stats.recorded_at}, 1, 10) AS date,
+    ${gitlab_stats.public_projects},
+    ${gitlab_stats.followers},
+    ${gitlab_stats.following}
+  FROM ${gitlab_stats}
+  WHERE ${gitlab_stats.account_id} = ${accountId}
+  ORDER BY SUBSTRING(${gitlab_stats.recorded_at}, 1, 10), ${gitlab_stats.recorded_at} DESC`);
+  return rows;
 }
 
 export async function getGitlabContributions(accountId: number, yr?: number) {

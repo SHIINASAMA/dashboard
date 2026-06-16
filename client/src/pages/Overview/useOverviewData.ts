@@ -123,7 +123,8 @@ export function useOverviewData() {
     .sort((a, b) => b.count - a.count)
     .slice(0, 10);
 
-  // Karma timeline across accounts
+  // Karma timeline across accounts — each account's timeline already returns
+  // one row per date (latest snapshot), so just sum across accounts per date
   const karmaByDate = new Map<string, { post: number; comment: number }>();
   for (const d of redditAllTimeline) {
     const cur = karmaByDate.get(d.date) || { post: 0, comment: 0 };

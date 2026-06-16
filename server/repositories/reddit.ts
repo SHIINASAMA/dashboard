@@ -7,10 +7,18 @@ export async function insertRedditStats(stats: { account_id: number; post_karma:
 }
 
 export async function getRedditTimeline(accountId: number) {
-  return getDb().select({
-    date: reddit_stats.recorded_at, post_karma: reddit_stats.post_karma,
-    comment_karma: reddit_stats.comment_karma,
-  }).from(reddit_stats).where(eq(reddit_stats.account_id, accountId)).orderBy(reddit_stats.recorded_at);
+  const { rows } = await getDb().execute<{
+    date: string;
+    post_karma: number;
+    comment_karma: number;
+  }>(sql`SELECT DISTINCT ON (SUBSTRING(${reddit_stats.recorded_at}, 1, 10))
+    SUBSTRING(${reddit_stats.recorded_at}, 1, 10) AS date,
+    ${reddit_stats.post_karma},
+    ${reddit_stats.comment_karma}
+  FROM ${reddit_stats}
+  WHERE ${reddit_stats.account_id} = ${accountId}
+  ORDER BY SUBSTRING(${reddit_stats.recorded_at}, 1, 10), ${reddit_stats.recorded_at} DESC`);
+  return rows;
 }
 
 export async function upsertRedditPost(post: { id: string; account_id: number; title: string; selftext: string; subreddit: string; score: number; upvote_ratio: number; num_comments: number; permalink: string; url: string; is_self: number; created_utc: number }) {

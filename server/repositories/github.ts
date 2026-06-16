@@ -22,10 +22,20 @@ export async function getGithubOverview(accountId: number) {
 }
 
 export async function getGithubTimeline(accountId: number) {
-  return getDb().select({
-    date: github_stats.recorded_at, public_repos: github_stats.public_repos,
-    followers: github_stats.followers, following: github_stats.following,
-  }).from(github_stats).where(eq(github_stats.account_id, accountId)).orderBy(github_stats.recorded_at);
+  const { rows } = await getDb().execute<{
+    date: string;
+    public_repos: number;
+    followers: number;
+    following: number;
+  }>(sql`SELECT DISTINCT ON (SUBSTRING(${github_stats.recorded_at}, 1, 10))
+    SUBSTRING(${github_stats.recorded_at}, 1, 10) AS date,
+    ${github_stats.public_repos},
+    ${github_stats.followers},
+    ${github_stats.following}
+  FROM ${github_stats}
+  WHERE ${github_stats.account_id} = ${accountId}
+  ORDER BY SUBSTRING(${github_stats.recorded_at}, 1, 10), ${github_stats.recorded_at} DESC`);
+  return rows;
 }
 
 export async function getGithubContributions(accountId: number, yr?: number) {
