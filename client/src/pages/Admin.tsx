@@ -3,12 +3,18 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api";
 import { Users, Plus, Trash2 } from "lucide-react";
+import { validatePassword } from "../lib/validatePassword";
+import { PasswordHints } from "../components/ui/PasswordHints";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 
 export function Admin() {
   const { t } = useTranslation();
   const [createError, setCreateError] = useState("");
   const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const pwRules = validatePassword(password).rules;
+  const pwMismatch = confirmPassword !== "" && password !== confirmPassword;
 
   const { data: authData } = useQuery({
     queryKey: ["auth", "me"],
@@ -33,11 +39,18 @@ export function Admin() {
     const role = (form.get("role") as string) || "user";
 
     if (!username) { setCreateError(t("admin.errorUsernameRequired")); return; }
-    if (password.length < 4) { setCreateError(t("admin.errorPasswordLength")); return; }
+    if (password !== confirmPassword) { setCreateError(t("admin.errorPasswordsDontMatch")); return; }
+    const pwResult = validatePassword(password);
+    if (!pwResult.valid) {
+      setCreateError(t(`admin.errorPassword${pwResult.errorKey}`));
+      return;
+    }
 
     try {
       await api.createUser({ username, password, role });
       formElement.reset();
+      setPassword("");
+      setConfirmPassword("");
       refetchUsers();
     } catch (err: unknown) {
       setCreateError(err instanceof Error ? err.message : String(err));
@@ -72,12 +85,20 @@ export function Admin() {
               />
               <input
                 name="password" type="password" placeholder={t("admin.password")} required
+                value={password} onChange={(e) => { setPassword(e.target.value); setCreateError(""); }}
                 className="px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
               />
               <select name="role" className="px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent text-sm">
                 <option value="user">{t("admin.roleUser")}</option>
               </select>
             </div>
+            {password && <PasswordHints rules={pwRules} t={t} namespace="admin" />}
+            <input
+              name="confirmPassword" type="password" placeholder={t("admin.confirmPassword")} required
+              value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); setCreateError(""); }}
+              className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+            />
+            {pwMismatch && <p className="text-xs text-[var(--danger)]">{t("admin.errorPasswordsDontMatch")}</p>}
             {createError && <p className="text-xs text-[var(--danger)]">{createError}</p>}
             <button
               type="submit"

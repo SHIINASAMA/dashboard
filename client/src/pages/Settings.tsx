@@ -5,6 +5,8 @@ import { themes, type Theme } from "../lib/themes";
 import { api } from "../api";
 import { getTimezone, setTimezone } from "../lib/datetime";
 import { useState } from "react";
+import { validatePassword } from "../lib/validatePassword";
+import { PasswordHints } from "../components/ui/PasswordHints";
 
 const MODE_ICONS = {
   system: Monitor,
@@ -24,6 +26,10 @@ export function Settings() {
   const [pwError, setPwError] = useState("");
   const [pwSuccess, setPwSuccess] = useState("");
   const [pwLoading, setPwLoading] = useState(false);
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const pwRules = validatePassword(newPw).rules;
+  const pwMismatch = confirmPw !== "" && newPw !== confirmPw;
 
   const handleChangePassword = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -39,8 +45,9 @@ export function Settings() {
       setPwError(t("settings.passwordsDontMatch"));
       return;
     }
-    if (newPassword.length < 4) {
-      setPwError(t("settings.passwordTooShort"));
+    const pwResult = validatePassword(newPassword);
+    if (!pwResult.valid) {
+      setPwError(t(`settings.password${pwResult.errorKey}`));
       return;
     }
 
@@ -49,6 +56,8 @@ export function Settings() {
       await api.changePassword(currentPassword, newPassword);
       setPwSuccess(t("settings.passwordChanged"));
       formElement.reset();
+      setNewPw("");
+      setConfirmPw("");
     } catch (err: unknown) {
       setPwError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -157,15 +166,19 @@ export function Settings() {
               <label className="block text-xs font-medium mb-1 text-[var(--muted-foreground)]">{t("settings.newPassword")}</label>
               <input
                 name="newPassword" type="password" autoComplete="new-password"
+                value={newPw} onChange={(e) => { setNewPw(e.target.value); setPwError(""); }}
                 className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] text-sm"
               />
+              {newPw && <div className="mt-2"><PasswordHints rules={pwRules} t={t} namespace="settings" /></div>}
             </div>
             <div>
               <label className="block text-xs font-medium mb-1 text-[var(--muted-foreground)]">{t("settings.confirmPassword")}</label>
               <input
                 name="confirmPassword" type="password" autoComplete="new-password"
+                value={confirmPw} onChange={(e) => { setConfirmPw(e.target.value); setPwError(""); }}
                 className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] text-sm"
               />
+              {pwMismatch && <p className="text-xs text-[var(--danger)] mt-1">{t("settings.passwordsDontMatch")}</p>}
             </div>
             {pwError && <p className="text-xs text-[var(--danger)]">{pwError}</p>}
             {pwSuccess && <p className="text-xs text-[var(--success)]">{pwSuccess}</p>}
