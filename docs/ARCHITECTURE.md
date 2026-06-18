@@ -73,7 +73,11 @@ dashboard/
 │       ├── App.tsx           # Route definitions + auth guards
 │       ├── api.ts            # API client + TypeScript interfaces
 │       ├── components/       # Shared UI components
-│       ├── lib/              # Utilities (cn(), themes)
+│       │   ├── Layout.tsx    # Sidebar + title bar + content area
+│       │   ├── Skeleton.tsx  # Skeleton loading primitives
+│       │   ├── NavigationProgress.tsx  # Top progress bar
+│       │   └── NavigatingOverlay.tsx   # Full-screen loading overlay
+│       ├── lib/              # Utilities (cn(), themes, hooks)
 │       ├── locales/          # i18n (en.json, zh.json)
 │       └── pages/            # Page components per platform
 ├── shared/                   # Shared types between client/server

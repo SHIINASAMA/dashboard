@@ -21,41 +21,18 @@ client/src/
 ├── App.tsx              # Route definitions, auth guards, QueryClient
 ├── api.ts               # API client functions + TypeScript interfaces
 ├── main.tsx             # Entry point
-├── index.css            # Tailwind imports + CSS variables (themes)
+├── index.css            # Tailwind imports + CSS variables (themes), animations
 ├── components/
 │   ├── Layout.tsx       # Main layout (sidebar + title bar + content area)
 │   ├── AccountListPage.tsx  # Reusable account list component
 │   ├── BrandIcons.tsx   # Platform brand icons
 │   ├── StatCard.tsx     # Reusable stat display card
+│   ├── Skeleton.tsx     # Skeleton loading primitives (StatCardSkeleton, ChartCardSkeleton)
+│   ├── NavigationProgress.tsx  # Top progress bar on route changes
+│   ├── NavigatingOverlay.tsx   # Full-screen spinner overlay during navigation
 │   ├── ThemeProvider.tsx # Theme context provider
 │   ├── useTheme.ts      # Theme hook
 │   └── ui/              # shadcn/ui primitives (dialog, dropdown, etc.)
-├── pages/
-│   ├── Login.tsx        # Login page
-│   ├── Overview.tsx     # Dashboard overview (all platforms)
-│   ├── AccountsPage.tsx # Account management
-│   ├── Admin.tsx        # User management (admin only)
-│   ├── Settings.tsx     # App settings
-│   ├── X.tsx            # X/Twitter account list
-│   ├── XDetail.tsx      # X/Twitter account detail
-│   ├── GitHub.tsx       # GitHub account list
-│   ├── GitHubDetail.tsx # GitHub account detail
-│   ├── RepoDetail.tsx   # GitHub repo detail
-│   ├── GitLab.tsx       # GitLab account list
-│   ├── GitLabDetail.tsx # GitLab account detail
-│   ├── ProjectDetail.tsx # GitLab project detail
-│   ├── Reddit.tsx       # Reddit account list
-│   └── RedditDetail.tsx # Reddit account detail
-├── lib/
-│   ├── utils.ts         # cn() helper, general utilities
-│   ├── datetime.ts      # Date formatting utilities
-│   ├── i18n.ts          # i18n hook and provider
-│   ├── themes.ts        # Theme definitions
-│   ├── useBingWallpaper.ts # Bing wallpaper hook
-│   └── useIsMobile.ts   # Responsive breakpoint detection hook
-└── locales/
-    ├── en.json          # English translations
-    └── zh.json          # Chinese translations
 ```
 
 ## Routing
@@ -121,7 +98,24 @@ The main layout (`Layout.tsx`) provides:
 
 ## Responsive Design
 
-- Charts use responsive heights (180-200px mobile, 250-300px desktop)
+- Charts use responsive heights (140-200px mobile, 160-300px desktop)
 - Grid layouts adapt from single column (mobile) to multi-column (desktop)
-- Detail page headers wrap gracefully on small screens
-- Chart margins adjust to reduce Y-axis blank space on mobile
+- Detail page headers wrap gracefully on small screens (`detail-header` CSS class)
+- Chart legends rendered as plain HTML outside Recharts for better space control
+- Touch targets meet WCAG 44px minimum (`min-h-11 min-w-11`)
+- Safe-area-inset padding for notched devices
+- PWA support via `manifest.json` with standalone display
+
+## Loading & Transitions
+
+Multi-layered loading strategy for smooth UX on slow networks:
+
+1. **HTML spinner** (`index.html`) — pure CSS spinner shown before JS loads
+2. **Auth check** — non-blocking; app renders immediately, `RequireAuth` redirects if needed
+3. **Route preloading** — sidebar `onMouseEnter`/`onFocus` triggers lazy chunk download
+4. **Navigating overlay** — semi-transparent backdrop + spinner during route transitions
+5. **Progress bar** — animated gradient bar at top of page on navigation
+6. **Skeleton loading** — `StatCardSkeleton` / `ChartCardSkeleton` replace "Loading..." text
+7. **Fade-in animation** — `page-enter` class on route content for smooth appearance
+
+Route transitions use `key={location.pathname}` on the Outlet wrapper to trigger re-mount and animation replay.
