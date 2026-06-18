@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { api, type Account } from "../api";
 import { Card, CardContent } from "./ui/card";
 import { Badge } from "./ui/badge";
+import { Skeleton } from "./Skeleton";
 import { formatDateTime } from "../lib/datetime";
 import { useNow } from "../lib/use-now";
 import { AlertCircle, ArrowUpRight } from "lucide-react";
@@ -65,7 +66,25 @@ export default function AccountListPage({
   }, [accounts, now]);
 
   if (isLoading) {
-    return <div className="text-center py-12 text-[var(--muted-foreground)]">{t("common.loading")}</div>;
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-6 w-6 rounded" />
+          <div><Skeleton className="h-6 w-24 mb-1" /><Skeleton className="h-3 w-40" /></div>
+        </div>
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 p-4 rounded-xl border border-[var(--border)] bg-[var(--card)]">
+              <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+              <div className="flex-1 min-w-0">
+                <Skeleton className="h-4 w-28 mb-2" />
+                <Skeleton className="h-3 w-48" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   const urlPrefix = PLATFORM_PREFIX[platform];

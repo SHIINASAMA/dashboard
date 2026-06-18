@@ -12,6 +12,7 @@ import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { ArrowLeft, ArrowUpRight, Play, RefreshCw, Trash2, AlertCircle, Star, GitFork, Code, Users, BookOpen, Settings2 } from "lucide-react";
 import { useIsMobile } from "../lib/useIsMobile";
 import { GitlabIcon } from "../components/BrandIcons";
+import { StatCardSkeleton, ChartCardSkeleton, Skeleton } from "../components/Skeleton";
 
 function ContributionHeatmap({ data, tNamespace }: { data: GitlabContribution[]; tNamespace: string }) {
   const { t } = useTranslation();
@@ -124,7 +125,20 @@ export function GitLabDetail() {
   const PIE_H = isMobile ? 200 : 300;
 
   if (accountLoading) {
-    return <div className="text-center py-12 text-[var(--muted-foreground)]">{t("common.loading")}</div>;
+    return (
+      <div className="space-y-6">
+        <div className="detail-header">
+          <div className="detail-header-body">
+            <Skeleton className="h-11 w-11 rounded-lg shrink-0" />
+            <div className="flex-1"><Skeleton className="h-6 w-32 mb-2" /><Skeleton className="h-3 w-48" /></div>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)}
+        </div>
+        <ChartCardSkeleton />
+      </div>
+    );
   }
 
   if (!account) {

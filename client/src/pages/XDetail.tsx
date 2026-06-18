@@ -16,6 +16,7 @@ import {
   AreaChart, Area,
 } from "recharts";
 import { useIsMobile } from "../lib/useIsMobile";
+import { StatCardSkeleton, ChartCardSkeleton, Skeleton } from "../components/Skeleton";
 
 export function XDetail() {
   const { t } = useTranslation();
@@ -65,7 +66,22 @@ export function XDetail() {
   const MARGIN = { top: 5, right: 5, left: 0, bottom: 5 };
 
   if (isLoading) {
-    return <div className="text-center py-12 text-[var(--muted-foreground)]">{t("common.loading")}</div>;
+    return (
+      <div className="space-y-6">
+        <div className="detail-header">
+          <div className="detail-header-body">
+            <Skeleton className="h-11 w-11 rounded-lg shrink-0" />
+            <div className="flex-1"><Skeleton className="h-6 w-32 mb-2" /><Skeleton className="h-3 w-48" /></div>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => <StatCardSkeleton key={i} />)}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ChartCardSkeleton /><ChartCardSkeleton />
+        </div>
+      </div>
+    );
   }
 
   if (!account) {

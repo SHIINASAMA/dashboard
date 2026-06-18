@@ -1,15 +1,32 @@
 import { useState, useEffect, useCallback } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { LayoutDashboard, PanelLeftClose, Settings, LogOut, Shield, Users, Menu } from "lucide-react";
 import { XIcon, GithubIcon, GitlabIcon, RedditIcon } from "./BrandIcons";
+import { NavigationProgress } from "./NavigationProgress";
+import { NavigatingOverlay } from "./NavigatingOverlay";
 import { api } from "../api";
 import { useBingWallpaper } from "../lib/useBingWallpaper";
 
 const SIDEBAR_KEY = "sidebar-state";
 const SIDEBAR_WIDTH = 240;
 const TITLEBAR_H = 48;
+
+const preloadMap: Record<string, () => Promise<unknown>> = {
+  "/": () => import("../pages/Overview"),
+  "/x": () => import("../pages/X"),
+  "/github": () => import("../pages/GitHub"),
+  "/gitlab": () => import("../pages/GitLab"),
+  "/reddit": () => import("../pages/Reddit"),
+  "/accounts": () => import("../pages/AccountsPage"),
+  "/admin": () => import("../pages/Admin"),
+  "/settings": () => import("../pages/Settings"),
+};
+
+function preloadRoute(path: string) {
+  preloadMap[path]?.();
+}
 
 function loadVisible(): boolean {
   try { return JSON.parse(localStorage.getItem(SIDEBAR_KEY) ?? "true"); } catch { return true; }
@@ -22,6 +39,7 @@ function saveVisible(v: boolean) {
 export default function Layout() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const { url } = useBingWallpaper();
   const [isOpen, setIsOpen] = useState(loadVisible);
@@ -89,6 +107,8 @@ export default function Layout() {
 
   return (
     <div className="h-dvh flex overflow-hidden bg-[var(--background)]">
+      <NavigationProgress />
+      <NavigatingOverlay />
       {/* Desktop sidebar */}
       {!isMobile && (
         <aside
@@ -110,6 +130,8 @@ export default function Layout() {
                   key={to}
                   to={to}
                   end={to === "/"}
+                  onMouseEnter={() => preloadRoute(to)}
+                  onFocus={() => preloadRoute(to)}
                   className={({ isActive }) =>
                     `relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                       isActive
@@ -132,6 +154,8 @@ export default function Layout() {
               {isAdmin && (
                 <NavLink
                   to="/admin"
+                  onMouseEnter={() => preloadRoute("/admin")}
+                  onFocus={() => preloadRoute("/admin")}
                   className={({ isActive }) =>
                     `relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                       isActive
@@ -151,6 +175,8 @@ export default function Layout() {
               )}
               <NavLink
                 to="/accounts"
+                onMouseEnter={() => preloadRoute("/accounts")}
+                onFocus={() => preloadRoute("/accounts")}
                 className={({ isActive }) =>
                   `relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isActive
@@ -169,6 +195,8 @@ export default function Layout() {
               </NavLink>
               <NavLink
                 to="/settings"
+                onMouseEnter={() => preloadRoute("/settings")}
+                onFocus={() => preloadRoute("/settings")}
                 className={({ isActive }) =>
                   `relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isActive
@@ -230,6 +258,8 @@ export default function Layout() {
                   to={to}
                   end={to === "/"}
                   onClick={closeMobile}
+                  onMouseEnter={() => preloadRoute(to)}
+                  onFocus={() => preloadRoute(to)}
                   className={({ isActive }) =>
                     `relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                       isActive
@@ -253,6 +283,8 @@ export default function Layout() {
                 <NavLink
                   to="/admin"
                   onClick={closeMobile}
+                  onMouseEnter={() => preloadRoute("/admin")}
+                  onFocus={() => preloadRoute("/admin")}
                   className={({ isActive }) =>
                     `relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                       isActive
@@ -273,6 +305,8 @@ export default function Layout() {
               <NavLink
                 to="/accounts"
                 onClick={closeMobile}
+                onMouseEnter={() => preloadRoute("/accounts")}
+                onFocus={() => preloadRoute("/accounts")}
                 className={({ isActive }) =>
                   `relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isActive
@@ -292,6 +326,8 @@ export default function Layout() {
               <NavLink
                 to="/settings"
                 onClick={closeMobile}
+                onMouseEnter={() => preloadRoute("/settings")}
+                onFocus={() => preloadRoute("/settings")}
                 className={({ isActive }) =>
                   `relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isActive
@@ -366,7 +402,9 @@ export default function Layout() {
               paddingRight: isMobile ? "max(16px, env(safe-area-inset-right))" : 32,
             }}
           >
-            <Outlet />
+            <div key={location.pathname} className="page-enter">
+              <Outlet />
+            </div>
           </div>
         </div>
       </main>

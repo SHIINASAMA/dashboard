@@ -31,20 +31,12 @@ const queryClient = new QueryClient({
 
 // Wrap the full app so that auth state is available everywhere
 function AuthContext({ children }: { children: React.ReactNode }) {
-  const { data, isLoading, isError } = useQuery({
+  const { data, isError } = useQuery({
     queryKey: ["auth", "me"],
     queryFn: () => api.checkAuth(),
     retry: 2,
     staleTime: 2 * 60_000,
   });
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-dvh bg-[var(--background)]">
-        <div className="text-sm text-[var(--muted-foreground)]">Loading...</div>
-      </div>
-    );
-  }
 
   // On error, treat as unauthenticated (server unreachable, etc.)
   if (isError || !data) {

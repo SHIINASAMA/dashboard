@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Badge } from "../../components/ui/badge";
 import { Separator } from "../../components/ui/separator";
 import { XIcon, GithubIcon, GitlabIcon, RedditIcon } from "../../components/BrandIcons";
+import { StatCardSkeleton, ChartCardSkeleton, Skeleton } from "../../components/Skeleton";
 import { useOverviewData } from "./useOverviewData";
 import { XSection } from "./XSection";
 import { GitHubSection } from "./GitHubSection";
@@ -21,7 +22,23 @@ export function Overview() {
   } = data;
 
   if (isLoading) {
-    return <div className="text-center py-12 text-[var(--muted-foreground)]">{t("common.loading")}</div>;
+    return (
+      <div className="space-y-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div><Skeleton className="h-6 w-32 mb-1" /></div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+          {Array.from({ length: 5 }).map((_, i) => <StatCardSkeleton key={i} />)}
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+          <ChartCardSkeleton /><ChartCardSkeleton />
+        </div>
+        <ChartCardSkeleton />
+      </div>
+    );
   }
 
   const ghFollowers = ghOverviews.reduce((s, o) => s + (o.data?.stats?.followers ?? 0), 0);
