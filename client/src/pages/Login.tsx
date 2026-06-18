@@ -37,7 +37,7 @@ export function Login() {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-[var(--background)]">
+    <div className="relative min-h-dvh flex items-center justify-center bg-[var(--background)] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]">
       {/* Bing wallpaper background */}
       <div className="absolute inset-0">
         <img
@@ -98,7 +98,7 @@ export function Login() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded text-white/50 hover:text-white/80 transition-colors"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded text-white/50 hover:text-white/80 transition-colors"
                   tabIndex={-1}
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}

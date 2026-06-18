@@ -13,7 +13,7 @@ import { useIsMobile } from "../lib/useIsMobile";
 import { RedditIcon } from "../components/BrandIcons";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 
 export function RedditDetail() {
@@ -82,6 +82,11 @@ export function RedditDetail() {
   const CHART_H = isMobile ? 180 : 250;
   const MARGIN = { top: 5, right: 5, left: 0, bottom: 5 };
 
+  const legendPayload = timeline && timeline.length > 1 ? [
+    { value: t("redditDetail.postKarma"), color: "var(--chart-4)" },
+    { value: t("redditDetail.commentKarma"), color: "var(--chart-1)" },
+  ] : [];
+
   if (accountLoading) {
     return <div className="text-center py-12 text-[var(--muted-foreground)]">{t("common.loading")}</div>;
   }
@@ -97,8 +102,9 @@ export function RedditDetail() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start gap-3">
-        <button onClick={() => navigate("/reddit")} className="p-2 rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("redditDetail.backToReddit")} aria-label={t("redditDetail.backToReddit")}>
+      <div className="detail-header">
+        <div className="detail-header-body">
+        <button onClick={() => navigate("/reddit")} className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("redditDetail.backToReddit")} aria-label={t("redditDetail.backToReddit")}>
           <ArrowLeft size={20} />
         </button>
         <div className="flex items-start gap-2 min-w-0 flex-1">
@@ -114,17 +120,18 @@ export function RedditDetail() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
+        </div>
+        <div className="detail-header-actions">
           <button onClick={() => _triggerMutation.mutate()} disabled={_triggerMutation.isPending}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-xs disabled:opacity-40">
+            className="flex items-center gap-1.5 px-3 py-2.5 min-h-11 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-xs disabled:opacity-40">
             <Play size={12} /> {_triggerMutation.isPending ? t("redditDetail.fetching") : t("redditDetail.fetchNow")}
           </button>
           <button onClick={() => { api.updateAccount(accountId, { isActive: !account.is_active }).then(() => queryClient.invalidateQueries({ queryKey: ["account", accountId] })); }}
-            className="p-1.5 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors" title={account.is_active ? t("redditDetail.disable") : t("redditDetail.enable")} aria-label={account.is_active ? t("redditDetail.disable") : t("redditDetail.enable")}>
+            className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors" title={account.is_active ? t("redditDetail.disable") : t("redditDetail.enable")} aria-label={account.is_active ? t("redditDetail.disable") : t("redditDetail.enable")}>
             <RefreshCw size={14} />
           </button>
           <button onClick={() => setShowDeleteDialog(true)}
-            className="p-1.5 rounded-lg bg-[var(--muted)] hover:bg-[var(--danger)]/10 transition-colors text-[var(--danger)]" title={t("redditDetail.delete")} aria-label={t("redditDetail.delete")}>
+            className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg bg-[var(--muted)] hover:bg-[var(--danger)]/10 transition-colors text-[var(--danger)]" title={t("redditDetail.delete")} aria-label={t("redditDetail.delete")}>
             <Trash2 size={14} />
           </button>
         </div>
@@ -156,13 +163,20 @@ export function RedditDetail() {
               </CardHeader>
               <CardContent>
                 <div role="img" aria-label={t("redditDetail.karmaTimeline")}>
+                <div className={`flex flex-wrap gap-x-3 gap-y-0.5 mb-2 ${isMobile ? "text-[10px]" : "text-xs"}`}>
+                  {legendPayload.map((e) => (
+                    <span key={e.value} className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: e.color }} />
+                      <span className="text-[var(--muted-foreground)]">{e.value}</span>
+                    </span>
+                  ))}
+                </div>
                 <ResponsiveContainer width="100%" height={CHART_H}>
                   <LineChart data={timeline} margin={MARGIN}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                     <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                     <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={30} />
                     <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
-                    <Legend />
                     <Line type="monotone" dataKey="post_karma" stroke="var(--chart-4)" name={t("redditDetail.postKarma")} dot={false} />
                     <Line type="monotone" dataKey="comment_karma" stroke="var(--chart-1)" name={t("redditDetail.commentKarma")} dot={false} />
                   </LineChart>
@@ -182,6 +196,10 @@ export function RedditDetail() {
                 </CardHeader>
                 <CardContent>
                   <div role="img" aria-label={t("redditDetail.dailyActivity")}>
+                  <div className={`flex flex-wrap gap-x-3 gap-y-0.5 mb-2 ${isMobile ? "text-[10px]" : "text-xs"}`}>
+                    <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: "var(--chart-4)" }} /><span className="text-[var(--muted-foreground)]">{t("redditDetail.totalPosts")}</span></span>
+                    <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: "var(--chart-1)" }} /><span className="text-[var(--muted-foreground)]">{t("redditDetail.recentComments")}</span></span>
+                  </div>
                   <ResponsiveContainer width="100%" height={CHART_H}>
                     <BarChart data={(() => {
                       const map: Record<string, { date: string; posts: number; comments: number }> = {};
@@ -196,7 +214,6 @@ export function RedditDetail() {
                       <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                       <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={30} />
                       <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
-                      <Legend />
                       <Bar dataKey="posts" fill="var(--chart-4)" name={t("redditDetail.totalPosts")} radius={[4, 4, 0, 0]} />
                       <Bar dataKey="comments" fill="var(--chart-1)" name={t("redditDetail.recentComments")} radius={[4, 4, 0, 0]} />
                     </BarChart>

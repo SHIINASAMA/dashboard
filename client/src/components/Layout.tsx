@@ -88,7 +88,7 @@ export default function Layout() {
   ] as const;
 
   return (
-    <div className="h-screen flex overflow-hidden bg-[var(--background)]">
+    <div className="h-dvh flex overflow-hidden bg-[var(--background)]">
       {/* Desktop sidebar */}
       {!isMobile && (
         <aside
@@ -212,7 +212,7 @@ export default function Layout() {
             onClick={closeMobile}
           />
           <aside
-            className="fixed inset-y-0 left-0 z-40 border-r border-[var(--border)] bg-[var(--card)] flex flex-col overflow-y-auto"
+            className="fixed inset-y-0 left-0 z-40 border-r border-[var(--border)] bg-[var(--card)] flex flex-col overflow-y-auto pb-[env(safe-area-inset-bottom)]"
             style={{
               width: SIDEBAR_WIDTH,
               transform: isOpen ? "translateX(0)" : "translateX(-100%)",
@@ -333,12 +333,12 @@ export default function Layout() {
 
         {/* Title bar */}
         <div
-          className="relative z-10 shrink-0 flex items-center gap-3 border-b border-[var(--border)] bg-[var(--card)]/80 backdrop-blur-sm"
-          style={{ height: TITLEBAR_H }}
+          className="relative z-10 shrink-0 flex items-center gap-3 border-b border-[var(--border)] bg-[var(--card)]/80 backdrop-blur-sm pt-[env(safe-area-inset-top)]"
+          style={{ minHeight: `calc(${TITLEBAR_H}px + env(safe-area-inset-top))` }}
         >
           <button
             onClick={toggle}
-            className="p-2 ml-2 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+            className="p-2.5 ml-2 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
             title={isOpen ? t("common.collapseSidebar") : t("common.expandSidebar")}
             aria-label={isOpen ? t("common.collapseSidebar") : t("common.expandSidebar")}
           >
@@ -356,10 +356,15 @@ export default function Layout() {
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-auto relative z-10">
+        <div className="flex-1 overflow-auto relative z-10 pb-[env(safe-area-inset-bottom)]">
           <div
             className="max-w-6xl mx-auto transition-all duration-300"
-            style={{ padding: isMobile ? "12px 16px" : "24px 32px" }}
+            style={{
+              paddingTop: isMobile ? 12 : 24,
+              paddingBottom: isMobile ? 12 : 24,
+              paddingLeft: isMobile ? "max(16px, env(safe-area-inset-left))" : 32,
+              paddingRight: isMobile ? "max(16px, env(safe-area-inset-right))" : 32,
+            }}
           >
             <Outlet />
           </div>

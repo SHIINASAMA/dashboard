@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/ca
 import { XIcon } from "../../components/BrandIcons";
 import { MessageSquare, Heart, Repeat2, Eye, TrendingUp } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
+import { useIsMobile } from "../../lib/useIsMobile";
 
 interface Props {
   stats: OverviewStats | undefined;
@@ -15,6 +16,8 @@ interface Props {
 
 export function XSection({ stats, timeline, topLiked, xAccounts }: Props) {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
+  const CHART_H = isMobile ? 140 : 160;
 
   if (xAccounts.length === 0) return null;
 
@@ -42,7 +45,7 @@ export function XSection({ stats, timeline, topLiked, xAccounts }: Props) {
           <CardContent className="p-0">
             {timeline?.dailyTweets && timeline.dailyTweets.length > 0 ? (
               <div role="img" aria-label={t("overview.charts.tweetActivity")}>
-              <ResponsiveContainer width="100%" height={160}>
+              <ResponsiveContainer width="100%" height={CHART_H}>
                 <BarChart data={timeline.dailyTweets}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v: string) => v.slice(5)} />
@@ -53,7 +56,7 @@ export function XSection({ stats, timeline, topLiked, xAccounts }: Props) {
               </ResponsiveContainer>
               </div>
             ) : (
-              <div className="flex items-center justify-center h-[160px] text-xs text-[var(--muted-foreground)]">{t("overview.charts.noTweetData")}</div>
+              <div className="flex items-center justify-center text-xs text-[var(--muted-foreground)]" style={{ height: CHART_H }}>{t("overview.charts.noTweetData")}</div>
             )}
           </CardContent>
         </Card>
@@ -62,7 +65,7 @@ export function XSection({ stats, timeline, topLiked, xAccounts }: Props) {
           <CardContent className="p-0">
             {timeline?.dailyTweets && timeline.dailyTweets.length > 0 ? (
               <div role="img" aria-label={t("overview.charts.dailyEngagement")}>
-              <ResponsiveContainer width="100%" height={160}>
+              <ResponsiveContainer width="100%" height={CHART_H}>
                 <AreaChart data={timeline.dailyTweets}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v: string) => v.slice(5)} />
@@ -74,7 +77,7 @@ export function XSection({ stats, timeline, topLiked, xAccounts }: Props) {
               </ResponsiveContainer>
               </div>
             ) : (
-              <div className="flex items-center justify-center h-[160px] text-xs text-[var(--muted-foreground)]">{t("overview.charts.noEngagementData")}</div>
+              <div className="flex items-center justify-center text-xs text-[var(--muted-foreground)]" style={{ height: CHART_H }}>{t("overview.charts.noEngagementData")}</div>
             )}
           </CardContent>
         </Card>
@@ -85,7 +88,7 @@ export function XSection({ stats, timeline, topLiked, xAccounts }: Props) {
           <CardContent className="p-0">
             {timeline?.dailyTweets && timeline.dailyTweets.length > 0 ? (
               <div role="img" aria-label={t("overview.charts.dailyViews")}>
-              <ResponsiveContainer width="100%" height={160}>
+              <ResponsiveContainer width="100%" height={CHART_H}>
                 <AreaChart data={timeline.dailyTweets}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v: string) => v.slice(5)} />
@@ -96,7 +99,7 @@ export function XSection({ stats, timeline, topLiked, xAccounts }: Props) {
               </ResponsiveContainer>
               </div>
             ) : (
-              <div className="flex items-center justify-center h-[160px] text-xs text-[var(--muted-foreground)]">{t("overview.charts.noTweetData")}</div>
+              <div className="flex items-center justify-center text-xs text-[var(--muted-foreground)]" style={{ height: CHART_H }}>{t("overview.charts.noTweetData")}</div>
             )}
           </CardContent>
         </Card>

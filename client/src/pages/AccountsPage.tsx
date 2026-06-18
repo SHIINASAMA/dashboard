@@ -67,24 +67,24 @@ export default function AccountsPage() {
   return (
     <div className="space-y-6">
       {/* header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-xl font-semibold">{t("settings.accounts")}</h2>
           <p className="text-sm text-[var(--muted-foreground)]">{t("settings.accountsDesc")}</p>
         </div>
         <button
           onClick={() => { setEditing(null); setAdding(true); }}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--primary)] text-white font-medium hover:opacity-90 transition-opacity"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 min-h-11 rounded-lg bg-[var(--primary)] text-white font-medium hover:opacity-90 transition-opacity shrink-0"
         >
           <Plus size={16} /> {t("settings.addAccount")}
         </button>
       </div>
 
       {/* platform tabs */}
-      <div className="flex gap-1 border-b border-[var(--border)]">
+      <div className="flex gap-1 border-b border-[var(--border)] overflow-x-auto">
         {TABS.map(({ key, headingKey, Icon }) => (
           <button key={key} onClick={() => { setTab(key); setAdding(false); setEditing(null); }}
-            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${tab === key ? "border-[var(--primary)] text-[var(--primary)]" : "border-transparent text-[var(--muted-foreground)] hover:text-[var(--foreground)]"}`}
+            className={`flex items-center gap-1.5 px-4 py-2.5 min-h-11 text-sm font-medium border-b-2 transition-colors -mb-px shrink-0 ${tab === key ? "border-[var(--primary)] text-[var(--primary)]" : "border-transparent text-[var(--muted-foreground)] hover:text-[var(--foreground)]"}`}
           >
             <Icon size={14} /> {t(headingKey)}
           </button>
@@ -126,7 +126,7 @@ export default function AccountsPage() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-semibold text-base">{currentTab.formatUsername(account)}</span>
-                          <ArrowUpRight size={14} className="text-[var(--muted-foreground)] opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <ArrowUpRight size={14} className="text-[var(--muted-foreground)] hover-reveal-icon" />
                           {!account.is_active && <Badge>{t("badge.inactive")}</Badge>}
                           {account.error_message && (
                             <Badge className="bg-[var(--danger)]/10 text-[var(--danger)]">{t("badge.error")}</Badge>
@@ -148,19 +148,19 @@ export default function AccountsPage() {
                       <div className="flex items-center gap-2 shrink-0">
                         <button
                           onClick={(e) => { e.stopPropagation(); setEditing(account); setAdding(false); }}
-                          className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors"
+                          className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors"
                           title={t("settings.edit")}
                         ><Pencil size={16} /></button>
                         <button
                           onClick={(e) => { e.stopPropagation(); toggleActiveMutation.mutate({ id: account.id, isActive: !account.is_active }); }}
                           disabled={toggleActiveMutation.isPending}
-                          className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors"
+                          className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors"
                           title={account.is_active ? t("settings.disable") : t("settings.enable")}
                         >{account.is_active ? <PauseCircle size={16} /> : <PlayCircle size={16} />}</button>
                         <button
                           onClick={(e) => { e.stopPropagation(); setDeleteTarget(account); }}
                           disabled={deleteMutation.isPending}
-                          className="p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--danger)]/10 text-[var(--danger)] transition-colors"
+                          className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg bg-[var(--muted)] hover:bg-[var(--danger)]/10 text-[var(--danger)] transition-colors"
                           title={t("settings.delete")}
                         ><Trash2 size={16} /></button>
                       </div>

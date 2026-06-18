@@ -61,8 +61,9 @@ export function ProjectDetail() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start gap-3">
-        <button onClick={() => navigate(`/gitlab/${aid}`)} className="p-2 rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("projectDetail.backToAccount")} aria-label={t("projectDetail.backToAccount")}>
+      <div className="detail-header">
+        <div className="detail-header-body">
+        <button onClick={() => navigate(`/gitlab/${aid}`)} className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("projectDetail.backToAccount")} aria-label={t("projectDetail.backToAccount")}>
           <ArrowLeft size={20} />
         </button>
         <div className="min-w-0 flex-1">
@@ -74,8 +75,9 @@ export function ProjectDetail() {
           </div>
           {project.description && <p className="text-sm text-[var(--muted-foreground)] line-clamp-2">{project.description}</p>}
         </div>
+        </div>
         <a href={`${instanceUrl}/${project.path_with_namespace}`} target="_blank" rel="noopener noreferrer"
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-xs shrink-0">
+          className="detail-header-actions flex items-center gap-1.5 px-3 py-2.5 min-h-11 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-xs">
           <ExternalLink size={12} /> {t("projectDetail.open")}
         </a>
       </div>

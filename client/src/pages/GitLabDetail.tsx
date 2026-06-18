@@ -138,8 +138,9 @@ export function GitLabDetail() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start gap-3">
-        <button onClick={() => navigate("/gitlab")} className="p-2 rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("gitlabDetail.backToGitLab")} aria-label={t("gitlabDetail.backToGitLab")}>
+      <div className="detail-header">
+        <div className="detail-header-body">
+        <button onClick={() => navigate("/gitlab")} className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("gitlabDetail.backToGitLab")} aria-label={t("gitlabDetail.backToGitLab")}>
           <ArrowLeft size={20} />
         </button>
         <div className="flex items-start gap-2 min-w-0 flex-1">
@@ -155,17 +156,18 @@ export function GitLabDetail() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
+        </div>
+        <div className="detail-header-actions">
           <button onClick={() => triggerMutation.mutate()} disabled={triggerMutation.isPending}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-xs disabled:opacity-40">
+            className="flex items-center gap-1.5 px-3 py-2.5 min-h-11 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-xs disabled:opacity-40">
             <Play size={12} /> {triggerMutation.isPending ? t("gitlabDetail.fetching") : t("gitlabDetail.fetchNow")}
           </button>
           <button onClick={() => { api.updateAccount(accountId, { isActive: !account.is_active }).then(() => queryClient.invalidateQueries({ queryKey: ["account", accountId] })); }}
-            className="p-1.5 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors" title={account.is_active ? t("gitlabDetail.disable") : t("gitlabDetail.enable")} aria-label={account.is_active ? t("gitlabDetail.disable") : t("gitlabDetail.enable")}>
+            className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors" title={account.is_active ? t("gitlabDetail.disable") : t("gitlabDetail.enable")} aria-label={account.is_active ? t("gitlabDetail.disable") : t("gitlabDetail.enable")}>
             <RefreshCw size={14} />
           </button>
           <button onClick={() => setShowDeleteDialog(true)}
-            className="p-1.5 rounded-lg bg-[var(--muted)] hover:bg-[var(--danger)]/10 transition-colors text-[var(--danger)]" title={t("gitlabDetail.delete")} aria-label={t("gitlabDetail.delete")}>
+            className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg bg-[var(--muted)] hover:bg-[var(--danger)]/10 transition-colors text-[var(--danger)]" title={t("gitlabDetail.delete")} aria-label={t("gitlabDetail.delete")}>
             <Trash2 size={14} />
           </button>
         </div>
@@ -194,7 +196,7 @@ export function GitLabDetail() {
                 <CardTitle className="flex items-center gap-2"><BookOpen size={18} /> {t("gitlabDetail.projectsHeading")}</CardTitle>
                 <button
                   onClick={openPinDialog}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-xs font-medium"
+                  className="flex items-center gap-1.5 px-3 py-2.5 min-h-11 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-xs font-medium"
                 >
                   <Settings2 size={14} /> {t("gitlabDetail.managePins")}
                 </button>

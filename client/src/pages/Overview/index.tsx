@@ -37,7 +37,7 @@ export function Overview() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold">{t("overview.heading")}</h2>
           {allAccounts.length === 0 && (
@@ -45,7 +45,7 @@ export function Overview() {
           )}
         </div>
         {allAccounts.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5 sm:justify-end">
             {allAccounts.map((acc: { id: number; platform: string; screen_name: string; error_message?: string | null }) => (
               <Badge key={acc.id} className="text-[10px] px-1.5 py-0.5 gap-0.5">
                 {acc.platform === "twitter" ? <XIcon /> : acc.platform === "github" ? <GithubIcon /> : acc.platform === "gitlab" ? <GitlabIcon /> : <RedditIcon />}

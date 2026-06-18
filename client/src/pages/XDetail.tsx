@@ -79,8 +79,9 @@ export function XDetail() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start gap-3">
-        <button onClick={() => navigate("/x")} className="p-2 rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("xDetail.backToX")} aria-label={t("xDetail.backToX")}>
+      <div className="detail-header">
+        <div className="detail-header-body">
+        <button onClick={() => navigate("/x")} className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("xDetail.backToX")} aria-label={t("xDetail.backToX")}>
           <ArrowLeft size={20} />
         </button>
         <div className="min-w-0 flex-1">
@@ -93,11 +94,12 @@ export function XDetail() {
             {account.last_fetched_at && ` • ${t("xDetail.lastFetched", { date: formatDateTime(account.last_fetched_at) })}`}
           </p>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
+        </div>
+        <div className="detail-header-actions">
           <button
             onClick={() => triggerMutation.mutate()}
             disabled={triggerMutation.isPending}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-xs disabled:opacity-40"
+            className="flex items-center gap-1.5 px-3 py-2.5 min-h-11 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-xs disabled:opacity-40"
           >
             <Play size={12} /> {triggerMutation.isPending ? t("xDetail.fetching") : t("xDetail.fetchNow")}
           </button>
@@ -107,7 +109,7 @@ export function XDetail() {
                 queryClient.invalidateQueries({ queryKey: ["account", accountId] })
               );
             }}
-            className="p-1.5 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors"
+            className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors"
             title={account.is_active ? t("xDetail.disable") : t("xDetail.enable")}
             aria-label={account.is_active ? t("xDetail.disable") : t("xDetail.enable")}
           >
@@ -115,7 +117,7 @@ export function XDetail() {
           </button>
           <button
             onClick={() => setShowDeleteDialog(true)}
-            className="p-1.5 rounded-lg bg-[var(--muted)] hover:bg-[var(--danger)]/10 transition-colors text-[var(--danger)]"
+            className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg bg-[var(--muted)] hover:bg-[var(--danger)]/10 transition-colors text-[var(--danger)]"
             title={t("xDetail.delete")}
             aria-label={t("xDetail.delete")}
           >
@@ -225,7 +227,7 @@ export function XDetail() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <p className="text-sm whitespace-pre-wrap break-words">{tweet.full_text}</p>
-                  <ExternalLink size={12} className="shrink-0 mt-1 text-[var(--muted-foreground)] opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <ExternalLink size={12} className="shrink-0 mt-1 text-[var(--muted-foreground)] hover-reveal-icon" />
                 </div>
                 <div className="flex items-center gap-4 text-xs text-[var(--muted-foreground)]">
                   <span className="flex items-center gap-1"><Heart size={12} /> {tweet.favorite_count}</span>
@@ -246,7 +248,7 @@ export function XDetail() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <p className="text-sm whitespace-pre-wrap break-words">{tweet.full_text}</p>
-                  <ExternalLink size={12} className="shrink-0 mt-1 text-[var(--muted-foreground)] opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <ExternalLink size={12} className="shrink-0 mt-1 text-[var(--muted-foreground)] hover-reveal-icon" />
                 </div>
                 <div className="flex items-center gap-4 text-xs text-[var(--muted-foreground)]">
                   <span className="flex items-center gap-1"><Heart size={12} /> {tweet.favorite_count}</span>

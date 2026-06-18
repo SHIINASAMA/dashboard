@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../co
 import { Badge } from "../components/ui/badge";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  AreaChart, Area, Legend, LineChart, Line,
+  AreaChart, Area, LineChart, Line,
 } from "recharts";
 import { ArrowLeft, Star, GitFork, Download, ExternalLink, Globe, TrendingUp, Eye, Activity, FileText } from "lucide-react";
 import { useIsMobile } from "../lib/useIsMobile";
@@ -131,8 +131,9 @@ export function RepoDetail() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start gap-3">
-        <button onClick={() => navigate(`/github/${aid}`)} className="p-2 rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("repoDetail.backToAccount")} aria-label={t("repoDetail.backToAccount")}>
+      <div className="detail-header">
+        <div className="detail-header-body">
+        <button onClick={() => navigate(`/github/${aid}`)} className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("repoDetail.backToAccount")} aria-label={t("repoDetail.backToAccount")}>
           <ArrowLeft size={20} />
         </button>
         <div className="min-w-0 flex-1">
@@ -143,8 +144,9 @@ export function RepoDetail() {
           </div>
           {repo.description && <p className="text-sm text-[var(--muted-foreground)] line-clamp-2">{repo.description}</p>}
         </div>
+        </div>
         <a href={`https://github.com/${repo.full_name}`} target="_blank" rel="noopener noreferrer"
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-xs shrink-0">
+          className="detail-header-actions flex items-center gap-1.5 px-3 py-2.5 min-h-11 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-xs">
           <ExternalLink size={12} /> {t("repoDetail.open")}
         </a>
       </div>
@@ -246,13 +248,20 @@ export function RepoDetail() {
           <CardContent>
             {referrerHistoryChart && referrerHistoryChart.length > 1 ? (
               <div role="img" aria-label={t("repoDetail.referringSites")}>
+              <div className={`flex flex-wrap gap-x-3 gap-y-0.5 mb-2 ${isMobile ? "text-[10px]" : "text-xs"}`}>
+                {(referrers?.slice(0, 5) || []).map((ref, i) => (
+                  <span key={ref.referrer} className="flex items-center gap-1">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: COLORS[i] }} />
+                    <span className="truncate max-w-[120px] text-[var(--muted-foreground)]">{ref.referrer}</span>
+                  </span>
+                ))}
+              </div>
               <ResponsiveContainer width="100%" height={TALL_CHART_H}>
                 <LineChart data={referrerHistoryChart} margin={MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                   <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={30} />
                   <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
-                  <Legend layout="horizontal" verticalAlign="bottom" align="left" wrapperStyle={{ fontSize: "12px" }} />
                   {(referrers?.slice(0, 5) || []).map((ref, i) => (
                     <Line key={ref.referrer} type="monotone" dataKey={ref.referrer} stroke={COLORS[i]} strokeWidth={2} dot={false} />
                   ))}
@@ -273,13 +282,20 @@ export function RepoDetail() {
           <CardContent>
             {pathHistoryChart && pathHistoryChart.length > 1 ? (
               <div role="img" aria-label={t("repoDetail.popularContent")}>
+              <div className={`flex flex-wrap gap-x-3 gap-y-0.5 mb-2 ${isMobile ? "text-[10px]" : "text-xs"}`}>
+                {(paths?.slice(0, 5) || []).map((p, i) => (
+                  <span key={p.path} className="flex items-center gap-1">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: COLORS[i] }} />
+                    <span className="truncate max-w-[120px] text-[var(--muted-foreground)]">{p.path}</span>
+                  </span>
+                ))}
+              </div>
               <ResponsiveContainer width="100%" height={TALL_CHART_H}>
                 <LineChart data={pathHistoryChart} margin={MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                   <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={30} />
                   <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
-                  <Legend layout="horizontal" verticalAlign="bottom" align="left" wrapperStyle={{ fontSize: "12px" }} />
                   {(paths?.slice(0, 5) || []).map((p, i) => (
                     <Line key={p.path} type="monotone" dataKey={p.path} stroke={COLORS[i]} strokeWidth={2} dot={false} />
                   ))}

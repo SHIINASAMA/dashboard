@@ -116,7 +116,7 @@ export default function AccountListPage({
                           <span className="font-semibold text-base">
                             {formatUsername ? formatUsername(account) : account.screen_name}
                           </span>
-                          <ArrowUpRight size={14} className="text-[var(--muted-foreground)] opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <ArrowUpRight size={14} className="text-[var(--muted-foreground)] hover-reveal-icon" />
                           {renderBadge?.(account)}
                           {!account.is_active && <Badge>{t("badge.inactive")}</Badge>}
                           {account.error_message && (

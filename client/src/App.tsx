@@ -40,7 +40,7 @@ function AuthContext({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-[var(--background)]">
+      <div className="flex items-center justify-center h-dvh bg-[var(--background)]">
         <div className="text-sm text-[var(--muted-foreground)]">Loading...</div>
       </div>
     );
@@ -79,7 +79,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthContext>
-          <Suspense fallback={<div className="flex items-center justify-center h-screen bg-[var(--background)]"><div className="text-sm text-[var(--muted-foreground)]">Loading...</div></div>}>
+          <Suspense fallback={<div className="flex items-center justify-center h-dvh bg-[var(--background)]"><div className="text-sm text-[var(--muted-foreground)]">Loading...</div></div>}>
             <Routes>
               <Route path="login" element={<RedirectIfAuth><Login /></RedirectIfAuth>} />
               <Route element={<RequireAuth><Layout /></RequireAuth>}>
