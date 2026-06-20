@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { api, type GithubRepo, type GithubRelease } from "../api";
@@ -6,7 +7,7 @@ import { formatDate } from "../lib/datetime";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area, LineChart, Line,
 } from "recharts";
 import { ArrowLeft, Star, GitFork, Download, ExternalLink, Globe, TrendingUp, Eye, Activity, FileText } from "lucide-react";
@@ -15,6 +16,100 @@ import { useIsMobile } from "../lib/useIsMobile";
 const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899", "#10b981", "#6366f1"];
 
 type HistoryPoint = Record<string, string | number>;
+
+function MultiSelectDropdown({ items, selected, onToggle, onSelectAll, onShowLatest, onDeselectAll, label, latestLabel, isMobile }: {
+  items: Array<{ id: string; label: string }>;
+  selected: Set<string>;
+  onToggle: (id: string) => void;
+  onSelectAll: () => void;
+  onShowLatest: () => void;
+  onDeselectAll: () => void;
+  label: string;
+  latestLabel: string;
+  isMobile: boolean;
+}) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const filtered = items.filter((item) =>
+    item.label.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const selectedItems = items.filter((item) => selected.has(item.id));
+
+  return (
+    <div ref={ref} className="relative">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-xs text-[var(--muted-foreground)] font-medium">{label}</span>
+        <button onClick={onSelectAll} className="text-xs text-[var(--primary)] hover:underline">{t("repoDetail.selectAll")}</button>
+        <button onClick={onShowLatest} className="text-xs text-[var(--primary)] hover:underline">{latestLabel}</button>
+        <button onClick={onDeselectAll} className="text-xs text-[var(--primary)] hover:underline">{t("repoDetail.hideAll")}</button>
+      </div>
+
+      {selectedItems.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {selectedItems.map((item) => (
+            <span key={item.id} className="inline-flex items-center gap-1 px-2 py-1 bg-[var(--secondary)] rounded-md text-xs text-[var(--secondary-foreground)]">
+              {item.label.length > (isMobile ? 8 : 15) ? item.label.slice(0, isMobile ? 8 : 15) + "..." : item.label}
+              <button onClick={() => onToggle(item.id)} className="ml-0.5 hover:text-[var(--foreground)] text-sm leading-none">&times;</button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-3 py-2 border border-[var(--border)] rounded-md text-sm text-left hover:bg-[var(--accent)] transition-colors"
+      >
+        <span className="text-[var(--muted-foreground)]">
+          {selected.size === items.length ? t("repoDetail.allSelected") : t("repoDetail.nSelected", { count: selected.size })}
+        </span>
+        <span className="text-[var(--muted-foreground)] text-xs">{open ? "\u25B2" : "\u25BC"}</span>
+      </button>
+
+      {open && (
+        <div className="absolute z-50 mt-1 w-full bg-[var(--card)] border border-[var(--border)] rounded-md shadow-lg max-h-64 overflow-hidden">
+          <div className="p-2 border-b border-[var(--border)]">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t("repoDetail.searchVersions")}
+              className="w-full px-3 py-1.5 text-sm bg-[var(--background)] border border-[var(--border)] rounded-md outline-none focus:border-[var(--primary)]"
+            />
+          </div>
+          <div className="overflow-y-auto max-h-48">
+            {filtered.length === 0 ? (
+              <p className="px-3 py-2 text-sm text-[var(--muted-foreground)]">{t("repoDetail.noResults")}</p>
+            ) : (
+              filtered.map((item) => (
+                <label key={item.id} className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-[var(--accent)] text-sm select-none">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(item.id)}
+                    onChange={() => onToggle(item.id)}
+                    className="accent-[var(--chart-1)] w-4 h-4"
+                  />
+                  <span className="text-[var(--foreground)] truncate">{item.label}</span>
+                </label>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function ReleaseDownloadsChart({ releases, isMobile }: { releases: GithubRelease[]; isMobile: boolean }) {
   const { t } = useTranslation();
@@ -31,42 +126,108 @@ function ReleaseDownloadsChart({ releases, isMobile }: { releases: GithubRelease
     .slice(0, 10)
     .map(([name]) => name);
 
-  const chartData = releases.map((rel) => {
+  const DEFAULT_VISIBLE = 10;
+  const [hiddenAssets, setHiddenAssets] = useState<Set<string>>(new Set());
+  const [hiddenReleases, setHiddenReleases] = useState<Set<number>>(() => {
+    if (releases.length <= DEFAULT_VISIBLE) return new Set();
+    return new Set(releases.slice(DEFAULT_VISIBLE).map((r) => r.id));
+  });
+
+  const visibleAssets = topAssets.filter((name) => !hiddenAssets.has(name));
+  const visibleReleases = releases.filter((r) => !hiddenReleases.has(r.id));
+
+  const chartData = visibleReleases.map((rel) => {
     const row: Record<string, string | number> = { tag_name: rel.tag_name || "" };
-    for (const name of topAssets) {
+    for (const name of visibleAssets) {
       const asset = rel.assets.find((a) => a.name === name);
       row[name] = asset?.download_count || 0;
     }
     return row;
   });
 
-  const chartHeight = Math.max(isMobile ? 140 : 200, releases.length * (isMobile ? 36 : 50));
+  const chartHeight = Math.max(isMobile ? 140 : 200, visibleReleases.length * (isMobile ? 36 : 50));
+
+  const toggleAsset = (name: string) => {
+    setHiddenAssets((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  };
+
+  const toggleRelease = (id: number) => {
+    setHiddenReleases((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const versionItems = releases.map((r) => ({ id: String(r.id), label: r.tag_name || `#${r.release_id}` }));
+  const selectedVersions = new Set(releases.filter((r) => !hiddenReleases.has(r.id)).map((r) => String(r.id)));
 
   return (
     <div role="img" aria-label={t("repoDetail.releasesDownloads")}>
-      <ResponsiveContainer width="100%" height={chartHeight}>
-        <BarChart data={chartData} layout="vertical" margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-          <XAxis type="number" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
-          <YAxis type="category" dataKey="tag_name" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={isMobile ? 50 : 120} tickFormatter={(v: string) => v.length > (isMobile ? 6 : 15) ? v.slice(0, isMobile ? 6 : 15) + "..." : v} />
-          <Tooltip
-            contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }}
-            formatter={(value: number, name: string) => [value.toLocaleString(), name]}
-            labelFormatter={(label) => {
-              const rel = releases.find((r) => r.tag_name === label);
-              return rel ? `${rel.name || rel.tag_name} — ${rel.published_at ? formatDate(rel.published_at) : ""}` : label;
-            }}
+      {releases.length > 1 && (
+        <div className="mb-3">
+          <MultiSelectDropdown
+            items={versionItems}
+            selected={selectedVersions}
+            onToggle={(id) => toggleRelease(Number(id))}
+            onSelectAll={() => setHiddenReleases(new Set())}
+            onShowLatest={() => setHiddenReleases(new Set(releases.slice(DEFAULT_VISIBLE).map((r) => r.id)))}
+            onDeselectAll={() => setHiddenReleases(new Set(releases.map((r) => r.id)))}
+            label={t("repoDetail.versions")}
+            latestLabel={t("repoDetail.latestN", { n: DEFAULT_VISIBLE })}
+            isMobile={isMobile}
           />
-          <Legend
-            iconSize={8}
-            wrapperStyle={{ fontSize: "10px" }}
-            formatter={(value: string) => value.length > (isMobile ? 10 : 20) ? value.slice(0, isMobile ? 10 : 20) + "..." : value}
-          />
-          {topAssets.map((name, i) => (
-            <Bar key={name} dataKey={name} stackId="assets" fill={COLORS[i % COLORS.length]} radius={i === topAssets.length - 1 ? [0, 4, 4, 0] : [0, 0, 0, 0]} />
-          ))}
-        </BarChart>
-      </ResponsiveContainer>
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3">
+        <span className="text-xs text-[var(--muted-foreground)] font-medium">{t("repoDetail.assets")}</span>
+        <button onClick={() => setHiddenAssets(new Set())} className="text-xs text-[var(--primary)] hover:underline">{t("repoDetail.selectAll")}</button>
+        <button onClick={() => setHiddenAssets(new Set(topAssets))} className="text-xs text-[var(--primary)] hover:underline">{t("repoDetail.hideAll")}</button>
+        {topAssets.map((name, i) => (
+          <label key={name} className="flex items-center gap-1.5 cursor-pointer text-xs select-none">
+            <input
+              type="checkbox"
+              checked={!hiddenAssets.has(name)}
+              onChange={() => toggleAsset(name)}
+              className="accent-[var(--chart-1)] w-4 h-4"
+            />
+            <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: COLORS[i % COLORS.length] }} />
+            <span className="text-[var(--muted-foreground)] truncate max-w-[120px]" title={name}>
+              {name.length > (isMobile ? 10 : 20) ? name.slice(0, isMobile ? 10 : 20) + "..." : name}
+            </span>
+          </label>
+        ))}
+      </div>
+
+      {visibleAssets.length === 0 || visibleReleases.length === 0 ? (
+        <p className="text-xs text-[var(--muted-foreground)] text-center py-4">{t("repoDetail.noAssetsSelected")}</p>
+      ) : (
+        <ResponsiveContainer width="100%" height={chartHeight}>
+          <BarChart data={chartData} layout="vertical" margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+            <XAxis type="number" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
+            <YAxis type="category" dataKey="tag_name" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={isMobile ? 50 : 120} tickFormatter={(v: string) => v.length > (isMobile ? 6 : 15) ? v.slice(0, isMobile ? 6 : 15) + "..." : v} />
+            <Tooltip
+              contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }}
+              formatter={(value: number, name: string) => [value.toLocaleString(), name]}
+              labelFormatter={(label) => {
+                const rel = releases.find((r) => r.tag_name === label);
+                return rel ? `${rel.name || rel.tag_name} — ${rel.published_at ? formatDate(rel.published_at) : ""}` : label;
+              }}
+            />
+            {visibleAssets.map((name, i) => (
+              <Bar key={name} dataKey={name} stackId="assets" fill={COLORS[topAssets.indexOf(name) % COLORS.length]} radius={i === visibleAssets.length - 1 ? [0, 4, 4, 0] : [0, 0, 0, 0]} />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
+      )}
     </div>
   );
 }
