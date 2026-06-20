@@ -1,10 +1,11 @@
-import { eq, and, desc, sql, type SQL } from "drizzle-orm";
+import { eq, and, desc, sql, inArray, type SQL } from "drizzle-orm";
 import { getDb } from "../db/connection";
 import {
   github_stats, github_repos, github_contributions,
   github_repo_snapshots, github_traffic_clones, github_traffic_views,
   github_referrers, github_paths, github_releases, github_release_assets,
 } from "../../db/schema";
+
 
 export async function getGithubOverview(accountId: number) {
   const [latest] = await getDb().select().from(github_stats)
@@ -183,7 +184,24 @@ export async function getGithubReleases(accountId: number, repoId: number) {
       latest.set(r.tag_name!, r);
     }
   }
-  return [...latest.values()].sort((a, b) => (b.published_at ?? "").localeCompare(a.published_at ?? ""));
+  const releases = [...latest.values()].sort((a, b) => (b.published_at ?? "").localeCompare(a.published_at ?? ""));
+
+  const releaseIds = releases.map((r) => r.id);
+  const allAssets = releaseIds.length > 0
+    ? await getDb().select().from(github_release_assets)
+        .where(inArray(github_release_assets.release_id, releaseIds))
+    : [];
+
+  const assetsMap = new Map<number, typeof allAssets>();
+  for (const a of allAssets) {
+    if (!assetsMap.has(a.release_id)) assetsMap.set(a.release_id, []);
+    assetsMap.get(a.release_id)!.push(a);
+  }
+
+  return releases.map((r) => ({
+    ...r,
+    assets: assetsMap.get(r.id) || [],
+  }));
 }
 
 export async function insertGithubReleaseAsset(a: { release_db_id: number; name: string; download_count: number; size: number; content_type: string | null; browser_download_url: string | null }) {
@@ -191,4 +209,9 @@ export async function insertGithubReleaseAsset(a: { release_db_id: number; name:
     release_id: a.release_db_id, name: a.name, download_count: a.download_count,
     size: a.size, content_type: a.content_type, browser_download_url: a.browser_download_url,
   });
+}
+
+export async function getGithubReleaseAssets(releaseDbId: number) {
+  return getDb().select().from(github_release_assets)
+    .where(eq(github_release_assets.release_id, releaseDbId));
 }

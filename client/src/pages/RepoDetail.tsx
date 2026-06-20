@@ -1,20 +1,75 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { api, type GithubRepo } from "../api";
+import { api, type GithubRepo, type GithubRelease } from "../api";
 import { formatDate } from "../lib/datetime";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
   AreaChart, Area, LineChart, Line,
 } from "recharts";
 import { ArrowLeft, Star, GitFork, Download, ExternalLink, Globe, TrendingUp, Eye, Activity, FileText } from "lucide-react";
 import { useIsMobile } from "../lib/useIsMobile";
 
-const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
+const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899", "#10b981", "#6366f1"];
 
 type HistoryPoint = Record<string, string | number>;
+
+function ReleaseDownloadsChart({ releases, isMobile }: { releases: GithubRelease[]; isMobile: boolean }) {
+  const { t } = useTranslation();
+
+  const assetNames = new Map<string, number>();
+  for (const rel of releases) {
+    for (const a of rel.assets) {
+      assetNames.set(a.name, (assetNames.get(a.name) || 0) + a.download_count);
+    }
+  }
+
+  const topAssets = [...assetNames.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([name]) => name);
+
+  const chartData = releases.map((rel) => {
+    const row: Record<string, string | number> = { tag_name: rel.tag_name || "" };
+    for (const name of topAssets) {
+      const asset = rel.assets.find((a) => a.name === name);
+      row[name] = asset?.download_count || 0;
+    }
+    return row;
+  });
+
+  const chartHeight = Math.max(isMobile ? 140 : 200, releases.length * (isMobile ? 36 : 50));
+
+  return (
+    <div role="img" aria-label={t("repoDetail.releasesDownloads")}>
+      <ResponsiveContainer width="100%" height={chartHeight}>
+        <BarChart data={chartData} layout="vertical" margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+          <XAxis type="number" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
+          <YAxis type="category" dataKey="tag_name" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={isMobile ? 50 : 120} tickFormatter={(v: string) => v.length > (isMobile ? 6 : 15) ? v.slice(0, isMobile ? 6 : 15) + "..." : v} />
+          <Tooltip
+            contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }}
+            formatter={(value: number, name: string) => [value.toLocaleString(), name]}
+            labelFormatter={(label) => {
+              const rel = releases.find((r) => r.tag_name === label);
+              return rel ? `${rel.name || rel.tag_name} — ${rel.published_at ? formatDate(rel.published_at) : ""}` : label;
+            }}
+          />
+          <Legend
+            iconSize={8}
+            wrapperStyle={{ fontSize: "10px" }}
+            formatter={(value: string) => value.length > (isMobile ? 10 : 20) ? value.slice(0, isMobile ? 10 : 20) + "..." : value}
+          />
+          {topAssets.map((name, i) => (
+            <Bar key={name} dataKey={name} stackId="assets" fill={COLORS[i % COLORS.length]} radius={i === topAssets.length - 1 ? [0, 4, 4, 0] : [0, 0, 0, 0]} />
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
 
 export function RepoDetail() {
   const { t } = useTranslation();
@@ -316,24 +371,7 @@ export function RepoDetail() {
         </CardHeader>
         <CardContent>
           {releases && releases.length > 0 ? (
-            <div role="img" aria-label={t("repoDetail.releasesDownloads")}>
-            <ResponsiveContainer width="100%" height={Math.max(isMobile ? 140 : 200, releases.length * (isMobile ? 36 : 60))}>
-              <BarChart data={releases} layout="vertical" margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis type="number" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
-                <YAxis type="category" dataKey="tag_name" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={isMobile ? 50 : 120} tickFormatter={(v: string) => v.length > (isMobile ? 6 : 15) ? v.slice(0, isMobile ? 6 : 15) + "…" : v} />
-                <Tooltip
-                  contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }}
-                  formatter={(value) => [String(value).toLocaleString() ?? "", t("repoDetail.downloads")]}
-                  labelFormatter={(label) => {
-                    const rel = releases.find((r) => r.tag_name === label);
-                    return rel ? `${rel.name || rel.tag_name} — ${rel.published_at ? formatDate(rel.published_at) : ""}` : label;
-                  }}
-                />
-                <Bar dataKey="total_downloads" fill="var(--chart-3)" radius={[0, 4, 4, 0]} name={t("repoDetail.downloads")} />
-              </BarChart>
-            </ResponsiveContainer>
-            </div>
+            <ReleaseDownloadsChart releases={releases} isMobile={isMobile} />
           ) : (
             <p className="text-sm text-[var(--muted-foreground)] text-center py-8">
               {t("repoDetail.noReleases")}

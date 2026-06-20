@@ -24,7 +24,7 @@ async function fetchJSON<T>(url: string, options?: RequestInit): Promise<T> {
 import type {
   Account, AccountWithStats, AccountsResponse, OverviewStats,
   Tweet, PaginatedTweets, TimelineData, CalendarDay,
-  GithubContribution, GithubOverview, GithubRepo, GithubRelease,
+  GithubContribution, GithubOverview, GithubRepo, GithubRelease, GithubReleaseAsset,
   GitlabContribution, GitlabOverview, GitlabProject, GitlabRelease,
   RedditOverview, RedditPost, RedditComment, PaginatedRedditPosts, PaginatedRedditComments,
   LoginResponse, AuthCheckResponse, UserPublic,
@@ -33,7 +33,7 @@ import type {
 export type {
   Account, AccountWithStats, AccountsResponse, OverviewStats,
   Tweet, PaginatedTweets, TimelineData, CalendarDay,
-  GithubContribution, GithubOverview, GithubRepo, GithubRelease,
+  GithubContribution, GithubOverview, GithubRepo, GithubRelease, GithubReleaseAsset,
   GitlabContribution, GitlabOverview, GitlabProject, GitlabRelease,
   RedditOverview, RedditPost, RedditComment, PaginatedRedditPosts, PaginatedRedditComments,
   LoginResponse, AuthCheckResponse, UserPublic,
@@ -94,6 +94,8 @@ export const api = {
     fetchJSON<{ snapshot_date: string; path: string; title: string | null; count: number; uniques: number }[]>(`/github/${accountId}/repos/${repoId}/paths/history`),
   getGithubReleases: (accountId: number, repoId: number) =>
     fetchJSON<GithubRelease[]>(`/github/${accountId}/repos/${repoId}/releases`),
+  getGithubReleaseAssets: (accountId: number, repoId: number, releaseId: number) =>
+    fetchJSON<GithubReleaseAsset[]>(`/github/${accountId}/repos/${repoId}/releases/${releaseId}/assets`),
   setPinnedRepos: (accountId: number, repoIds: number[]) =>
     fetchJSON<{ ok: boolean }>(`/github/repos/pin`, { method: "PUT", body: JSON.stringify({ accountId, repoIds }) }),
 

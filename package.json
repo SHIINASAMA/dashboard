@@ -9,7 +9,8 @@
     "lint": "bun run --cwd client lint && bun run lint:server",
     "lint:server": "bun run --cwd client eslint ../server/",
     "test": "bun test server/__tests__/",
-    "typecheck": "bun run --cwd client tsc --noEmit"
+    "typecheck": "bun run --cwd client tsc --noEmit",
+    "backfill:release-downloads": "bun run server/scripts/backfill-release-downloads.ts"
   },
   "dependencies": {
     "drizzle-kit": "^0.31.10",

@@ -157,6 +157,17 @@ export interface GithubRelease {
   html_url: string | null;
   total_downloads: number;
   fetched_at: string;
+  assets: GithubReleaseAsset[];
+}
+
+export interface GithubReleaseAsset {
+  id: number;
+  release_id: number;
+  name: string;
+  download_count: number;
+  size: number;
+  content_type: string | null;
+  browser_download_url: string | null;
 }
 
 // ─── GitLab types ────────────────────────────────────────────────

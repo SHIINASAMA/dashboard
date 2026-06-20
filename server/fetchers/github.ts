@@ -12,6 +12,7 @@ import { github_releases, github_release_assets } from "../../db/schema";
 import { getLogger } from "../logger";
 import { fetchWithConfig } from "../http";
 
+
 const GITHUB_API = "https://api.github.com";
 
 async function ghFetch(path: string, token?: string) {
@@ -250,7 +251,8 @@ async function fetchRepoReleases(accountId: number, repoId: number, fullName: st
     if (!releases) return;
 
     for (const release of releases) {
-      const totalDownloads = (release.assets as Array<Record<string, unknown>> || []).reduce((s: number, a: Record<string, unknown>) => s + ((a.download_count as number) || 0), 0);
+      const totalDownloads = ((release.assets as Array<Record<string, unknown>>) || [])
+        .reduce((s: number, a: Record<string, unknown>) => s + ((a.download_count as number) || 0), 0);
 
       await upsertGithubRelease({
         account_id: accountId,

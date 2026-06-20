@@ -79,4 +79,9 @@ githubRouter.get("/:accountId/repos/:repoId/releases", async (c) => {
   return c.json(await githubRepo.getGithubReleases(accountId, repoId));
 });
 
+githubRouter.get("/:accountId/repos/:repoId/releases/:releaseId/assets", async (c) => {
+  const releaseId = Number(c.req.param("releaseId"));
+  return c.json(await githubRepo.getGithubReleaseAssets(releaseId));
+});
+
 export default githubRouter;

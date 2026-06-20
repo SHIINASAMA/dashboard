@@ -253,7 +253,11 @@
     "noTrafficData": "暂无流量数据。需要使用具有 repo 权限的经典 PAT（细粒度令牌不支持流量 API）。",
     "noReferrerData": "暂无引荐来源数据。更多数据将在后续抓取后出现。",
     "noPopularContent": "暂无热门内容数据。更多数据将在后续抓取后出现。",
-    "noReleases": "未找到发行版。需要使用具有 repo 权限的经典 PAT。"
+    "noReleases": "未找到发行版。需要使用具有 repo 权限的经典 PAT。",
+    "noAssets": "该发行版暂无资产文件。",
+    "comparisonTitle": "对比 {{count}} 个版本",
+    "assetName": "文件",
+    "size": "大小"
   },
   "gitlab": {
     "heading": "GitLab",
