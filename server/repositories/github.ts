@@ -57,7 +57,7 @@ export async function setPinnedRepos(accountId: number, repoIds: number[]) {
   await db.update(github_repos).set({ pinned: 0 }).where(eq(github_repos.account_id, accountId));
   if (repoIds.length > 0) {
     await db.update(github_repos).set({ pinned: 1 })
-      .where(and(eq(github_repos.account_id, accountId), sql`repo_id IN ${sql.join(repoIds, sql`, `)}`));
+      .where(and(eq(github_repos.account_id, accountId), sql`repo_id IN (${sql.join(repoIds.map(id => sql`${id}`), sql`, `)})`));
   }
 }
 

@@ -7,6 +7,7 @@ import { formatDateTime } from "../lib/datetime";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { Portal } from "../components/ui/Portal";
 import { StatCard } from "../components/StatCard";
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import {
@@ -257,46 +258,48 @@ export function GitHubDetail() {
           </Card>
 
           {showPinDialog && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowPinDialog(false)}>
-              <div className="bg-[var(--card)] rounded-xl p-6 w-full max-w-lg mx-4 shadow-lg border border-[var(--border)] max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold">{t("githubDetail.managePins")}</h2>
-                  <button onClick={() => setShowPinDialog(false)} className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]">{t("common.cancel")}</button>
+            <Portal>
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowPinDialog(false)}>
+                <div className="bg-[var(--card)] rounded-xl p-6 w-full max-w-lg mx-4 shadow-lg border border-[var(--border)] max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold">{t("githubDetail.managePins")}</h2>
+                    <button onClick={() => setShowPinDialog(false)} className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]">{t("common.cancel")}</button>
+                  </div>
+                  <div className="space-y-1 overflow-y-auto flex-1">
+                    {overview.allRepos?.map((repo: GithubRepo) => (
+                      <label key={repo.id} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-[var(--muted)] cursor-pointer transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={pinnedIds.has(repo.repo_id)}
+                          onChange={(e) => {
+                            setPinnedIds(prev => {
+                              const next = new Set(prev);
+                              if (e.target.checked) next.add(repo.repo_id);
+                              else next.delete(repo.repo_id);
+                              return next;
+                            });
+                          }}
+                          className="w-4 h-4 rounded accent-[var(--primary)] shrink-0"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <span className="text-sm">{repo.full_name}</span>
+                          {repo.language && <span className="text-xs text-[var(--muted-foreground)] ml-2">{repo.language}</span>}
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-[var(--muted-foreground)]">
+                          <span className="flex items-center gap-1"><Star size={12} /> {repo.stars}</span>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                  <button
+                    onClick={handlePinSave}
+                    className="mt-4 w-full px-4 py-2 rounded-lg bg-[var(--primary)] text-white font-medium hover:opacity-90 transition-opacity"
+                  >
+                    {t("common.save")}
+                  </button>
                 </div>
-                <div className="space-y-1 overflow-y-auto flex-1">
-                  {overview.allRepos?.map((repo: GithubRepo) => (
-                    <label key={repo.id} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-[var(--muted)] cursor-pointer transition-colors">
-                      <input
-                        type="checkbox"
-                        checked={pinnedIds.has(repo.repo_id)}
-                        onChange={(e) => {
-                          setPinnedIds(prev => {
-                            const next = new Set(prev);
-                            if (e.target.checked) next.add(repo.repo_id);
-                            else next.delete(repo.repo_id);
-                            return next;
-                          });
-                        }}
-                        className="w-4 h-4 rounded accent-[var(--primary)] shrink-0"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <span className="text-sm">{repo.full_name}</span>
-                        {repo.language && <span className="text-xs text-[var(--muted-foreground)] ml-2">{repo.language}</span>}
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-[var(--muted-foreground)]">
-                        <span className="flex items-center gap-1"><Star size={12} /> {repo.stars}</span>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-                <button
-                  onClick={handlePinSave}
-                  className="mt-4 w-full px-4 py-2 rounded-lg bg-[var(--primary)] text-white font-medium hover:opacity-90 transition-opacity"
-                >
-                  {t("common.save")}
-                </button>
               </div>
-            </div>
+            </Portal>
           )}
 
           <Card>

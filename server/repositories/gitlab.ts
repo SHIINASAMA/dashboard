@@ -55,7 +55,7 @@ export async function setPinnedGitlabProjects(accountId: number, projectIds: num
   await db.update(gitlab_projects).set({ pinned: 0 }).where(eq(gitlab_projects.account_id, accountId));
   if (projectIds.length > 0) {
     await db.update(gitlab_projects).set({ pinned: 1 })
-      .where(and(eq(gitlab_projects.account_id, accountId), sql`project_id IN ${sql.join(projectIds, sql`, `)}`));
+      .where(and(eq(gitlab_projects.account_id, accountId), sql`project_id IN (${sql.join(projectIds.map(id => sql`${id}`), sql`, `)})`));
   }
 }
 
