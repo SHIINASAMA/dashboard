@@ -41,7 +41,7 @@ export function RedditSection({ postKarma, commentKarma, totalPosts, totalCommen
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
         <Card className="bg-[var(--card)] border border-[var(--border)] shadow-sm">
           <CardHeader className="pb-1"><CardTitle className="text-xs font-medium text-[var(--muted-foreground)]">{t("overview.charts.redditKarma")}</CardTitle></CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="pt-0">
             {karmaTimeline.length > 0 ? (
               <div role="img" aria-label={t("overview.charts.redditKarma")}>
               <div className={`flex flex-wrap gap-x-3 gap-y-0.5 mb-1 ${isMobile ? "text-[10px]" : "text-xs"}`}>
