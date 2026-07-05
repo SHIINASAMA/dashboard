@@ -1,4 +1,4 @@
-import { getActiveAccounts } from "./services/accounts";
+import { getActiveAccounts, getAccountById } from "./services/accounts";
 import { fetchAccount } from "./fetcher";
 import { fetchGithubAccount } from "./fetchers/github";
 import { fetchGitlabAccount } from "./fetchers/gitlab";
@@ -63,21 +63,26 @@ async function runCycle() {
         await sleep(cooldown - elapsed);
       }
 
-      if (account.platform === "github") {
-        await fetchGithubAccount(account);
-      } else if (account.platform === "gitlab") {
-        await fetchGitlabAccount(account);
-      } else if (account.platform === "reddit") {
-        if (account.auth_type === "reddit_public") {
-          await fetchRedditPublicAccount(account);
-        } else {
-          await fetchRedditAccount(account);
-        }
-      } else {
-        await fetchAccount(account);
+      const freshAccount = await getAccountById(account.id);
+      if (!freshAccount || !freshAccount.is_active) {
+        continue;
       }
 
-      lastPlatformFetch.set(platform, Date.now());
+      if (freshAccount.platform === "github") {
+        await fetchGithubAccount(freshAccount);
+      } else if (freshAccount.platform === "gitlab") {
+        await fetchGitlabAccount(freshAccount);
+      } else if (freshAccount.platform === "reddit") {
+        if (freshAccount.auth_type === "reddit_public") {
+          await fetchRedditPublicAccount(freshAccount);
+        } else {
+          await fetchRedditAccount(freshAccount);
+        }
+      } else {
+        await fetchAccount(freshAccount);
+      }
+
+      lastPlatformFetch.set(freshAccount.platform, Date.now());
       // Refresh now after each fetch so the interval check reflects real elapsed time
       now = Date.now();
     }
@@ -86,6 +91,10 @@ async function runCycle() {
   } finally {
     cycleRunning = false;
   }
+}
+
+export async function runCycleOnceForTests() {
+  await runCycle();
 }
 
 function sleep(ms: number) {
