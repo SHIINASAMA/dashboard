@@ -224,7 +224,7 @@ function ReleaseDownloadsChart({ releases, isMobile }: { releases: GithubRelease
               }}
             />
             {visibleAssets.map((name, i) => (
-              <Bar key={name} dataKey={name} stackId="assets" fill={COLORS[topAssets.indexOf(name) % COLORS.length]} radius={[0, 4, 4, 0]} />
+              <Bar key={name} dataKey={name} stackId="assets" fill={COLORS[topAssets.indexOf(name) % COLORS.length]} radius={i === visibleAssets.length - 1 ? [0, 4, 4, 0] : [0, 0, 0, 0]} />
             ))}
           </BarChart>
         </ResponsiveContainer>
