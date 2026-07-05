@@ -36,7 +36,12 @@ export async function getOverviewStats(accountIds?: number[]) {
   }).from(tweets).where(replyCond);
 
   const today = new Date().toISOString().slice(0, 10);
-  const todayCond = and(gte(tweets.created_at, today), ...(idsParam ? [idsParam] : []));
+  const todayCond = and(
+    gte(tweets.created_at, today),
+    eq(tweets.is_reply, 0),
+    eq(tweets.is_retweet, 0),
+    ...(idsParam ? [idsParam] : []),
+  );
   const [td] = await db.select({
     today_likes: sql<number>`COALESCE(SUM(${tweets.favorite_count}), 0)`,
     today_retweets: sql<number>`COALESCE(SUM(${tweets.retweet_count}), 0)`,

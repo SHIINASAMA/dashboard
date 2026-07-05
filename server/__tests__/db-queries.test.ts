@@ -133,6 +133,73 @@ describe("twitter queries", () => {
     expect(result.data.length).toBe(1);
     expect(result.data[0].full_text).toBe("Hello test");
   });
+
+  it("counts only non-reply non-retweet tweets in todayTweets", async () => {
+    const today = new Date().toISOString();
+
+    await twitterQ.upsertTweet({
+      id: "today_tweet",
+      account_id: acctId,
+      full_text: "Today main tweet",
+      created_at: today,
+      favorite_count: 3,
+      retweet_count: 2,
+      reply_count: 1,
+      view_count: 30,
+      bookmark_count: 0,
+      is_quote: 0,
+      is_reply: 0,
+      is_retweet: 0,
+      media_urls: "[]",
+      urls: "[]",
+      hashtags: "[]",
+      mentions: "[]",
+      lang: "en",
+    });
+
+    await twitterQ.upsertTweet({
+      id: "today_reply",
+      account_id: acctId,
+      full_text: "Today reply",
+      created_at: today,
+      favorite_count: 2,
+      retweet_count: 1,
+      reply_count: 0,
+      view_count: 20,
+      bookmark_count: 0,
+      is_quote: 0,
+      is_reply: 1,
+      is_retweet: 0,
+      media_urls: "[]",
+      urls: "[]",
+      hashtags: "[]",
+      mentions: "[]",
+      lang: "en",
+    });
+
+    await twitterQ.upsertTweet({
+      id: "today_retweet",
+      account_id: acctId,
+      full_text: "Today retweet",
+      created_at: today,
+      favorite_count: 1,
+      retweet_count: 0,
+      reply_count: 0,
+      view_count: 10,
+      bookmark_count: 0,
+      is_quote: 0,
+      is_reply: 0,
+      is_retweet: 1,
+      media_urls: "[]",
+      urls: "[]",
+      hashtags: "[]",
+      mentions: "[]",
+      lang: "en",
+    });
+
+    const overview = await twitterQ.getOverviewStats([acctId]);
+    expect(overview.todayTweets).toBe(1);
+  });
 });
 
 describe("reddit queries", () => {
