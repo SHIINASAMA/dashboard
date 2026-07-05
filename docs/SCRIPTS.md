@@ -1,13 +1,13 @@
 # Scripts
 
-Utility scripts in `scripts/`. Run with `bun run scripts/<name>.ts`.
+Utility scripts in `scripts/`. Run with `pnpm exec tsx scripts/<name>.ts`.
 
 ## dump-x-data.ts
 
 Dumps raw X/Twitter API responses to local files for analysis.
 
 ```bash
-bun run scripts/dump-x-data.ts
+pnpm exec tsx scripts/dump-x-data.ts
 ```
 
 Saves data to `data/dumps/<screen_name>/`:
@@ -24,7 +24,7 @@ Requires: active Twitter account in database, valid `DASHBOARD_SECRET`.
 Tests the X fetcher algorithm against real API data without writing to the database.
 
 ```bash
-bun run scripts/test-fetch-algorithm.ts
+pnpm exec tsx scripts/test-fetch-algorithm.ts
 ```
 
 Output:

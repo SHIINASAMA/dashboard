@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../co
 import { Badge } from "../components/ui/badge";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { StatCard } from "../components/StatCard";
+import { calcYAxisWidth } from "../lib/utils";
 import { ArrowLeft, ArrowUpRight, Play, RefreshCw, Trash2, AlertCircle, ThumbsUp, MessageSquare, TrendingUp, FileText } from "lucide-react";
 import { useIsMobile } from "../lib/useIsMobile";
 import { RedditIcon } from "../components/BrandIcons";
@@ -189,7 +190,7 @@ export function RedditDetail() {
                   <LineChart data={timeline} margin={MARGIN}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                     <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                    <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={30} />
+                    <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(timeline, "post_karma", "comment_karma")} />
                     <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
                     <Line type="monotone" dataKey="post_karma" stroke="var(--chart-4)" name={t("redditDetail.postKarma")} dot={false} />
                     <Line type="monotone" dataKey="comment_karma" stroke="var(--chart-1)" name={t("redditDetail.commentKarma")} dot={false} />
@@ -226,7 +227,15 @@ export function RedditDetail() {
                     })()} margin={MARGIN}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                       <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                      <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={30} />
+                      <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth((() => {
+                        const map: Record<string, { date: string; posts: number; comments: number }> = {};
+                        for (const p of activity.posts) map[p.date] = { ...map[p.date], date: p.date, posts: p.count, comments: 0 };
+                        for (const c of activity.comments) {
+                          if (map[c.date]) map[c.date].comments = c.count;
+                          else map[c.date] = { date: c.date, posts: 0, comments: c.count };
+                        }
+                        return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
+                      })(), "posts", "comments")} />
                       <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
                       <Bar dataKey="posts" fill="var(--chart-4)" name={t("redditDetail.totalPosts")} radius={[4, 4, 0, 0]} />
                       <Bar dataKey="comments" fill="var(--chart-1)" name={t("redditDetail.recentComments")} radius={[4, 4, 0, 0]} />

@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { ArrowLeft, Star, GitFork, Download, ExternalLink, Globe, TrendingUp, Eye, Activity, FileText } from "lucide-react";
 import { useIsMobile } from "../lib/useIsMobile";
+import { calcYAxisWidth } from "../lib/utils";
 
 const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899", "#10b981", "#6366f1"];
 
@@ -385,7 +386,7 @@ export function RepoDetail() {
               <AreaChart data={snapshots} margin={MARGIN}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={30} />
+                <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(snapshots, "stars")} />
                 <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
                 <Area type="monotone" dataKey="stars" stroke="var(--chart-3)" fill="color-mix(in oklch, var(--chart-3) 12%, transparent)" name={t("repoDetail.stars")} />
               </AreaChart>
@@ -412,7 +413,7 @@ export function RepoDetail() {
                 <BarChart data={clones} margin={MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={30} />
+                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(clones, "count", "uniques")} />
                   <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
                   <Bar dataKey="count" fill="var(--chart-1)" radius={[4, 4, 0, 0]} name={t("repoDetail.clones")} />
                   <Bar dataKey="uniques" fill="var(--chart-3)" radius={[4, 4, 0, 0]} name={t("repoDetail.uniqueCloners")} />
@@ -439,7 +440,7 @@ export function RepoDetail() {
                 <BarChart data={views} margin={MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={30} />
+                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(views, "count", "uniques")} />
                   <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
                   <Bar dataKey="count" fill="var(--chart-2)" radius={[4, 4, 0, 0]} name={t("repoDetail.views")} />
                   <Bar dataKey="uniques" fill="var(--chart-5)" radius={[4, 4, 0, 0]} name={t("repoDetail.uniqueVisitors")} />
@@ -476,7 +477,7 @@ export function RepoDetail() {
                 <LineChart data={referrerHistoryChart} margin={MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={30} />
+                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(referrerHistoryChart, ...(referrers?.slice(0, 5).map(r => r.referrer) ?? []))} />
                   <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
                   {(referrers?.slice(0, 5) || []).map((ref, i) => (
                     <Line key={ref.referrer} type="monotone" dataKey={ref.referrer} stroke={COLORS[i]} strokeWidth={2} dot={false} />
@@ -510,7 +511,7 @@ export function RepoDetail() {
                 <LineChart data={pathHistoryChart} margin={MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={30} />
+                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(pathHistoryChart, ...(paths?.slice(0, 5).map(p => p.path) ?? []))} />
                   <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
                   {(paths?.slice(0, 5) || []).map((p, i) => (
                     <Line key={p.path} type="monotone" dataKey={p.path} stroke={COLORS[i]} strokeWidth={2} dot={false} />

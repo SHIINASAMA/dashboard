@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from "bun:test";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { resetTestDb, getTestPool, closeTestPool } from "./setup";
 import * as usersQ from "../repositories/users";
 import * as accountsQ from "../repositories/accounts";

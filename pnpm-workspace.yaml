@@ -1,0 +1,7 @@
+packages:
+  - "."
+  - "client"
+
+onlyBuiltDependencies:
+  - argon2
+  - esbuild

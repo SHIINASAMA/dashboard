@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { serveStatic } from "hono/bun";
+import { serve } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import tweetsRouter from "./routes/tweets";
 import statsRouter from "./routes/stats";
@@ -359,6 +360,8 @@ if (isProd) {
 
 startScheduler();
 
+serve({ fetch: app.fetch, port });
+
 logger.info("Server", "Running on %s", serverUrl);
 if (isProd) logger.info("Server", "Serving production client build");
 
@@ -366,5 +369,3 @@ if (isProd) logger.info("Server", "Serving production client build");
 export function getServerBaseUrl(): string {
   return serverUrl;
 }
-
-export default { port, fetch: app.fetch };

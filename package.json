@@ -2,17 +2,21 @@
   "name": "dashboard",
   "type": "module",
   "license": "Apache-2.0",
+  "packageManager": "pnpm@10.34.4",
   "scripts": {
-    "server": "bun run server/index.ts",
-    "client": "bun run --cwd client dev",
-    "dev": "bun run server & bun run --cwd client dev",
-    "lint": "bun run --cwd client lint && bun run lint:server",
-    "lint:server": "bun run --cwd client eslint ../server/",
-    "test": "bun test server/__tests__/",
-    "typecheck": "bun run --cwd client tsc --noEmit",
-    "backfill:release-downloads": "bun run server/scripts/backfill-release-downloads.ts"
+    "server": "tsx server/index.ts",
+    "client": "pnpm --filter client dev",
+    "dev": "pnpm run server & pnpm run client",
+    "lint": "pnpm --filter client lint && pnpm run lint:server",
+    "lint:server": "pnpm --filter client lint ../server/",
+    "test": "vitest run server/__tests__/",
+    "typecheck": "pnpm --filter client exec tsc --noEmit",
+    "backfill:release-downloads": "tsx server/scripts/backfill-release-downloads.ts"
   },
   "dependencies": {
+    "@chenglou/pretext": "^0.0.8",
+    "@hono/node-server": "^2.0.8",
+    "argon2": "^0.44.0",
     "drizzle-kit": "^0.31.10",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.7.6",
@@ -21,16 +25,18 @@
     "lucide-react": "^1.17.0",
     "pg": "8.21.0",
     "react-icons": "^5.6.0",
+    "tsx": "^4.23.0",
     "twitter-api-v2": "^1.18.2",
     "twitter-openapi-typescript": "^0.0.56"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@types/bun": "latest",
     "@types/lodash": "^4.17.0",
+    "@types/node": "^26.1.0",
     "@types/pg": "8.20.0",
     "eslint": "^10.3.0",
-    "typescript-eslint": "^8.59.2"
+    "typescript-eslint": "^8.59.2",
+    "vitest": "^4.1.9"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"

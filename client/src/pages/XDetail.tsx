@@ -7,6 +7,7 @@ import { formatDateTime, formatDate } from "../lib/datetime";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { calcYAxisWidth } from "../lib/utils";
 import {
   ArrowLeft, Play, RefreshCw, Trash2, AlertCircle,
   MessageSquare, Heart, Repeat2, Eye, ExternalLink,
@@ -166,7 +167,7 @@ export function XDetail() {
                 <BarChart data={timeline.dailyTweets} margin={MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={30} />
+                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(timeline.dailyTweets, "tweets_count")} />
                   <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
                   <Bar dataKey="tweets_count" fill="var(--primary)" radius={[4, 4, 0, 0]} name={t("xDetail.tweetsCount")} />
                 </BarChart>
@@ -182,7 +183,7 @@ export function XDetail() {
                 <AreaChart data={timeline.dailyTweets} margin={MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={30} />
+                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(timeline.dailyTweets, "total_views")} />
                   <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
                   <Area type="monotone" dataKey="total_views" stroke="var(--chart-2)" fill="color-mix(in oklch, var(--chart-2) 12%, transparent)" name={t("xDetail.views")} />
                 </AreaChart>
@@ -202,7 +203,7 @@ export function XDetail() {
                 <AreaChart data={timeline.dailyTweets} margin={MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={30} />
+                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(timeline.dailyTweets, "total_likes", "total_retweets")} />
                   <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
                   <Area type="monotone" dataKey="total_likes" stroke="var(--chart-5)" fill="color-mix(in oklch, var(--chart-5) 12%, transparent)" name={t("xDetail.likes")} />
                   <Area type="monotone" dataKey="total_retweets" stroke="var(--chart-1)" fill="color-mix(in oklch, var(--chart-1) 12%, transparent)" name={t("xDetail.retweets")} />

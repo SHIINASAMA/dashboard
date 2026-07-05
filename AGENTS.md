@@ -4,22 +4,22 @@ Multi-platform social & code dashboard with web UI. Track activity and stats acr
 
 ## Tech Stack
 
-Bun + Hono REST API + React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui + Drizzle ORM + SQLite
+Node.js + pnpm + tsx + Hono REST API + React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui + Drizzle ORM + SQLite
 
 ## Quick Start
 
 ```bash
-bun install && bun run dev
+pnpm install && pnpm run dev
 ```
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `bun run dev` | Start server + client dev |
-| `bun run lint` | Run ESLint on client |
-| `bun run typecheck` | Run TypeScript type check |
-| `bun test` | Run server tests |
+| `pnpm run dev` | Start server + client dev |
+| `pnpm run lint` | Run ESLint on client |
+| `pnpm run typecheck` | Run TypeScript type check |
+| `pnpm test` | Run server tests |
 
 ## Documentation Index
 

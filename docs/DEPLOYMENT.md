@@ -38,28 +38,29 @@ docker compose up -d
 ```
 
 The Dockerfile uses a multi-stage build:
-1. **Stage 1** (`oven/bun:1`): builds the client (Vite + React)
-2. **Stage 2** (`oven/bun:1-slim`): runs the server with the built client
+1. **Stage 1** (`node:22-slim`): builds the client (Vite + React)
+2. **Stage 2** (`node:22-slim`): runs the server with the built client
 
 ## Standalone
 
 ### Prerequisites
 
-- Bun runtime
+- Node.js 22+
+- pnpm
 - PostgreSQL (or use SQLite — see below)
 
 ### Development
 
 ```bash
-bun install
-bun run dev
+pnpm install
+pnpm run dev
 ```
 
 ### Production
 
 ```bash
-bun install --production
-bun run server
+pnpm install --prod
+pnpm run server
 ```
 
 Set `NODE_ENV=production` to serve the pre-built client from `client/dist/`.
@@ -67,7 +68,7 @@ Set `NODE_ENV=production` to serve the pre-built client from `client/dist/`.
 Build the client first:
 
 ```bash
-cd client && bun install && bunx vite build
+cd client && pnpm install && pnpm exec vite build
 ```
 
 ## Database

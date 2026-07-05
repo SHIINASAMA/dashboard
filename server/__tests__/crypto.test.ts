@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "bun:test";
+import { describe, it, expect, beforeAll } from "vitest";
 import { encrypt, decrypt, sign, verifySignature, initCrypto, getJwtSecret } from "../crypto";
 
 beforeAll(() => {

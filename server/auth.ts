@@ -1,4 +1,4 @@
-import { password } from "bun";
+import { verify } from "argon2";
 import { getUserByUsername, updateUserPassword } from "./repositories/users";
 
 // ── Multi-user auth ──────────────────────────────────────────────
@@ -7,7 +7,7 @@ export async function verifyCredentials(inputUsername: string, pw: string): Prom
   const user = await getUserByUsername(inputUsername);
   if (!user) return { ok: false };
   try {
-    const valid = await password.verify(pw, user.password_hash);
+    const valid = await verify(user.password_hash, pw);
     if (!valid) return { ok: false };
     return { ok: true, userId: user.id, role: user.role };
   } catch {
@@ -25,7 +25,7 @@ export async function verifyPassword(input: string): Promise<boolean> {
   const user = await getUserByUsername("admin");
   if (!user || !user.password_hash) return false;
   try {
-    return password.verify(input, user.password_hash);
+    return verify(user.password_hash, input);
   } catch {
     return false;
   }
@@ -42,7 +42,7 @@ export async function changePassword(oldPassword: string, newPassword: string): 
   const user = await getUserByUsername("admin");
   if (!user) return false;
   if (user.password_hash) {
-    const ok = await password.verify(oldPassword, user.password_hash);
+    const ok = await verify(user.password_hash, oldPassword);
     if (!ok) return false;
   }
   await updateUserPassword(user.id, newPassword);

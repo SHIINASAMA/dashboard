@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { api, type Account } from "../api";
 import { formatDate } from "../lib/datetime";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { calcYAxisWidth } from "../lib/utils";
 import { Badge } from "../components/ui/badge";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -100,7 +101,7 @@ export function ProjectDetail() {
               <AreaChart data={snapshots} margin={MARGIN}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={30} />
+                <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(snapshots, "stars")} />
                 <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
                 <Area type="monotone" dataKey="stars" stroke="var(--chart-3)" fill="color-mix(in oklch, var(--chart-3) 12%, transparent)" name={t("projectDetail.stars")} />
               </AreaChart>

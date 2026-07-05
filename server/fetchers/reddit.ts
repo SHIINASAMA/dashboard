@@ -2,6 +2,7 @@ import type { AccountRow } from "../repositories/accounts";
 import { insertRedditStats, upsertRedditPost, upsertRedditComment, updateAccount } from "../db";
 import { getLogger } from "../logger";
 import { fetchWithConfig } from "../http";
+import { execFileSync } from "child_process";
 
 async function getRedditAccessToken(refreshToken: string): Promise<string> {
   const clientId = process.env.REDDIT_CLIENT_ID;
@@ -185,7 +186,7 @@ export async function fetchRedditAccount(account: AccountRow) {
 }
 
 // ── Public (cookie-based) fetcher (curl) ──────────────────────────
-// Uses curl subprocess to avoid Bun's TLS fingerprint detection by Reddit.
+// Uses curl subprocess to avoid TLS fingerprint detection by Reddit.
 // The old fetch()-based implementation is kept below as redditPublicFetchOld.
 
 async function redditPublicFetchCurl(path: string, cookies: Record<string, string>): Promise<Record<string, unknown>> {
@@ -194,34 +195,35 @@ async function redditPublicFetchCurl(path: string, cookies: Record<string, strin
     .join("; ");
 
   const url = `https://www.reddit.com${path}`;
-  const proc = Bun.spawn([
-    "curl",
-    "-sS",
-    "--http1.1",
-    "--max-time", "30",
-    "-w", "\n%{http_code}",
-    url,
-    "-H", "User-Agent: Safari/537.36",
-    "-H", "Accept: application/json",
-    "-H", `Cookie: ${cookieStr}`,
-  ]);
+  let stdout: string;
+  try {
+    stdout = execFileSync("curl", [
+      "-sS",
+      "--http1.1",
+      "--max-time", "30",
+      "-w", "\n%{http_code}",
+      url,
+      "-H", "User-Agent: Safari/537.36",
+      "-H", "Accept: application/json",
+      "-H", `Cookie: ${cookieStr}`,
+    ], { encoding: "utf-8", timeout: 35000 });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    getLogger().error("Reddit", "Public API (curl) failed for %s: %s", path, msg.slice(0, 200));
+    throw new Error(`Reddit public API curl failed for ${path}: ${msg.slice(0, 200)}`);
+  }
 
-  const stdout = await new Response(proc.stdout).text();
-  const stderr = await new Response(proc.stderr).text();
-  const exitCode = await proc.exited;
-
-  // Last line of stdout is the HTTP status code from curl -w
   const lastNewline = stdout.lastIndexOf("\n");
-  const status = lastNewline >= 0 ? parseInt(stdout.slice(lastNewline + 1).trim(), 10) || 0 : (exitCode !== 0 ? 0 : 200);
+  const status = lastNewline >= 0 ? parseInt(stdout.slice(lastNewline + 1).trim(), 10) || 0 : 200;
   const body = lastNewline >= 0 ? stdout.slice(0, lastNewline) : stdout;
 
   if (status >= 400 || status === 0) {
-    getLogger().error("Reddit", "Public API (curl) HTTP %d for %s (exit=%d)", status, path, exitCode);
+    getLogger().error("Reddit", "Public API (curl) HTTP %d for %s", status, path);
     if (status === 403) {
       throw new Error(`Reddit rejected the request (HTTP 403). This may be because: (1) your cookies have expired, or (2) the server IP is blocked by Reddit (common for datacenter/VPS IPs). Try from a residential IP or use OAuth instead. Body: ${body.slice(0, 200)}`);
     }
     if (status === 0) {
-      throw new Error(`Reddit public API curl failed (exit=${exitCode}): ${stderr.slice(0, 200)}`);
+      throw new Error(`Reddit public API curl returned no status for ${path}`);
     }
     throw new Error(`Reddit public API ${status} for ${path}: ${body.slice(0, 200)}`);
   }

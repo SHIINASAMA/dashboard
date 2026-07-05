@@ -1,4 +1,4 @@
-import { password } from "bun";
+import { hash } from "argon2";
 import * as usersRepo from "../repositories/users";
 
 export async function getUserByUsername(username: string) {
@@ -14,15 +14,15 @@ export async function getUsers() {
 }
 
 export async function createUser(username: string, pw: string, role: "admin" | "user" = "user") {
-  const hash = await password.hash(pw, { algorithm: "argon2id" });
+  const passwordHash = await hash(pw);
 
   const deleted = await usersRepo.getDeletedUserByUsername(username);
   if (deleted) {
-    await usersRepo.reviveUser(deleted.id, hash, role);
+    await usersRepo.reviveUser(deleted.id, passwordHash, role);
     return usersRepo.getUserById(deleted.id)!;
   }
 
-  await usersRepo.insertUser({ username, password_hash: hash, role });
+  await usersRepo.insertUser({ username, password_hash: passwordHash, role });
   const user = await usersRepo.getUserByUsername(username);
   if (!user) throw new Error("Failed to create user");
   return user;
@@ -33,8 +33,8 @@ export async function deleteUser(id: number) {
 }
 
 export async function updateUserPassword(id: number, newPassword: string) {
-  const hash = await password.hash(newPassword, { algorithm: "argon2id" });
-  await usersRepo.updateUserPassword(id, hash);
+  const passwordHash = await hash(newPassword);
+  await usersRepo.updateUserPassword(id, passwordHash);
 }
 
 export async function hasAnyUser() {

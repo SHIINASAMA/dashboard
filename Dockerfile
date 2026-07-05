@@ -1,32 +1,34 @@
 # ── Stage 1: Build client ─────────────────────────────────────────
-FROM oven/bun:1 AS client-builder
+FROM node:22-slim AS client-builder
+RUN npm install -g pnpm
 WORKDIR /app
 
 # Clear host proxy vars
 ENV HTTP_PROXY= HTTPS_PROXY= http_proxy= https_proxy=
 
-# Install root deps (includes pg, drizzle-orm/node-postgres)
-COPY package.json bun.lockb ./
-RUN bun install
-COPY client/package.json client/bun.lock client/
-RUN cd client && bun install
+# Install deps
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY client/package.json client/
+RUN pnpm install --frozen-lockfile
 
 # Copy source and build
 COPY shared/ shared/
 COPY client/ client/
-RUN cd client && bunx vite build
+RUN cd client && pnpm exec vite build
 
 # ── Stage 2: Run server ────────────────────────────────────────────
-FROM oven/bun:1-slim
+FROM node:22-slim
+RUN npm install -g pnpm
 WORKDIR /app
 
-# curl is needed by the Reddit public fetcher to avoid Bun's TLS fingerprint detection
+# curl is needed by the Reddit public fetcher
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 ENV HTTP_PROXY= HTTPS_PROXY= http_proxy= https_proxy=
 
-COPY package.json bun.lockb ./
-RUN bun install --production
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY client/package.json client/
+RUN pnpm install --frozen-lockfile --prod
 
 # Copy server source, DB schema, shared types, scripts
 COPY server/ server/
@@ -49,4 +51,4 @@ RUN mkdir -p /app/data/db /app/data/logs
 
 EXPOSE 3001
 
-CMD ["bun", "run", "server/index.ts"]
+CMD ["pnpm", "exec", "tsx", "server/index.ts"]
