@@ -44,6 +44,10 @@ function sleep(ms: number) {
 const runningAccounts = new Set<number>();
 
 export async function fetchGithubAccount(account: AccountRow) {
+  if (!account.is_active) {
+    getLogger().info("GitHub", "@%s: inactive, skipping", account.screen_name);
+    return false;
+  }
   if (runningAccounts.has(account.id)) {
     getLogger().info("GitHub", "@%s: already running, skipping", account.screen_name);
     return false;

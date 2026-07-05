@@ -62,6 +62,10 @@ function sleep(ms: number) {
 const runningRedditAccounts = new Set<number>();
 
 export async function fetchRedditAccount(account: AccountRow) {
+  if (!account.is_active) {
+    getLogger().info("Reddit", "@%s: inactive, skipping", account.screen_name);
+    return { posts: 0, comments: 0 };
+  }
   if (runningRedditAccounts.has(account.id)) {
     getLogger().info("Reddit", "@%s: already running, skipping", account.screen_name);
     return { posts: 0, comments: 0 };
@@ -232,6 +236,10 @@ async function redditPublicFetchCurl(path: string, cookies: Record<string, strin
 }
 
 export async function fetchRedditPublicAccount(account: AccountRow) {
+  if (!account.is_active) {
+    getLogger().info("Reddit", "@%s (public): inactive, skipping", account.screen_name);
+    return { posts: 0, comments: 0 };
+  }
   if (runningRedditAccounts.has(account.id)) {
     getLogger().info("Reddit", "@%s (public): already running, skipping", account.screen_name);
     return { posts: 0, comments: 0 };

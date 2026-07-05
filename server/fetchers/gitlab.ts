@@ -93,6 +93,10 @@ function sleep(ms: number) {
 const runningGitlabAccounts = new Set<number>();
 
 export async function fetchGitlabAccount(account: AccountRow) {
+  if (!account.is_active) {
+    getLogger().info("GitLab", "%s: inactive, skipping", account.screen_name);
+    return 0;
+  }
   if (runningGitlabAccounts.has(account.id)) {
     getLogger().info("GitLab", "%s: already running, skipping", account.screen_name);
     return 0;
