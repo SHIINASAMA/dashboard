@@ -18,12 +18,11 @@ stages:
         - .gitlab-ci.yml
 
 build:
-  variables:
-    BUILD_DESTINATION: reg.mikumikumi.xyz/kaoru/dashboard
   stage: build
   image: reg.mikumikumi.xyz/base/kaniko-builder:latest
   <<: *build_template
   script:
+    - export BUILD_DESTINATION="reg.mikumikumi.xyz/kaoru/dashboard:${CI_COMMIT_SHORT_SHA}"
     - build
 
 deploy:
