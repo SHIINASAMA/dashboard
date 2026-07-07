@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { secureHeaders } from "hono/secure-headers";
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
@@ -117,6 +118,19 @@ export type AppEnv = {
 };
 
 const app = new Hono<AppEnv>();
+
+// Security headers (noop CSP — SPA needs inline scripts, CF beacon needs external)
+app.use("/*", secureHeaders());
+
+// Remove CSP Reporting-Endpoints header from secureHeaders default (uses deprecated report-uri)
+app.use("/*", async (c, next) => {
+  await next();
+  // Replace overly strict default CSP with a permissive one that still blocks eval()
+  c.res.headers.set(
+    "Content-Security-Policy",
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; font-src 'self'; base-uri 'self'; form-action 'self';"
+  );
+});
 
 // CORS — controlled by config.allowedOrigins.
 // Default empty = no cross-origin access. Set to ["*"] to allow all,
