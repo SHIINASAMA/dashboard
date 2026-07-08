@@ -3,7 +3,7 @@ import { jwtVerify } from "jose";
 
 const SESSION_COOKIE = "dash_session";
 
-/** Decode a 64-char hex string to a 32-byte Uint8Array (Edge-safe). */
+/** Decode a 64-char hex string to a 32-byte Uint8Array. */
 function hexToBytes(hex: string): Uint8Array {
   const len = hex.length;
   const bytes = new Uint8Array(len / 2);
@@ -12,6 +12,8 @@ function hexToBytes(hex: string): Uint8Array {
   }
   return bytes;
 }
+
+const JWT_SECRET_KEY = hexToBytes(process.env.DASHBOARD_SECRET!);
 
 const PUBLIC_API_PATHS = [
   "/api/auth/login",
@@ -49,8 +51,7 @@ export async function proxy(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     try {
-      const secret = hexToBytes(process.env.DASHBOARD_SECRET!);
-      await jwtVerify(token, secret, { algorithms: ["HS256"] });
+      await jwtVerify(token, JWT_SECRET_KEY, { algorithms: ["HS256"] });
     } catch {
       return NextResponse.json({ error: "Session expired or invalid" }, { status: 401 });
     }
@@ -66,8 +67,7 @@ export async function proxy(req: NextRequest) {
 
   // Validate JWT for page routes
   try {
-    const secret = hexToBytes(process.env.DASHBOARD_SECRET!);
-    await jwtVerify(token, secret, { algorithms: ["HS256"] });
+    await jwtVerify(token, JWT_SECRET_KEY, { algorithms: ["HS256"] });
   } catch {
     const loginUrl = new URL("/login", req.url);
     return NextResponse.redirect(loginUrl);

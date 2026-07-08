@@ -1,4 +1,4 @@
-import { verify } from "argon2";
+import { verify, hash } from "argon2";
 import { getUserByUsername, updateUserPassword } from "./repositories/users";
 
 // ── Multi-user auth ──────────────────────────────────────────────
@@ -16,7 +16,8 @@ export async function verifyCredentials(inputUsername: string, pw: string): Prom
 }
 
 export async function setUserPassword(userId: number, pw: string): Promise<void> {
-  await updateUserPassword(userId, pw);
+  const pwHash = await hash(pw);
+  await updateUserPassword(userId, pwHash);
 }
 
 // ── Legacy single-password compat ─────────────────────────────────
@@ -34,7 +35,8 @@ export async function verifyPassword(input: string): Promise<boolean> {
 export async function setNewPassword(pw: string): Promise<void> {
   const user = await getUserByUsername("admin");
   if (user) {
-    await updateUserPassword(user.id, pw);
+    const pwHash = await hash(pw);
+    await updateUserPassword(user.id, pwHash);
   }
 }
 
@@ -45,6 +47,7 @@ export async function changePassword(oldPassword: string, newPassword: string): 
     const ok = await verify(user.password_hash, oldPassword);
     if (!ok) return false;
   }
-  await updateUserPassword(user.id, newPassword);
+  const pwHash = await hash(newPassword);
+  await updateUserPassword(user.id, pwHash);
   return true;
 }

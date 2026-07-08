@@ -19,7 +19,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const updates: Record<string, unknown> = {};
   if (screenName !== undefined) updates.screen_name = screenName;
-  if (authToken !== undefined) updates.auth_token = authToken;
+  if (authToken !== undefined && authToken !== "") updates.auth_token = authToken;
   if (fetchInterval !== undefined) updates.fetch_interval = fetchInterval;
   if (isActive !== undefined) updates.is_active = isActive ? 1 : 0;
   if (instanceUrl !== undefined) updates.instance_url = instanceUrl;
