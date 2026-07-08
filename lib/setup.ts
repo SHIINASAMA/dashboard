@@ -35,7 +35,12 @@ export async function bootstrap() {
   await reEncryptPlaintextTokens();
 
   // 7. Bootstrap admin user
-  await bootstrapAdminUser();
+  try {
+    await bootstrapAdminUser();
+  } catch (e: unknown) {
+    console.error("❌ Failed to bootstrap admin user:", e instanceof Error ? e.message : String(e));
+    process.exit(1);
+  }
 
   console.log("[Bootstrap] Ready");
 }
@@ -208,7 +213,10 @@ async function bootstrapAdminUser(): Promise<void> {
   );
   if (rows.length > 0) return;
 
-  const { password: argon2 } = await import("bun");
+  // Use the same npm argon2 package that login verification uses
+  // (lib/auth.ts verifyPassword). `bun`'s argon2 is not available in the
+  // production Node container, which previously made bootstrap throw.
+  const argon2 = await import("argon2");
 
   let pwHash: string;
   let generated: string | null = null;
@@ -218,7 +226,7 @@ async function bootstrapAdminUser(): Promise<void> {
   } else {
     const { randomBytes } = await import("crypto");
     generated = randomBytes(12).toString("base64url");
-    pwHash = await argon2.hash(generated, { algorithm: "argon2id" });
+    pwHash = await argon2.hash(generated);
   }
 
   await pool.query(

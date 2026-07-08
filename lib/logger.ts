@@ -41,7 +41,7 @@ function interpolate(msg: string, args: unknown[]): string {
   }) + (i < args.length ? " " + args.slice(i).map(String).join(" ") : "");
 }
 
-let _instance: Logger | null = null;
+const g = globalThis as unknown as { __logger?: Logger };
 
 export interface Logger {
   info(component: string, msg: string, ...args: unknown[]): void;
@@ -56,6 +56,8 @@ class FileLogger implements Logger {
   private maxSize: number;
   private maxFiles: number;
   private filePath: string;
+  private fileLoggingAvailable = true;
+  private fileLoggingWarningEmitted = false;
 
   constructor(opts: LoggerOptions) {
     this.dir = opts.dir;
@@ -71,8 +73,13 @@ class FileLogger implements Logger {
     const ts = new Date().toISOString();
     const line = formatLine(ts, level, component, interpolate(msg, args));
     process.stdout.write(line);
-    this.rotateIfNeeded();
-    appendFileSync(this.filePath, line, "utf-8");
+    if (!this.fileLoggingAvailable) return;
+    try {
+      this.rotateIfNeeded();
+      appendFileSync(this.filePath, line, "utf-8");
+    } catch (error) {
+      this.disableFileLogging(error);
+    }
   }
 
   private rotateIfNeeded() {
@@ -90,6 +97,14 @@ class FileLogger implements Logger {
     renameSync(this.filePath, this.filePath + ".1");
   }
 
+  private disableFileLogging(error: unknown) {
+    this.fileLoggingAvailable = false;
+    if (this.fileLoggingWarningEmitted) return;
+    this.fileLoggingWarningEmitted = true;
+    const message = error instanceof Error ? error.message : String(error);
+    process.stderr.write(`[Logger] File logging disabled: ${message}\n`);
+  }
+
   info(component: string, msg: string, ...args: unknown[]) { this.log("info", component, msg, args); }
   warn(component: string, msg: string, ...args: unknown[]) { this.log("warn", component, msg, args); }
   error(component: string, msg: string, ...args: unknown[]) { this.log("error", component, msg, args); }
@@ -97,11 +112,11 @@ class FileLogger implements Logger {
 }
 
 export function initLogger(opts: LoggerOptions): Logger {
-  _instance = new FileLogger(opts);
-  return _instance;
+  g.__logger = new FileLogger(opts);
+  return g.__logger;
 }
 
 export function getLogger(): Logger {
-  if (!_instance) throw new Error("Logger not initialized. Call initLogger() first.");
-  return _instance;
+  if (!g.__logger) throw new Error("Logger not initialized. Call initLogger() first.");
+  return g.__logger;
 }

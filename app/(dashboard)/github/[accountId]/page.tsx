@@ -76,7 +76,7 @@ const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--cha
 
 export default function GitHubDetail() {
   const { t } = useTranslation();
-  const { id } = useParams<{ id: string }>();
+  const { accountId: id } = useParams<{ accountId: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
   const accountId = Number(id);

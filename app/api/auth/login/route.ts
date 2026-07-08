@@ -4,6 +4,7 @@ import { verifyCredentials, verifyPassword } from "@/lib/auth";
 import { createSessionToken, SESSION_MAX_AGE } from "@/lib/auth-helpers";
 
 const SESSION_COOKIE = "dash_session";
+const IS_SECURE = process.env.HTTPS === "true";
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_WINDOW_MS = 60_000;
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
       cookieStore.set(SESSION_COOKIE, token, {
         path: "/",
         httpOnly: true,
-        secure: true,
+        secure: IS_SECURE,
         sameSite: "lax",
         maxAge: SESSION_MAX_AGE,
       });
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
     cookieStore.set(SESSION_COOKIE, token, {
       path: "/",
       httpOnly: true,
-      secure: true,
+      secure: IS_SECURE,
       sameSite: "lax",
       maxAge: SESSION_MAX_AGE,
     });

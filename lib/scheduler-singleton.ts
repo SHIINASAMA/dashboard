@@ -1,10 +1,10 @@
 import { startScheduler } from "./scheduler";
 
-let started = false;
+const g = globalThis as unknown as { __schedulerStarted?: boolean };
 
 export function ensureScheduler() {
-  if (!started) {
-    started = true;
+  if (!g.__schedulerStarted) {
+    g.__schedulerStarted = true;
     startScheduler();
   }
 }

@@ -5,10 +5,6 @@ import { fetchGitlabAccount } from "./fetchers/gitlab";
 import { fetchRedditAccount, fetchRedditPublicAccount } from "./fetchers/reddit";
 import { getLogger } from "./logger";
 
-let running = false;
-let cycleRunning = false;
-let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
 // Minimum seconds between fetching two accounts of the same platform.
 // Prevents hammering a single API with back-to-back full-profile fetches.
 const PLATFORM_COOLDOWN_MS: Record<string, number> = {
@@ -20,30 +16,32 @@ const PLATFORM_COOLDOWN_MS: Record<string, number> = {
 
 const CYCLE_INTERVAL_MS = 60_000;
 
+const g = globalThis as unknown as { __running?: boolean; __cycleRunning?: boolean; __timeoutId?: ReturnType<typeof setTimeout> | null };
+
 export function startScheduler() {
-  if (running) return;
-  running = true;
+  if (g.__running) return;
+  g.__running = true;
   getLogger().info("Scheduler", "Started (checking every %ds)", CYCLE_INTERVAL_MS / 1000);
   scheduleNext();
 }
 
 export function stopScheduler() {
-  if (timeoutId) clearTimeout(timeoutId);
-  running = false;
+  if (g.__timeoutId) clearTimeout(g.__timeoutId);
+  g.__running = false;
 }
 
 function scheduleNext() {
-  if (!running) return;
+  if (!g.__running) return;
   // Add jitter to prevent alignment across restarts
   const jitter = Math.random() * 10_000; // 0–10s
-  timeoutId = setTimeout(() => {
+  g.__timeoutId = setTimeout(() => {
     runCycle().finally(() => scheduleNext());
   }, CYCLE_INTERVAL_MS + jitter);
 }
 
 async function runCycle() {
-  if (cycleRunning) return;
-  cycleRunning = true;
+  if (g.__cycleRunning) return;
+  g.__cycleRunning = true;
   try {
     const accounts = await getActiveAccounts();
     if (accounts.length === 0) return;
@@ -89,7 +87,7 @@ async function runCycle() {
   } catch (err) {
     getLogger().error("Scheduler", "Cycle error: %s", err instanceof Error ? err.message : String(err));
   } finally {
-    cycleRunning = false;
+    g.__cycleRunning = false;
   }
 }
 

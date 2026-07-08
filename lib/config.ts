@@ -79,16 +79,16 @@ function parseDbUrl(url: string): DatabaseConfig | null {
 
 // ── Config (env-only, no filesystem persistence) ────────────────────
 
-let _config: DashboardConfig | null = null;
+const g = globalThis as unknown as { __dashboardConfig?: DashboardConfig };
 
 export function loadConfig(): DashboardConfig {
-  if (_config) return _config;
+  if (g.__dashboardConfig) return g.__dashboardConfig;
 
   // DATABASE_URL takes priority; fall back to individual PG_* vars
   const dbUrl = process.env.DATABASE_URL?.trim();
   const dbConfig = dbUrl ? parseDbUrl(dbUrl) ?? defaultDb() : defaultDb();
 
-  _config = {
+  g.__dashboardConfig = {
     host: process.env.HOST || "0.0.0.0",
     port: Number(process.env.PORT) || 3001,
     https: process.env.HTTPS === "true",
@@ -102,7 +102,7 @@ export function loadConfig(): DashboardConfig {
       maxFiles: logMaxFiles(),
     },
   };
-  return _config;
+  return g.__dashboardConfig;
 }
 
 function defaultDb(): DatabaseConfig {

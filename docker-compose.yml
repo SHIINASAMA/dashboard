@@ -25,7 +25,7 @@ services:
       LOG_MAX_SIZE: ${LOG_MAX_SIZE:-10m}
       LOG_MAX_FILES: ${LOG_MAX_FILES:-5}
     volumes:
-      - dashboard_data:/app/data
+      - ${DATA_HOST_DIR:-./data}:/app/data
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/api/health"]
       interval: 30s
@@ -56,5 +56,4 @@ services:
       start_period: 5s
 
 volumes:
-  dashboard_data:
   pg_data:

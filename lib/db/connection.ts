@@ -3,14 +3,18 @@ import type { Pool } from "pg";
 import { loadConfig } from "../config";
 import * as schema from "@/db/schema";
 
-let _pgPool: Pool | null = null;
-let _db: ReturnType<typeof drizzle> | null = null;
+// Use globalThis to survive Next.js standalone module identity splits.
+const g = globalThis as unknown as {
+  __pgPool?: Pool;
+  __db?: ReturnType<typeof drizzle>;
+};
 
 export async function initPgPool(): Promise<void> {
+  if (g.__pgPool) return; // already initialized
   const cfg = loadConfig().database;
   if (!cfg) throw new Error("PostgreSQL config missing");
   const { Pool } = await import("pg");
-  _pgPool = new Pool({
+  g.__pgPool = new Pool({
     host: cfg.host,
     port: cfg.port,
     database: cfg.database,
@@ -20,27 +24,27 @@ export async function initPgPool(): Promise<void> {
     ssl: cfg.ssl ? { rejectUnauthorized: false } : undefined,
   });
 
-  const client = await _pgPool.connect();
+  const client = await g.__pgPool.connect();
   client.release();
   console.log("[DB] Connected to PostgreSQL at %s:%d/%s", cfg.host, cfg.port, cfg.database);
 }
 
 export function getDb() {
-  if (!_db) {
-    if (!_pgPool) throw new Error("PostgreSQL pool not initialized. Call initPgPool() first.");
-    _db = drizzle(_pgPool, { schema });
+  if (!g.__db) {
+    if (!g.__pgPool) throw new Error("PostgreSQL pool not initialized. Call initPgPool() first.");
+    g.__db = drizzle(g.__pgPool, { schema });
   }
-  return _db;
+  return g.__db;
 }
 
 export function getPgPool(): Pool | null {
-  return _pgPool;
+  return g.__pgPool ?? null;
 }
 
 export async function closeDb() {
-  _db = null;
-  if (_pgPool) {
-    await _pgPool.end();
-    _pgPool = null;
+  g.__db = undefined;
+  if (g.__pgPool) {
+    await g.__pgPool.end();
+    g.__pgPool = undefined;
   }
 }

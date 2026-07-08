@@ -38,9 +38,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Copy standalone build
 COPY --from=base --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=base --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
-USER nextjs
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+CMD ["docker-entrypoint.sh"]

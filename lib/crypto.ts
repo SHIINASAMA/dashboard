@@ -4,21 +4,21 @@ const ALGO = "aes-256-gcm";
 const IV_LEN = 12;
 const TAG_LEN = 16;
 
-let _key: Buffer | null = null;
+const g = globalThis as unknown as { __cryptoKey?: Buffer };
 
 export function initCrypto(keyHex?: string): string {
   if (keyHex) {
     if (keyHex.length !== 64) throw new Error("Encryption key must be 64 hex chars (32 bytes)");
-    _key = Buffer.from(keyHex, "hex");
+    g.__cryptoKey = Buffer.from(keyHex, "hex");
     return keyHex;
   }
-  _key = randomBytes(32);
-  return _key.toString("hex");
+  g.__cryptoKey = randomBytes(32);
+  return g.__cryptoKey.toString("hex");
 }
 
 function getKey(): Buffer {
-  if (!_key) throw new Error("Crypto not initialised — call initCrypto() first");
-  return _key;
+  if (!g.__cryptoKey) throw new Error("Crypto not initialised — call initCrypto() first");
+  return g.__cryptoKey;
 }
 
 function toU8(buf: Buffer): Uint8Array {
