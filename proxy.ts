@@ -23,8 +23,6 @@ const PUBLIC_API_PATHS = [
 
 const PUBLIC_PAGE_PATHS = ["/login"];
 
-export const runtime = "nodejs";
-
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
