@@ -19,5 +19,6 @@ export function useNow(): number {
       };
     },
     () => now,
+    () => Date.now(),
   );
 }
