@@ -1,0 +1,53 @@
+services:
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: dashboard-dev
+    ports:
+      - "3000:3000"
+    environment:
+      HOST: 0.0.0.0
+      PORT: "3000"
+      DATA_DIR: /app/data
+      NODE_ENV: development
+      DASHBOARD_SECRET: ${DASHBOARD_SECRET:-dev-secret-change-in-production}
+      DATABASE_URL: postgresql://${PG_USER:-dashboard}:${PG_PASSWORD:-dashboard}@postgres:5432/${PG_DB:-dashboard}
+      HTTPS_PROXY: ${HTTPS_PROXY:-}
+      HTTP_PROXY: ${HTTP_PROXY:-}
+      REDDIT_CLIENT_ID: ${REDDIT_CLIENT_ID:-}
+      REDDIT_CLIENT_SECRET: ${REDDIT_CLIENT_SECRET:-}
+      LOG_LEVEL: debug
+      LOG_DIR: /app/data/logs
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+      - dashboard_data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: pnpm dev
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: dashboard-pg
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${PG_USER:-dashboard}
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-dashboard}
+      POSTGRES_DB: ${PG_DB:-dashboard}
+    ports:
+      - "${PG_PORT:-5432}:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER:-dashboard} -d ${PG_DB:-dashboard}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+volumes:
+  dashboard_data:
+  pg_data:
