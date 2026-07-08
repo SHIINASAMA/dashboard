@@ -1,4 +1,4 @@
-import { getActiveAccounts, getAccountById } from "./services/accounts";
+import { getActiveAccounts, getAccountById, updateAccount } from "./services/accounts";
 import { fetchAccount } from "./fetcher";
 import { fetchGithubAccount } from "./fetchers/github";
 import { fetchGitlabAccount } from "./fetchers/gitlab";
@@ -61,10 +61,15 @@ async function runCycle() {
         await sleep(cooldown - elapsed);
       }
 
+      // Re-fetch the account to ensure it's still active and has the latest state.
       const freshAccount = await getAccountById(account.id);
       if (!freshAccount || !freshAccount.is_active) {
         continue;
       }
+
+      // Mark fetch as started so other cycles (or other workers) see a fresh
+      // last_fetched_at and skip this account.
+      await updateAccount(freshAccount.id, { last_fetched_at: new Date().toISOString() });
 
       if (freshAccount.platform === "github") {
         await fetchGithubAccount(freshAccount);

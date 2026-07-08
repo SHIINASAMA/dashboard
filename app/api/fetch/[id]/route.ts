@@ -14,6 +14,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     account.is_active = 1;
   }
 
+  // Mark as fetching to prevent duplicate concurrent runs.
+  await updateAccount(Number(id), { last_fetched_at: new Date().toISOString() });
+
   const fn =
     account.platform === "github"
       ? fetchGithubAccount
