@@ -17,10 +17,12 @@ const SIDEBAR_WIDTH = 240;
 const TITLEBAR_H = 48;
 
 function loadVisible(): boolean {
+  if (typeof window === "undefined") return true;
   try { return JSON.parse(localStorage.getItem(SIDEBAR_KEY) ?? "true"); } catch { return true; }
 }
 
 function saveVisible(v: boolean) {
+  if (typeof window === "undefined") return;
   localStorage.setItem(SIDEBAR_KEY, JSON.stringify(v));
 }
 
@@ -59,7 +61,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { url } = useBingWallpaper();
   const [isOpen, setIsOpen] = useState(loadVisible);
   const [loggingOut, setLoggingOut] = useState(false);
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");

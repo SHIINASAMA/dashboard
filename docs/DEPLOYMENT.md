@@ -11,7 +11,7 @@ docker compose up -d
 ```
 
 The compose stack includes:
-- **dashboard** — the app (port 3001)
+- **dashboard** — the app (port 3000)
 - **postgres** — PostgreSQL 16 (port 5432)
 
 ### Volumes
@@ -38,8 +38,8 @@ docker compose up -d
 ```
 
 The Dockerfile uses a multi-stage build:
-1. **Stage 1** (`node:22-slim`): builds the client (Vite + React)
-2. **Stage 2** (`node:22-slim`): runs the server with the built client
+1. **Stage 1** (`node:22-slim`): installs dependencies and builds the Next.js standalone server
+2. **Stage 2** (`node:22-slim`): runs the standalone output on port 3000 as a non-root user
 
 ## Standalone
 
@@ -47,7 +47,7 @@ The Dockerfile uses a multi-stage build:
 
 - Node.js 22+
 - pnpm
-- PostgreSQL (or use SQLite — see below)
+- PostgreSQL
 
 ### Development
 
@@ -59,17 +59,12 @@ pnpm run dev
 ### Production
 
 ```bash
-pnpm install --prod
-pnpm run server
+pnpm install --frozen-lockfile
+pnpm run build
+pnpm run start
 ```
 
-Set `NODE_ENV=production` to serve the pre-built client from `client/dist/`.
-
-Build the client first:
-
-```bash
-cd client && pnpm install && pnpm exec vite build
-```
+The production app runs as a single Next.js process on port 3000.
 
 ## Database
 
@@ -77,13 +72,9 @@ cd client && pnpm install && pnpm exec vite build
 
 The app uses Drizzle ORM with the `pg` driver. On first run, tables are created automatically via the migration system.
 
-### SQLite (Legacy)
-
-SQLite support exists in the schema definitions but the runtime uses PostgreSQL. To use SQLite, you would need to modify `server/db/connection.ts` to use `@libsql/client` instead of `pg`.
-
 ### Migrations
 
-Migrations run automatically on startup via `server/setup.ts`. The migration system:
+Migrations and bootstrap setup run automatically on startup. The startup flow:
 1. Creates tables if they don't exist
 2. Adds missing columns (e.g., `owner_id`, `deleted_at`)
 3. Creates indexes
@@ -95,8 +86,6 @@ Migrations run automatically on startup via `server/setup.ts`. The migration sys
 # PostgreSQL
 pg_dump -U dashboard dashboard > backup.sql
 
-# SQLite (if used)
-cp data/db/dashboard.db data/db/dashboard.db.backup
 ```
 
 ## Kubernetes
@@ -116,7 +105,7 @@ server {
     server_name dashboard.example.com;
 
     location / {
-        proxy_pass http://localhost:3001;
+        proxy_pass http://localhost:3000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

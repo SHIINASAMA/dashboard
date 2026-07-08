@@ -1,9 +1,12 @@
 node_modules
-client/node_modules
-client/dist
+.pnpm-store
+.next
+coverage
+*.log
 data
 .git
 .env
+.env.*
 *.md
 docs
 .github

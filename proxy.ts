@@ -13,7 +13,7 @@ const PUBLIC_API_PATHS = [
 
 const PUBLIC_PAGE_PATHS = ["/login"];
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Static assets — pass through

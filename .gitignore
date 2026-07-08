@@ -12,10 +12,12 @@
 
 # Dependencies
 node_modules/
+.pnpm-store/
 
 # Next.js
 .next/
 out/
+*.tsbuildinfo
 
 # Dashboard
 *.db

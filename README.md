@@ -27,25 +27,25 @@ openssl rand -hex 32  # generate a secret
 docker compose up -d
 ```
 
-Open `http://localhost:3001`. On first run, log in as `admin` with empty password, then set a password in Settings.
+Open `http://localhost:3000`. On first run, log in as `admin` with empty password, then set a password in Settings.
 
 ### Standalone
 
 ```bash
-bun install
-bun run dev
+pnpm install
+pnpm run dev
 ```
 
-The server starts on port 3001, client dev server on a random port. Open the URL printed in the console.
+The app starts on port 3000.
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| **Runtime** | Bun |
-| **Backend** | Hono REST API |
-| **Frontend** | React 19 + React Router + TypeScript |
-| **Build** | Vite |
+| **Runtime** | Node.js 22 + pnpm |
+| **Backend** | Next.js Route Handlers |
+| **Frontend** | React 19 + Next.js App Router + TypeScript |
+| **Build** | Next.js standalone |
 | **Styling** | Tailwind CSS v4 + shadcn/ui |
 | **Charts** | Recharts |
 | **Icons** | lucide-react |
@@ -86,7 +86,7 @@ cp .env.example .env
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `HOST` | `0.0.0.0` | Bind address |
-| `PORT` | `3001` | Listen port |
+| `PORT` | `3000` | Listen port |
 | `NODE_ENV` | — | Set `production` for prod mode |
 
 ### Auth & Security
@@ -129,16 +129,15 @@ docker compose up -d
 ```
 
 The compose stack includes:
-- **dashboard** — the app (port 3001)
+- **dashboard** — the app (port 3000)
 - **postgres** — PostgreSQL 16 (port 5432)
 
 ### Standalone Production
 
 ```bash
-bun install --production
-cd client && bun install && bunx vite build
-cd ..
-bun run server
+pnpm install --frozen-lockfile
+pnpm run build
+pnpm run start
 ```
 
 ### Kubernetes
@@ -155,7 +154,7 @@ server {
     server_name dashboard.example.com;
 
     location / {
-        proxy_pass http://localhost:3001;
+        proxy_pass http://localhost:3000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -168,28 +167,10 @@ server {
 
 ```
 dashboard/
-├── server/                 # Hono REST API
-│   ├── index.ts            # Server entry, auth routes, middleware
-│   ├── setup.ts            # Bootstrap: migrations, admin user
-│   ├── config.ts           # Config management
-│   ├── auth.ts             # Argon2id password hashing
-│   ├── crypto.ts           # AES-256-GCM encryption, JWT signing
-│   ├── scheduler.ts        # Background fetch scheduler (60s intervals)
-│   ├── fetchers/           # Per-platform data fetchers
-│   ├── repositories/       # Data access layer (Drizzle queries)
-│   ├── services/           # Business logic layer
-│   └── routes/             # REST API route handlers
-├── client/                 # React SPA
-│   └── src/
-│       ├── App.tsx         # Route definitions + auth guards
-│       ├── api.ts          # API client + TypeScript interfaces
-│       ├── components/     # Shared UI components
-│       ├── pages/          # Page components per platform
-│       ├── lib/            # Utilities, hooks, i18n
-│       └── locales/        # en.json, zh.json
+├── app/                    # Next.js pages and API routes
+├── components/             # Shared UI components
 ├── db/schema/              # Drizzle ORM schema files
-├── shared/                 # Shared types between client/server
-├── scripts/                # Utility scripts
+├── lib/                    # Server/client shared utilities, DB, fetchers
 ├── docs/                   # Project documentation
 └── data/                   # Runtime data (config, db, logs)
 ```
@@ -224,27 +205,28 @@ Each platform (x, github, gitlab, reddit) has dedicated endpoints for stats, tim
 
 ### Prerequisites
 
-- [Bun](https://bun.sh/) runtime
-- PostgreSQL (or use SQLite with modifications)
+- Node.js 22+
+- pnpm
+- PostgreSQL
 
 ### Setup
 
 ```bash
-bun install
+pnpm install
 cp .env.example .env
 # Set DASHBOARD_SECRET in .env
-bun run dev
+pnpm run dev
 ```
 
 ### Commands
 
 | Command | Description |
 |---------|-------------|
-| `bun run dev` | Start dev server (server + client) |
-| `bun run server` | Start server only |
-| `bun run test` | Run server tests |
-| `bun run typecheck` | TypeScript type checking |
-| `cd client && bun run lint` | ESLint for client |
+| `pnpm run dev` | Start Next.js dev server |
+| `pnpm run start` | Start production server |
+| `pnpm test` | Run tests |
+| `pnpm run typecheck` | TypeScript type checking |
+| `pnpm run lint` | ESLint |
 
 ### Architecture
 

@@ -34,8 +34,12 @@ export const DEFAULT_SETTINGS: ThemeSettings = {
 };
 
 const STORAGE_KEY = "theme-settings";
+const isBrowser = typeof window !== "undefined";
 
 export function loadSettings(): ThemeSettings {
+  if (!isBrowser) {
+    return { ...DEFAULT_SETTINGS };
+  }
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
@@ -44,17 +48,20 @@ export function loadSettings(): ThemeSettings {
 }
 
 export function saveSettings(settings: ThemeSettings) {
+  if (!isBrowser) return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
 }
 
 export function resolveTheme(settings: ThemeSettings): string {
   if (settings.mode === "light") return settings.lightTheme;
   if (settings.mode === "dark") return settings.darkTheme;
+  if (!isBrowser) return settings.lightTheme;
   const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
   return prefersDark ? settings.darkTheme : settings.lightTheme;
 }
 
 export function applyTheme(themeId: string) {
+  if (typeof document === "undefined") return;
   const root = document.documentElement;
   root.setAttribute("data-theme", themeId);
   root.classList.toggle("dark", isDarkId(themeId));
