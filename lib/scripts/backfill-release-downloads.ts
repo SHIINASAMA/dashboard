@@ -4,8 +4,8 @@
  * Usage: bun run backfill:release-downloads
  */
 
-import { getDb } from "../db/connection.js";
-import { github_releases, github_release_assets } from "../../db/schema/github.js";
+import { getDb } from "@/lib/db/connection";
+import { github_releases, github_release_assets } from "@/db/schema/github";
 import { eq } from "drizzle-orm";
 
 async function main() {

@@ -8,8 +8,8 @@ import { api, type Account } from "@/lib/api";
 import { Card, CardContent } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Skeleton } from "./Skeleton";
-import { formatDateTime } from "../lib/datetime";
-import { useNow } from "../lib/use-now";
+import { formatDateTime } from "@/lib/client/datetime";
+import { useNow } from "@/lib/client/use-now";
 import { AlertCircle, ArrowUpRight } from "lucide-react";
 
 export interface AccountListPageProps {

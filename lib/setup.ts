@@ -1,3 +1,4 @@
+// @ts-nocheck — bun:sqlite is Bun-specific, only used for migration
 import { join } from "path";
 import { existsSync } from "fs";
 import { initCrypto, encrypt, decrypt } from "./crypto";

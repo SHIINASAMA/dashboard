@@ -1,7 +1,7 @@
 "use client";
 
 import type { HTMLAttributes, ReactNode } from "react";
-import { cn } from "../../lib/utils";
+import { cn } from "@/lib/client/utils";
 
 export function Badge({ className, children, ...props }: HTMLAttributes<HTMLSpanElement> & { children?: ReactNode }) {
   return (

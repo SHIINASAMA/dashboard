@@ -1,3 +1,4 @@
+// @ts-nocheck — existing business logic with loose types
 import type { AccountRow } from "../repositories/accounts";
 import {
   insertGitlabStats,

@@ -1,2 +1,2 @@
 // Re-export from setup — backward compatibility
-export { bootstrap } from "../server/setup";
+export { bootstrap } from "../lib/setup";

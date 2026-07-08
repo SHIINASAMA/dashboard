@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { loadSettings, saveSettings, resolveTheme, applyTheme } from "../lib/themes";
-import type { ThemeSettings } from "../lib/themes";
+import { loadSettings, saveSettings, resolveTheme, applyTheme } from "@/lib/client/themes";
+import type { ThemeSettings } from "@/lib/client/themes";
 import { ThemeContext } from "./useTheme";
 
 function matchSystemDark() {

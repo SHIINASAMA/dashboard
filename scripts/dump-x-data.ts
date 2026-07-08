@@ -6,11 +6,11 @@
  * Saves data to data/dumps/<screen_name>/
  */
 import { _xClient } from "./utils";
-import { getDb } from "../server/db/connection";
+import { getDb } from "@/lib/db/connection";
 import { accounts } from "../db/schema";
 import { eq, and, isNull } from "drizzle-orm";
-import { decrypt, initCrypto } from "../server/crypto";
-import { loadOrGenerateKey } from "../server/config";
+import { decrypt, initCrypto } from "@/lib/crypto";
+import { loadOrGenerateKey } from "@/lib/config";
 import { mkdirSync, writeFileSync } from "fs";
 import { join } from "path";
 

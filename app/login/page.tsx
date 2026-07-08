@@ -8,7 +8,7 @@ import { LayoutDashboard, LogIn, Eye, EyeOff } from "lucide-react";
 import { api } from "@/lib/api";
 import { useBingWallpaper } from "@/lib/client/useBingWallpaper";
 
-export function Login() {
+export default function Login() {
   const { t } = useTranslation();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -27,7 +27,7 @@ export function Login() {
       const res = await api.login(username || "admin", password);
       if (res.ok) {
         queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
-        router.push("/", { replace: true });
+        router.replace("/");
       } else {
         setError(t("login.invalidPassword"));
       }

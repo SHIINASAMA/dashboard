@@ -20,7 +20,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 
-export function RedditDetail() {
+export default function RedditDetail() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();

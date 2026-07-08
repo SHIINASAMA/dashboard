@@ -11,7 +11,7 @@ import { GitHubSection } from "./GitHubSection";
 import { GitLabSection } from "./GitLabSection";
 import { RedditSection } from "./RedditSection";
 
-export function Overview() {
+export default function Overview() {
   const { t } = useTranslation();
   const data = useOverviewData();
   const {

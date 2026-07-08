@@ -219,7 +219,7 @@ function ReleaseDownloadsChart({ releases, isMobile }: { releases: GithubRelease
             <YAxis type="category" dataKey="tag_name" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={isMobile ? 50 : 120} tickFormatter={(v: string) => v.length > (isMobile ? 6 : 15) ? v.slice(0, isMobile ? 6 : 15) + "..." : v} />
             <Tooltip
               contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }}
-              formatter={(value: number, name: string) => [value.toLocaleString(), name]}
+              formatter={(value, name) => [String(value), String(name)]}
               labelFormatter={(label) => {
                 const rel = releases.find((r) => r.tag_name === label);
                 return rel ? `${rel.name || rel.tag_name} — ${rel.published_at ? formatDate(rel.published_at) : ""}` : label;
@@ -240,7 +240,7 @@ function ReleaseDownloadsChart({ releases, isMobile }: { releases: GithubRelease
   );
 }
 
-export function RepoDetail() {
+export default function RepoDetail() {
   const { t } = useTranslation();
   const { accountId, repoId } = useParams<{ accountId: string; repoId: string }>();
   const router = useRouter();

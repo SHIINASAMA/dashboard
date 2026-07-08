@@ -22,7 +22,7 @@ const MODE_OPTIONS = [
   { value: "dark" as const },
 ];
 
-export function Settings() {
+export default function Settings() {
   const { t, i18n } = useTranslation();
   const { settings, setSettings } = useTheme();
   const [pwError, setPwError] = useState("");

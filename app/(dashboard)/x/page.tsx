@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import AccountListPage from "@/components/AccountListPage";
 import { XIcon } from "@/components/BrandIcons";
 
-export function X() {
+export default function X() {
   const { t } = useTranslation();
 
   return (

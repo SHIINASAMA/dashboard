@@ -9,7 +9,7 @@ import { validatePassword } from "@/lib/client/validatePassword";
 import { PasswordHints } from "@/components/ui/PasswordHints";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
-export function Admin() {
+export default function Admin() {
   const { t } = useTranslation();
   const [createError, setCreateError] = useState("");
   const [deleteUserId, setDeleteUserId] = useState<number | null>(null);

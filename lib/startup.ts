@@ -3,8 +3,11 @@ import { bootstrap } from "./setup";
 import { loadConfig } from "./config";
 import { initLogger } from "./logger";
 
-// Top-level await — runs once when module is first imported
-await bootstrap();
-const cfg = loadConfig();
-initLogger(cfg.log);
-ensureScheduler();
+// Only run startup at runtime, not during build
+// NEXT_RUNTIME is "nodejs" when running server-side at runtime
+if (process.env.NEXT_RUNTIME === "nodejs") {
+  await bootstrap();
+  const cfg = loadConfig();
+  initLogger(cfg.log);
+  ensureScheduler();
+}

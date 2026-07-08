@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, X } from "lucide-react";
-import type { PasswordRules } from "../../lib/validatePassword";
+import type { PasswordRules } from "@/lib/client/validatePassword";
 
 interface PasswordHintsProps {
   rules: PasswordRules;

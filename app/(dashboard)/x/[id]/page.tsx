@@ -21,7 +21,7 @@ import {
 import { useIsMobile } from "@/lib/client/useIsMobile";
 import { StatCardSkeleton, ChartCardSkeleton, Skeleton } from "@/components/Skeleton";
 
-export function XDetail() {
+export default function XDetail() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();

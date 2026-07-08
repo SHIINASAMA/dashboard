@@ -1,5 +1,4 @@
 import "./globals.css";
-import "@/lib/startup";
 import { Providers } from "./providers";
 
 export const metadata = {

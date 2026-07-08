@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import type { ThemeSettings } from "../lib/themes";
+import type { ThemeSettings } from "@/lib/client/themes";
 
 export interface ThemeContextValue {
   settings: ThemeSettings;

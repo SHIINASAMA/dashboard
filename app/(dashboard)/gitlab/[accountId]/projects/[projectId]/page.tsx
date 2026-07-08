@@ -15,7 +15,7 @@ import {
 import { ArrowLeft, Star, GitFork, Download, ExternalLink, TrendingUp, Activity } from "lucide-react";
 import { useIsMobile } from "@/lib/client/useIsMobile";
 
-export function ProjectDetail() {
+export default function ProjectDetail() {
   const { t } = useTranslation();
   const { accountId, projectId } = useParams<{ accountId: string; projectId: string }>();
   const router = useRouter();

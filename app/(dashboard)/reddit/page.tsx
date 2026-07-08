@@ -7,7 +7,7 @@ import { RedditIcon } from "@/components/BrandIcons";
 import { Badge } from "@/components/ui/badge";
 import { MessageSquare, TrendingUp, ThumbsUp } from "lucide-react";
 
-export function Reddit() {
+export default function Reddit() {
   const { t } = useTranslation();
 
   return (

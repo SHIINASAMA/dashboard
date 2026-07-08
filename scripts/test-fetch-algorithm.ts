@@ -5,11 +5,11 @@
  * Usage: bun run scripts/test-fetch-algorithm.ts
  */
 import { _xClient } from "./utils";
-import { getDb } from "../server/db/connection";
+import { getDb } from "@/lib/db/connection";
 import { accounts } from "../db/schema";
 import { eq, and, isNull } from "drizzle-orm";
-import { decrypt, initCrypto } from "../server/crypto";
-import { loadOrGenerateKey } from "../server/config";
+import { decrypt, initCrypto } from "@/lib/crypto";
+import { loadOrGenerateKey } from "@/lib/config";
 
 // Bootstrap
 initCrypto(loadOrGenerateKey());

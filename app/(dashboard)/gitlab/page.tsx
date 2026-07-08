@@ -7,7 +7,7 @@ import { GitlabIcon } from "@/components/BrandIcons";
 import { Badge } from "@/components/ui/badge";
 import { Star, GitFork, Users, BookOpen } from "lucide-react";
 
-export function GitLab() {
+export default function GitLab() {
   const { t } = useTranslation();
 
   return (

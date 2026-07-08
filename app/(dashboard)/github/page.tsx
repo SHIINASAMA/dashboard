@@ -6,7 +6,7 @@ import { GithubIcon } from "@/components/BrandIcons";
 import { Badge } from "@/components/ui/badge";
 import { Star, GitFork, Users, BookOpen } from "lucide-react";
 
-export function GitHub() {
+export default function GitHub() {
   const { t } = useTranslation();
 
   return (
