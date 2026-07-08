@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 16, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/middleware.ts"],"sourcesContent":["import { NextRequest, NextResponse } from \"next/server\";\n\nexport function middleware(req: NextRequest) {\n  return NextResponse.next();\n}\n\nexport const config = {\n  matcher: [\"/((?!_next/static|_next/image|favicon.ico).*)\"],\n};\n"],"names":["middleware","req","next","config","matcher"],"mappings":";;;;;;AAAA;AAAA;;AAEO,SAASA,WAAWC,GAAgB;IACzC,OAAO,6UAAY,CAACC,IAAI;AAC1B;AAEO,MAAMC,SAAS;IACpBC,SAAS;QAAC;KAAgD;AAC5D"}}]
+}
