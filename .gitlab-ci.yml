@@ -5,14 +5,15 @@ stages:
 .build_template: &build_template
   rules:
     - changes:
-        - src/**/*
-        - client/**/*
-        - server/**/*
+        - app/**/*
+        - components/**/*
+        - lib/**/*
         - shared/**/*
         - db/**/*
         - scripts/**/*
         - Dockerfile
         - package.json
+        - next.config.ts
         - drizzle.config.ts
         - tsconfig.json
         - .gitlab-ci.yml

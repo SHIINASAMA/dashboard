@@ -5,10 +5,10 @@ services:
     container_name: dashboard
     restart: unless-stopped
     ports:
-      - "${PORT:-3001}:3001"
+      - "${PORT:-3000}:3000"
     environment:
       HOST: 0.0.0.0
-      PORT: "3001"
+      PORT: "3000"
       DATA_DIR: /app/data
       NODE_ENV: production
       DASHBOARD_SECRET: ${DASHBOARD_SECRET:-}
