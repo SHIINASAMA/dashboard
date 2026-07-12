@@ -8,6 +8,7 @@ import { api, type GithubRepo, type GithubRelease } from "@/lib/api";
 import { formatDate } from "@/lib/client/datetime";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { TimeRangeSelector } from "@/components/TimeRangeSelector";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area, LineChart, Line,
@@ -246,6 +247,7 @@ export default function RepoDetail() {
   const router = useRouter();
   const aid = Number(accountId);
   const rid = Number(repoId);
+  const [days, setDays] = useState(30);
 
   const { data: overview } = useQuery({
     queryKey: ["github", "overview", aid],
@@ -256,20 +258,20 @@ export default function RepoDetail() {
   const repo: GithubRepo | undefined = overview?.repos.find((r) => r.repo_id === rid);
 
   const { data: snapshots } = useQuery({
-    queryKey: ["github", "snapshots", aid, rid],
-    queryFn: () => api.getGithubRepoSnapshots(aid, rid),
+    queryKey: ["github", "snapshots", aid, rid, days],
+    queryFn: () => api.getGithubRepoSnapshots(aid, rid, days),
     enabled: !!aid && !!rid,
   });
 
   const { data: clones } = useQuery({
-    queryKey: ["github", "clones", aid, rid],
-    queryFn: () => api.getGithubTrafficClones(aid, rid),
+    queryKey: ["github", "clones", aid, rid, days],
+    queryFn: () => api.getGithubTrafficClones(aid, rid, days),
     enabled: !!aid && !!rid,
   });
 
   const { data: views } = useQuery({
-    queryKey: ["github", "views", aid, rid],
-    queryFn: () => api.getGithubTrafficViews(aid, rid),
+    queryKey: ["github", "views", aid, rid, days],
+    queryFn: () => api.getGithubTrafficViews(aid, rid, days),
     enabled: !!aid && !!rid,
   });
 
@@ -280,8 +282,8 @@ export default function RepoDetail() {
   });
 
   const { data: referrerHistory } = useQuery({
-    queryKey: ["github", "referrers", "history", aid, rid],
-    queryFn: () => api.getGithubReferrerHistory(aid, rid),
+    queryKey: ["github", "referrers", "history", aid, rid, days],
+    queryFn: () => api.getGithubReferrerHistory(aid, rid, days),
     enabled: !!aid && !!rid,
   });
 
@@ -292,8 +294,8 @@ export default function RepoDetail() {
   });
 
   const { data: pathHistory } = useQuery({
-    queryKey: ["github", "paths", "history", aid, rid],
-    queryFn: () => api.getGithubPathHistory(aid, rid),
+    queryKey: ["github", "paths", "history", aid, rid, days],
+    queryFn: () => api.getGithubPathHistory(aid, rid, days),
     enabled: !!aid && !!rid,
   });
 
@@ -373,6 +375,10 @@ export default function RepoDetail() {
           className="detail-header-actions flex items-center gap-1.5 px-3 py-2.5 min-h-11 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-xs">
           <ExternalLink size={12} /> {t("repoDetail.open")}
         </a>
+      </div>
+
+      <div className="flex items-center justify-end">
+        <TimeRangeSelector value={days} onChange={setDays} />
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">

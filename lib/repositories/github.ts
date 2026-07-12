@@ -1,5 +1,5 @@
 // @ts-nocheck — Drizzle ORM types are complex
-import { eq, and, desc, sql, inArray, type SQL } from "drizzle-orm";
+import { eq, and, desc, sql, inArray, gte, type SQL } from "drizzle-orm";
 import { getDb } from "../db/connection";
 import {
   github_stats, github_repos, github_contributions,
@@ -93,12 +93,14 @@ export async function upsertGithubRepoSnapshot(s: { account_id: number; repo_id:
   });
 }
 
-export async function getGithubRepoSnapshots(accountId: number, repoId: number) {
+export async function getGithubRepoSnapshots(accountId: number, repoId: number, days = 30) {
+  const since = new Date(); since.setDate(since.getDate() - days);
+  const sinceStr = since.toISOString();
   return getDb().select({
     stars: github_repo_snapshots.stars, forks: github_repo_snapshots.forks,
     open_issues: github_repo_snapshots.open_issues, date: github_repo_snapshots.snapshot_date,
   }).from(github_repo_snapshots)
-    .where(and(eq(github_repo_snapshots.account_id, accountId), eq(github_repo_snapshots.repo_id, repoId)))
+    .where(and(eq(github_repo_snapshots.account_id, accountId), eq(github_repo_snapshots.repo_id, repoId), gte(github_repo_snapshots.snapshot_date, sinceStr)))
     .orderBy(github_repo_snapshots.snapshot_date);
 }
 
@@ -109,9 +111,11 @@ export async function upsertGithubTrafficClones(t: { account_id: number; repo_id
   });
 }
 
-export async function getGithubTrafficClones(accountId: number, repoId: number) {
+export async function getGithubTrafficClones(accountId: number, repoId: number, days = 30) {
+  const since = new Date(); since.setDate(since.getDate() - days);
+  const sinceStr = since.toISOString();
   return getDb().select().from(github_traffic_clones)
-    .where(and(eq(github_traffic_clones.account_id, accountId), eq(github_traffic_clones.repo_id, repoId)))
+    .where(and(eq(github_traffic_clones.account_id, accountId), eq(github_traffic_clones.repo_id, repoId), gte(github_traffic_clones.date, sinceStr)))
     .orderBy(github_traffic_clones.date);
 }
 
@@ -122,9 +126,11 @@ export async function upsertGithubTrafficViews(t: { account_id: number; repo_id:
   });
 }
 
-export async function getGithubTrafficViews(accountId: number, repoId: number) {
+export async function getGithubTrafficViews(accountId: number, repoId: number, days = 30) {
+  const since = new Date(); since.setDate(since.getDate() - days);
+  const sinceStr = since.toISOString();
   return getDb().select().from(github_traffic_views)
-    .where(and(eq(github_traffic_views.account_id, accountId), eq(github_traffic_views.repo_id, repoId)))
+    .where(and(eq(github_traffic_views.account_id, accountId), eq(github_traffic_views.repo_id, repoId), gte(github_traffic_views.date, sinceStr)))
     .orderBy(github_traffic_views.date);
 }
 
@@ -144,9 +150,11 @@ export async function getGithubReferrers(accountId: number, repoId: number) {
   return [...latest.values()].sort((a, b) => (b.count ?? 0) - (a.count ?? 0));
 }
 
-export async function getGithubReferrerHistory(accountId: number, repoId: number) {
+export async function getGithubReferrerHistory(accountId: number, repoId: number, days = 30) {
+  const since = new Date(); since.setDate(since.getDate() - days);
+  const sinceStr = since.toISOString();
   return getDb().select().from(github_referrers)
-    .where(and(eq(github_referrers.account_id, accountId), eq(github_referrers.repo_id, repoId)))
+    .where(and(eq(github_referrers.account_id, accountId), eq(github_referrers.repo_id, repoId), gte(github_referrers.snapshot_date, sinceStr)))
     .orderBy(github_referrers.referrer, github_referrers.snapshot_date);
 }
 
@@ -166,9 +174,11 @@ export async function getGithubPaths(accountId: number, repoId: number) {
   return [...latest.values()].sort((a, b) => (b.count ?? 0) - (a.count ?? 0));
 }
 
-export async function getGithubPathHistory(accountId: number, repoId: number) {
+export async function getGithubPathHistory(accountId: number, repoId: number, days = 30) {
+  const since = new Date(); since.setDate(since.getDate() - days);
+  const sinceStr = since.toISOString();
   return getDb().select().from(github_paths)
-    .where(and(eq(github_paths.account_id, accountId), eq(github_paths.repo_id, repoId)))
+    .where(and(eq(github_paths.account_id, accountId), eq(github_paths.repo_id, repoId), gte(github_paths.snapshot_date, sinceStr)))
     .orderBy(github_paths.path, github_paths.snapshot_date);
 }
 

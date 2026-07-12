@@ -78,20 +78,20 @@ export const api = {
     fetchJSON<GithubContribution[]>(`/github/contributions/${accountId}${year ? `?year=${year}` : ""}`),
 
   // GitHub Repo Insights
-  getGithubRepoSnapshots: (accountId: number, repoId: number) =>
-    fetchJSON<{ stars: number; forks: number; open_issues: number; date: string }[]>(`/github/${accountId}/repos/${repoId}/snapshots`),
-  getGithubTrafficClones: (accountId: number, repoId: number) =>
-    fetchJSON<{ date: string; count: number; uniques: number }[]>(`/github/${accountId}/repos/${repoId}/clones`),
-  getGithubTrafficViews: (accountId: number, repoId: number) =>
-    fetchJSON<{ date: string; count: number; uniques: number }[]>(`/github/${accountId}/repos/${repoId}/views`),
+  getGithubRepoSnapshots: (accountId: number, repoId: number, days = 30) =>
+    fetchJSON<{ stars: number; forks: number; open_issues: number; date: string }[]>(`/github/${accountId}/repos/${repoId}/snapshots?days=${days}`),
+  getGithubTrafficClones: (accountId: number, repoId: number, days = 30) =>
+    fetchJSON<{ date: string; count: number; uniques: number }[]>(`/github/${accountId}/repos/${repoId}/clones?days=${days}`),
+  getGithubTrafficViews: (accountId: number, repoId: number, days = 30) =>
+    fetchJSON<{ date: string; count: number; uniques: number }[]>(`/github/${accountId}/repos/${repoId}/views?days=${days}`),
   getGithubReferrers: (accountId: number, repoId: number) =>
     fetchJSON<{ snapshot_date: string; referrer: string; count: number; uniques: number }[]>(`/github/${accountId}/repos/${repoId}/referrers`),
-  getGithubReferrerHistory: (accountId: number, repoId: number) =>
-    fetchJSON<{ snapshot_date: string; referrer: string; count: number; uniques: number }[]>(`/github/${accountId}/repos/${repoId}/referrers/history`),
+  getGithubReferrerHistory: (accountId: number, repoId: number, days = 30) =>
+    fetchJSON<{ snapshot_date: string; referrer: string; count: number; uniques: number }[]>(`/github/${accountId}/repos/${repoId}/referrers/history?days=${days}`),
   getGithubPaths: (accountId: number, repoId: number) =>
     fetchJSON<{ snapshot_date: string; path: string; title: string | null; count: number; uniques: number }[]>(`/github/${accountId}/repos/${repoId}/paths`),
-  getGithubPathHistory: (accountId: number, repoId: number) =>
-    fetchJSON<{ snapshot_date: string; path: string; title: string | null; count: number; uniques: number }[]>(`/github/${accountId}/repos/${repoId}/paths/history`),
+  getGithubPathHistory: (accountId: number, repoId: number, days = 30) =>
+    fetchJSON<{ snapshot_date: string; path: string; title: string | null; count: number; uniques: number }[]>(`/github/${accountId}/repos/${repoId}/paths/history?days=${days}`),
   getGithubReleases: (accountId: number, repoId: number) =>
     fetchJSON<GithubRelease[]>(`/github/${accountId}/repos/${repoId}/releases`),
   getGithubReleaseAssets: (accountId: number, repoId: number, releaseId: number) =>
@@ -106,8 +106,8 @@ export const api = {
     fetchJSON<GitlabContribution[]>(`/gitlab/contributions/${accountId}${year ? `?year=${year}` : ""}`),
 
   // GitLab Project Insights
-  getGitlabProjectSnapshots: (accountId: number, projectId: number) =>
-    fetchJSON<{ stars: number; forks: number; open_issues: number; date: string }[]>(`/gitlab/${accountId}/projects/${projectId}/snapshots`),
+  getGitlabProjectSnapshots: (accountId: number, projectId: number, days = 30) =>
+    fetchJSON<{ stars: number; forks: number; open_issues: number; date: string }[]>(`/gitlab/${accountId}/projects/${projectId}/snapshots?days=${days}`),
   getGitlabReleases: (accountId: number, projectId: number) =>
     fetchJSON<GitlabRelease[]>(`/gitlab/${accountId}/projects/${projectId}/releases`),
   setPinnedGitlabProjects: (accountId: number, projectIds: number[]) =>

@@ -1,5 +1,5 @@
 // @ts-nocheck — Drizzle ORM types are complex
-import { eq, and, desc, sql, type SQL } from "drizzle-orm";
+import { eq, and, desc, sql, gte, type SQL } from "drizzle-orm";
 import { getDb } from "../db/connection";
 import {
   gitlab_stats, gitlab_projects, gitlab_project_snapshots,
@@ -91,12 +91,14 @@ export async function upsertGitlabProjectSnapshot(s: { account_id: number; proje
   });
 }
 
-export async function getGitlabProjectSnapshots(accountId: number, projectId: number) {
+export async function getGitlabProjectSnapshots(accountId: number, projectId: number, days = 30) {
+  const since = new Date(); since.setDate(since.getDate() - days);
+  const sinceStr = since.toISOString();
   return getDb().select({
     stars: gitlab_project_snapshots.stars, forks: gitlab_project_snapshots.forks,
     open_issues: gitlab_project_snapshots.open_issues, date: gitlab_project_snapshots.snapshot_date,
   }).from(gitlab_project_snapshots)
-    .where(and(eq(gitlab_project_snapshots.account_id, accountId), eq(gitlab_project_snapshots.project_id, projectId)))
+    .where(and(eq(gitlab_project_snapshots.account_id, accountId), eq(gitlab_project_snapshots.project_id, projectId), gte(gitlab_project_snapshots.snapshot_date, sinceStr)))
     .orderBy(gitlab_project_snapshots.snapshot_date);
 }
 

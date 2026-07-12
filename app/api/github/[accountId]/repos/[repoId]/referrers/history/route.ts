@@ -3,6 +3,7 @@ import { getGithubReferrerHistory } from "@/lib/repositories/github";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ accountId: string; repoId: string }> }) {
   const { accountId, repoId } = await params;
-  const data = await getGithubReferrerHistory(Number(accountId), Number(repoId));
+  const days = Number(req.nextUrl.searchParams.get("days") ?? "30");
+  const data = await getGithubReferrerHistory(Number(accountId), Number(repoId), days);
   return NextResponse.json(data);
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { api, type Account } from "@/lib/api";
@@ -8,6 +9,7 @@ import { formatDate } from "@/lib/client/datetime";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { calcYAxisWidth } from "@/lib/client/utils";
 import { Badge } from "@/components/ui/badge";
+import { TimeRangeSelector } from "@/components/TimeRangeSelector";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area,
@@ -21,6 +23,7 @@ export default function ProjectDetail() {
   const router = useRouter();
   const aid = Number(accountId);
   const pid = Number(projectId);
+  const [days, setDays] = useState(30);
 
   const { data: overview } = useQuery({
     queryKey: ["gitlab", "overview", aid],
@@ -38,8 +41,8 @@ export default function ProjectDetail() {
   const instanceUrl = account?.instance_url || "https://gitlab.com";
 
   const { data: snapshots } = useQuery({
-    queryKey: ["gitlab", "snapshots", aid, pid],
-    queryFn: () => api.getGitlabProjectSnapshots(aid, pid),
+    queryKey: ["gitlab", "snapshots", aid, pid, days],
+    queryFn: () => api.getGitlabProjectSnapshots(aid, pid, days),
     enabled: !!aid && !!pid,
   });
 
@@ -83,6 +86,10 @@ export default function ProjectDetail() {
           className="detail-header-actions flex items-center gap-1.5 px-3 py-2.5 min-h-11 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-xs">
           <ExternalLink size={12} /> {t("projectDetail.open")}
         </a>
+      </div>
+
+      <div className="flex items-center justify-end">
+        <TimeRangeSelector value={days} onChange={setDays} />
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
