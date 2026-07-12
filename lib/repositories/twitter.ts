@@ -105,10 +105,10 @@ export async function getTweetById(id: string) {
   return rows[0];
 }
 
-export async function getTimeline(months: number, accountIds?: number[]) {
+export async function getTimeline(days = 30, accountIds?: number[]) {
   if (isExplicitEmpty(accountIds)) return { dailyTweets: [], followerGrowth: [] };
   const db = getDb();
-  const since = new Date(); since.setMonth(since.getMonth() - months);
+  const since = new Date(); since.setDate(since.getDate() - days);
   const sinceStr = since.toISOString();
   const tweetFilter = hasIds(accountIds) ? inArray(tweets.account_id, accountIds) : undefined;
 

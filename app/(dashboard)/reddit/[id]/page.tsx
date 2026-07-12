@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { StatCard } from "@/components/StatCard";
+import { TimeRangeSelector } from "@/components/TimeRangeSelector";
 import { calcYAxisWidth } from "@/lib/client/utils";
 import { ArrowLeft, ArrowUpRight, Play, RefreshCw, Trash2, AlertCircle, ThumbsUp, MessageSquare, TrendingUp, FileText } from "lucide-react";
 import { useIsMobile } from "@/lib/client/useIsMobile";
@@ -26,6 +27,7 @@ export default function RedditDetail() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const accountId = Number(id);
+  const [days, setDays] = useState(30);
 
   const { data: account, isLoading: accountLoading } = useQuery({
     queryKey: ["account", accountId],
@@ -53,14 +55,14 @@ export default function RedditDetail() {
   });
 
   const { data: timeline } = useQuery({
-    queryKey: ["reddit", "timeline", accountId],
-    queryFn: () => api.getRedditTimeline(accountId!),
+    queryKey: ["reddit", "timeline", accountId, days],
+    queryFn: () => api.getRedditTimeline(accountId!, days),
     enabled: !!accountId,
   });
 
   const { data: activity } = useQuery({
-    queryKey: ["reddit", "activity", accountId],
-    queryFn: () => api.getRedditActivity(accountId!),
+    queryKey: ["reddit", "activity", accountId, days],
+    queryFn: () => api.getRedditActivity(accountId!, days),
     enabled: !!accountId,
   });
 
@@ -164,6 +166,10 @@ export default function RedditDetail() {
         <div className="text-center py-12 text-[var(--muted-foreground)]">{t("redditDetail.loadingData")}</div>
       ) : overview ? (
         <>
+          <div className="flex items-center justify-end">
+            <TimeRangeSelector value={days} onChange={setDays} />
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard title={t("redditDetail.postKarma")} value={overview.stats?.post_karma ?? 0} icon={<ThumbsUp size={20} />} />
             <StatCard title={t("redditDetail.commentKarma")} value={overview.stats?.comment_karma ?? 0} icon={<MessageSquare size={20} />} />

@@ -1,5 +1,5 @@
 // @ts-nocheck — Drizzle ORM types are complex
-import { eq, desc, sql, count, type SQL } from "drizzle-orm";
+import { eq, desc, sql, count, gte, and, type SQL } from "drizzle-orm";
 import { getDb } from "../db/connection";
 import { reddit_stats, reddit_posts, reddit_comments } from "@/db/schema";
 
@@ -7,7 +7,9 @@ export async function insertRedditStats(stats: { account_id: number; post_karma:
   await getDb().insert(reddit_stats).values({ ...stats, recorded_at: sql`NOW()` });
 }
 
-export async function getRedditTimeline(accountId: number) {
+export async function getRedditTimeline(accountId: number, days = 30) {
+  const since = new Date(); since.setDate(since.getDate() - days);
+  const sinceStr = since.toISOString();
   const { rows } = await getDb().execute<{
     date: string;
     post_karma: number;
@@ -18,6 +20,7 @@ export async function getRedditTimeline(accountId: number) {
     ${reddit_stats.comment_karma}
   FROM ${reddit_stats}
   WHERE ${reddit_stats.account_id} = ${accountId}
+    AND ${reddit_stats.recorded_at} >= ${sinceStr}
   ORDER BY SUBSTRING(${reddit_stats.recorded_at}, 1, 10), ${reddit_stats.recorded_at} DESC`);
   return rows;
 }
@@ -69,20 +72,26 @@ export async function getRedditOverview(accountId: number) {
   return { stats: latest || undefined, totalPosts: postCount.count, totalComments: commentCount.count, totalScore: scoreSum.s, topPosts };
 }
 
-export async function getRedditDailyActivity(accountId: number) {
+export async function getRedditDailyActivity(accountId: number, days = 30) {
+  const since = new Date(); since.setDate(since.getDate() - days);
+  const sinceStr = since.toISOString();
   return getDb().select({
     date: sql`TO_TIMESTAMP(${reddit_posts.created_utc})::date`.as("date"),
     count: count(),
-  }).from(reddit_posts).where(eq(reddit_posts.account_id, accountId))
+  }).from(reddit_posts)
+    .where(and(eq(reddit_posts.account_id, accountId), gte(sql`TO_TIMESTAMP(${reddit_posts.created_utc})`, sinceStr)))
     .groupBy(sql`TO_TIMESTAMP(${reddit_posts.created_utc})::date`)
     .orderBy(sql`TO_TIMESTAMP(${reddit_posts.created_utc})::date`);
 }
 
-export async function getRedditDailyCommentActivity(accountId: number) {
+export async function getRedditDailyCommentActivity(accountId: number, days = 30) {
+  const since = new Date(); since.setDate(since.getDate() - days);
+  const sinceStr = since.toISOString();
   return getDb().select({
     date: sql`TO_TIMESTAMP(${reddit_comments.created_utc})::date`.as("date"),
     count: count(),
-  }).from(reddit_comments).where(eq(reddit_comments.account_id, accountId))
+  }).from(reddit_comments)
+    .where(and(eq(reddit_comments.account_id, accountId), gte(sql`TO_TIMESTAMP(${reddit_comments.created_utc})`, sinceStr)))
     .groupBy(sql`TO_TIMESTAMP(${reddit_comments.created_utc})::date`)
     .orderBy(sql`TO_TIMESTAMP(${reddit_comments.created_utc})::date`);
 }

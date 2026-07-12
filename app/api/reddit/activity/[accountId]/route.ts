@@ -3,7 +3,8 @@ import { getRedditDailyActivity, getRedditDailyCommentActivity } from "@/lib/rep
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ accountId: string }> }) {
   const { accountId } = await params;
-  const posts = await getRedditDailyActivity(Number(accountId));
-  const comments = await getRedditDailyCommentActivity(Number(accountId));
+  const days = Number(req.nextUrl.searchParams.get("days") ?? "30");
+  const posts = await getRedditDailyActivity(Number(accountId), days);
+  const comments = await getRedditDailyCommentActivity(Number(accountId), days);
   return NextResponse.json({ posts, comments });
 }

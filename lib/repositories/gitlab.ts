@@ -20,7 +20,9 @@ export async function getGitlabOverview(accountId: number) {
   return { stats: latest, projects, allProjects, totalStars, totalForks, totalProjects: allProjects.length, languages, topProjects };
 }
 
-export async function getGitlabTimeline(accountId: number) {
+export async function getGitlabTimeline(accountId: number, days = 30) {
+  const since = new Date(); since.setDate(since.getDate() - days);
+  const sinceStr = since.toISOString();
   const { rows } = await getDb().execute<{
     date: string;
     public_projects: number;
@@ -33,6 +35,7 @@ export async function getGitlabTimeline(accountId: number) {
     ${gitlab_stats.following}
   FROM ${gitlab_stats}
   WHERE ${gitlab_stats.account_id} = ${accountId}
+    AND ${gitlab_stats.recorded_at} >= ${sinceStr}
   ORDER BY SUBSTRING(${gitlab_stats.recorded_at}, 1, 10), ${gitlab_stats.recorded_at} DESC`);
   return rows;
 }

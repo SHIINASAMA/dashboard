@@ -11,8 +11,8 @@ export function useOverviewData() {
   });
 
   const { data: timeline } = useQuery<TimelineData>({
-    queryKey: ["timeline", 6],
-    queryFn: () => api.getTimeline(6),
+    queryKey: ["timeline", 30],
+    queryFn: () => api.getTimeline(),
   });
 
   const { data: topLiked } = useQuery({

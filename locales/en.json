@@ -1,4 +1,12 @@
 {
+  "timeRange": {
+    "label": "Time range",
+    "7d": "7 days",
+    "30d": "30 days",
+    "90d": "3 months",
+    "180d": "6 months",
+    "1y": "1 year"
+  },
   "common": {
     "dashboard": "Social Data Hub",
     "loading": "Loading...",

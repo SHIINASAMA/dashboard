@@ -23,7 +23,9 @@ export async function getGithubOverview(accountId: number) {
   return { stats: latest, repos, allRepos, totalStars, totalForks, totalRepos: allRepos.length, languages, topRepos };
 }
 
-export async function getGithubTimeline(accountId: number) {
+export async function getGithubTimeline(accountId: number, days = 30) {
+  const since = new Date(); since.setDate(since.getDate() - days);
+  const sinceStr = since.toISOString();
   const { rows } = await getDb().execute<{
     date: string;
     public_repos: number;
@@ -36,6 +38,7 @@ export async function getGithubTimeline(accountId: number) {
     ${github_stats.following}
   FROM ${github_stats}
   WHERE ${github_stats.account_id} = ${accountId}
+    AND ${github_stats.recorded_at} >= ${sinceStr}
   ORDER BY SUBSTRING(${github_stats.recorded_at}, 1, 10), ${github_stats.recorded_at} DESC`);
   return rows;
 }

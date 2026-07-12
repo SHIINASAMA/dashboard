@@ -20,6 +20,7 @@ import {
 } from "recharts";
 import { useIsMobile } from "@/lib/client/useIsMobile";
 import { StatCardSkeleton, ChartCardSkeleton, Skeleton } from "@/components/Skeleton";
+import { TimeRangeSelector } from "@/components/TimeRangeSelector";
 
 export default function XDetail() {
   const { t } = useTranslation();
@@ -29,6 +30,7 @@ export default function XDetail() {
   const accountId = Number(id);
   const [tab, setTab] = useState<"tweets" | "replies">("tweets");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [days, setDays] = useState(30);
 
   const { data: account, isLoading } = useQuery({
     queryKey: ["account", accountId],
@@ -49,8 +51,8 @@ export default function XDetail() {
   });
 
   const { data: timeline } = useQuery<TimelineData>({
-    queryKey: ["timeline", accountId],
-    queryFn: () => api.getTimeline(6, accountId),
+    queryKey: ["timeline", accountId, days],
+    queryFn: () => api.getTimeline(days, accountId),
     enabled: !!accountId,
   });
 
@@ -158,6 +160,10 @@ export default function XDetail() {
           <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold">{account.stats.tweet_count?.toLocaleString() || "0"}</p><p className="text-xs text-[var(--muted-foreground)]">{t("xDetail.tweets")}</p></CardContent></Card>
         </div>
       )}
+
+      <div className="flex items-center justify-end">
+        <TimeRangeSelector value={days} onChange={setDays} />
+      </div>
 
       {timeline && timeline.dailyTweets.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

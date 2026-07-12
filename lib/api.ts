@@ -61,8 +61,8 @@ export const api = {
     return fetchJSON<PaginatedTweets>(url);
   },
   getTweet: (id: string) => fetchJSON<Tweet>(`/tweets/${id}`),
-  getTimeline: (months = 6, accountId?: number) => {
-    let url = `/stats/timeline?months=${months}`;
+  getTimeline: (days = 30, accountId?: number) => {
+    let url = `/stats/timeline?days=${days}`;
     if (accountId) url += `&accountIds=${accountId}`;
     return fetchJSON<TimelineData>(url);
   },
@@ -73,7 +73,7 @@ export const api = {
 
   // GitHub
   getGithubOverview: (accountId: number) => fetchJSON<GithubOverview>(`/github/overview/${accountId}`),
-  getGithubTimeline: (accountId: number) => fetchJSON<{ date: string; public_repos: number; followers: number; following: number }[]>(`/github/timeline/${accountId}`),
+  getGithubTimeline: (accountId: number, days = 30) => fetchJSON<{ date: string; public_repos: number; followers: number; following: number }[]>(`/github/timeline/${accountId}?days=${days}`),
   getGithubContributions: (accountId: number, year?: number) =>
     fetchJSON<GithubContribution[]>(`/github/contributions/${accountId}${year ? `?year=${year}` : ""}`),
 
@@ -101,7 +101,7 @@ export const api = {
 
   // GitLab
   getGitlabOverview: (accountId: number) => fetchJSON<GitlabOverview>(`/gitlab/overview/${accountId}`),
-  getGitlabTimeline: (accountId: number) => fetchJSON<{ date: string; public_projects: number; followers: number; following: number }[]>(`/gitlab/timeline/${accountId}`),
+  getGitlabTimeline: (accountId: number, days = 30) => fetchJSON<{ date: string; public_projects: number; followers: number; following: number }[]>(`/gitlab/timeline/${accountId}?days=${days}`),
   getGitlabContributions: (accountId: number, year?: number) =>
     fetchJSON<GitlabContribution[]>(`/gitlab/contributions/${accountId}${year ? `?year=${year}` : ""}`),
 
@@ -115,13 +115,13 @@ export const api = {
 
   // Reddit
   getRedditOverview: (accountId: number) => fetchJSON<RedditOverview>(`/reddit/overview/${accountId}`),
-  getRedditTimeline: (accountId: number) => fetchJSON<{ date: string; post_karma: number; comment_karma: number }[]>(`/reddit/timeline/${accountId}`),
+  getRedditTimeline: (accountId: number, days = 30) => fetchJSON<{ date: string; post_karma: number; comment_karma: number }[]>(`/reddit/timeline/${accountId}?days=${days}`),
   getRedditPosts: (accountId: number, page = 1, limit = 20, sort = "score") =>
     fetchJSON<PaginatedRedditPosts>(`/reddit/posts/${accountId}?page=${page}&limit=${limit}&sort=${sort}`),
   getRedditComments: (accountId: number, page = 1, limit = 20) =>
     fetchJSON<PaginatedRedditComments>(`/reddit/comments/${accountId}?page=${page}&limit=${limit}`),
-  getRedditActivity: (accountId: number) =>
-    fetchJSON<{ posts: { date: string; count: number }[]; comments: { date: string; count: number }[] }>(`/reddit/activity/${accountId}`),
+  getRedditActivity: (accountId: number, days = 30) =>
+    fetchJSON<{ posts: { date: string; count: number }[]; comments: { date: string; count: number }[] }>(`/reddit/activity/${accountId}?days=${days}`),
   getRedditSubreddits: (accountId: number) =>
     fetchJSON<{ subreddit: string; count: number }[]>(`/reddit/subreddits/${accountId}`),
 
