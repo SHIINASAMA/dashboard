@@ -1,6 +1,7 @@
 // @ts-nocheck — Drizzle ORM types are complex
 import { eq, and, desc, sql, inArray, gte, type SQL } from "drizzle-orm";
 import { getDb } from "../db/connection";
+import { latestSnapshotRows } from "../utils/latest-snapshot";
 import {
   github_stats, github_repos, github_contributions,
   github_repo_snapshots, github_traffic_clones, github_traffic_views,
@@ -145,9 +146,7 @@ export async function getGithubReferrers(accountId: number, repoId: number) {
   const all = await getDb().select().from(github_referrers)
     .where(and(eq(github_referrers.account_id, accountId), eq(github_referrers.repo_id, repoId)))
     .orderBy(desc(github_referrers.count));
-  const latest = new Map<string, typeof all[0]>();
-  for (const r of all) { if (!latest.has(r.referrer) || r.snapshot_date > latest.get(r.referrer)!.snapshot_date) latest.set(r.referrer, r); }
-  return [...latest.values()].sort((a, b) => (b.count ?? 0) - (a.count ?? 0));
+  return latestSnapshotRows(all);
 }
 
 export async function getGithubReferrerHistory(accountId: number, repoId: number, days = 30) {
@@ -169,9 +168,7 @@ export async function getGithubPaths(accountId: number, repoId: number) {
   const all = await getDb().select().from(github_paths)
     .where(and(eq(github_paths.account_id, accountId), eq(github_paths.repo_id, repoId)))
     .orderBy(desc(github_paths.count));
-  const latest = new Map<string, typeof all[0]>();
-  for (const r of all) { if (!latest.has(r.path) || r.snapshot_date > latest.get(r.path)!.snapshot_date) latest.set(r.path, r); }
-  return [...latest.values()].sort((a, b) => (b.count ?? 0) - (a.count ?? 0));
+  return latestSnapshotRows(all);
 }
 
 export async function getGithubPathHistory(accountId: number, repoId: number, days = 30) {

@@ -9,6 +9,7 @@ import { formatDate } from "@/lib/client/datetime";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TimeRangeSelector } from "@/components/TimeRangeSelector";
+import { TrafficMetricList } from "@/components/TrafficMetricList";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area, LineChart, Line,
@@ -478,24 +479,21 @@ export default function RepoDetail() {
           <CardContent>
             {referrers && referrers.length > 0 ? (
               <div className="space-y-4">
-                <div className="space-y-0.5">
-                  <div className="flex items-center justify-between px-1 pb-1 text-xs font-medium text-[var(--muted-foreground)]">
-                    <span>{t("repoDetail.referrerSource")}</span>
-                    <span className="flex gap-6">
-                      <span className="w-16 text-right">{t("repoDetail.views")}</span>
-                      <span className="w-16 text-right">{t("repoDetail.uniqueVisitors")}</span>
-                    </span>
-                  </div>
+                <TrafficMetricList
+                  label={t("repoDetail.referrerSource")}
+                  primaryLabel={t("repoDetail.views")}
+                  secondaryLabel={t("repoDetail.uniqueVisitors")}
+                >
                   {referrers.map((ref) => (
                     <div key={ref.referrer} className="flex items-center justify-between rounded px-1 py-1.5 hover:bg-[var(--accent)]">
                       <span className="truncate text-sm" title={ref.referrer}>{ref.referrer}</span>
-                      <span className="flex gap-6 text-sm tabular-nums text-[var(--muted-foreground)]">
+                      <span className="flex shrink-0 gap-6 text-sm tabular-nums text-[var(--muted-foreground)]">
                         <span className="w-16 text-right">{(ref.count ?? 0).toLocaleString()}</span>
                         <span className="w-16 text-right">{(ref.uniques ?? 0).toLocaleString()}</span>
                       </span>
                     </div>
                   ))}
-                </div>
+                </TrafficMetricList>
                 {referrerHistoryChart && referrerHistoryChart.length >= 2 ? (
                   <div role="img" aria-label={t("repoDetail.referringSites")}>
                     <p className="mb-2 text-xs font-medium text-[var(--muted-foreground)]">{t("repoDetail.trend")}</p>
@@ -535,24 +533,21 @@ export default function RepoDetail() {
           <CardContent>
             {paths && paths.length > 0 ? (
               <div className="space-y-4">
-                <div className="space-y-0.5">
-                  <div className="flex items-center justify-between px-1 pb-1 text-xs font-medium text-[var(--muted-foreground)]">
-                    <span>{t("repoDetail.contentPath")}</span>
-                    <span className="flex gap-6">
-                      <span className="w-16 text-right">{t("repoDetail.views")}</span>
-                      <span className="w-16 text-right">{t("repoDetail.uniqueVisitors")}</span>
-                    </span>
-                  </div>
+                <TrafficMetricList
+                  label={t("repoDetail.contentPath")}
+                  primaryLabel={t("repoDetail.views")}
+                  secondaryLabel={t("repoDetail.uniqueVisitors")}
+                >
                   {paths.map((p) => (
                     <div key={p.path} className="flex items-center justify-between rounded px-1 py-1.5 hover:bg-[var(--accent)]">
                       <span className="truncate text-sm" title={p.title || p.path}>{p.path}</span>
-                      <span className="flex gap-6 text-sm tabular-nums text-[var(--muted-foreground)]">
+                      <span className="flex shrink-0 gap-6 text-sm tabular-nums text-[var(--muted-foreground)]">
                         <span className="w-16 text-right">{(p.count ?? 0).toLocaleString()}</span>
                         <span className="w-16 text-right">{(p.uniques ?? 0).toLocaleString()}</span>
                       </span>
                     </div>
                   ))}
-                </div>
+                </TrafficMetricList>
                 {pathHistoryChart && pathHistoryChart.length >= 2 ? (
                   <div role="img" aria-label={t("repoDetail.popularContent")}>
                     <p className="mb-2 text-xs font-medium text-[var(--muted-foreground)]">{t("repoDetail.trend")}</p>

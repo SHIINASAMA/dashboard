@@ -1,0 +1,30 @@
+import type { ReactNode } from "react";
+
+type TrafficMetricListProps = {
+  label: ReactNode;
+  primaryLabel: ReactNode;
+  secondaryLabel: ReactNode;
+  children: ReactNode;
+};
+
+export function TrafficMetricList({
+  label,
+  primaryLabel,
+  secondaryLabel,
+  children,
+}: TrafficMetricListProps) {
+  return (
+    <div className="flex h-60 flex-col">
+      <div className="flex shrink-0 items-center justify-between px-1 pb-1 text-xs font-medium text-[var(--muted-foreground)]">
+        <span>{label}</span>
+        <span className="flex shrink-0 gap-6">
+          <span className="w-16 text-right">{primaryLabel}</span>
+          <span className="w-16 text-right">{secondaryLabel}</span>
+        </span>
+      </div>
+      <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto overscroll-contain pr-1">
+        {children}
+      </div>
+    </div>
+  );
+}
