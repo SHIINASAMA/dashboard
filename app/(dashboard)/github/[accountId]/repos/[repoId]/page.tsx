@@ -323,7 +323,7 @@ export default function RepoDetail() {
   const referrerHistoryData = referrerHistory;
   const referrersData = referrers;
   if (referrerHistoryData && referrerHistoryData.length > 0 && referrersData?.length) {
-    const refs = referrersData.slice(0, 5).map(r => r.referrer);
+    const refs = referrersData.slice(0, 10).map(r => r.referrer);
     if (refs.length > 0) {
       const dates = [...new Set(referrerHistoryData.map((r) => r.snapshot_date))].sort() as string[];
       referrerHistoryChart = dates.map((date: string) => {
@@ -341,7 +341,7 @@ export default function RepoDetail() {
   const pathHistoryData = pathHistory;
   const pathsData = paths;
   if (pathHistoryData && pathHistoryData.length > 0 && pathsData?.length) {
-    const pts = pathsData.slice(0, 5).map(p => p.path);
+    const pts = pathsData.slice(0, 10).map(p => p.path);
     if (pts.length > 0) {
       const dates = [...new Set(pathHistoryData.map((p) => p.snapshot_date))].sort() as string[];
       pathHistoryChart = dates.map((date: string) => {
@@ -476,27 +476,50 @@ export default function RepoDetail() {
             <CardDescription>{t("repoDetail.referringSitesDesc")}</CardDescription>
           </CardHeader>
           <CardContent>
-            {referrerHistoryChart && referrerHistoryChart.length > 1 ? (
-              <div role="img" aria-label={t("repoDetail.referringSites")}>
-              <div className={`flex flex-wrap gap-x-3 gap-y-0.5 mb-2 ${isMobile ? "text-[10px]" : "text-xs"}`}>
-                {(referrers?.slice(0, 5) || []).map((ref, i) => (
-                  <span key={ref.referrer} className="flex items-center gap-1">
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: COLORS[i] }} />
-                    <span className="truncate max-w-[120px] text-[var(--muted-foreground)]">{ref.referrer}</span>
-                  </span>
-                ))}
-              </div>
-              <ResponsiveContainer width="100%" height={TALL_CHART_H}>
-                <LineChart data={referrerHistoryChart} margin={MARGIN}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(referrerHistoryChart, ...(referrers?.slice(0, 5).map(r => r.referrer) ?? []))} />
-                  <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
-                  {(referrers?.slice(0, 5) || []).map((ref, i) => (
-                    <Line key={ref.referrer} type="monotone" dataKey={ref.referrer} stroke={COLORS[i]} strokeWidth={2} dot={false} />
+            {referrers && referrers.length > 0 ? (
+              <div className="space-y-4">
+                <div className="space-y-0.5">
+                  <div className="flex items-center justify-between px-1 pb-1 text-xs font-medium text-[var(--muted-foreground)]">
+                    <span>{t("repoDetail.referrerSource")}</span>
+                    <span className="flex gap-6">
+                      <span className="w-16 text-right">{t("repoDetail.views")}</span>
+                      <span className="w-16 text-right">{t("repoDetail.uniqueVisitors")}</span>
+                    </span>
+                  </div>
+                  {referrers.map((ref) => (
+                    <div key={ref.referrer} className="flex items-center justify-between rounded px-1 py-1.5 hover:bg-[var(--accent)]">
+                      <span className="truncate text-sm" title={ref.referrer}>{ref.referrer}</span>
+                      <span className="flex gap-6 text-sm tabular-nums text-[var(--muted-foreground)]">
+                        <span className="w-16 text-right">{(ref.count ?? 0).toLocaleString()}</span>
+                        <span className="w-16 text-right">{(ref.uniques ?? 0).toLocaleString()}</span>
+                      </span>
+                    </div>
                   ))}
-                </LineChart>
-              </ResponsiveContainer>
+                </div>
+                {referrerHistoryChart && referrerHistoryChart.length >= 2 ? (
+                  <div role="img" aria-label={t("repoDetail.referringSites")}>
+                    <p className="mb-2 text-xs font-medium text-[var(--muted-foreground)]">{t("repoDetail.trend")}</p>
+                    <div className={`flex flex-wrap gap-x-3 gap-y-0.5 mb-2 ${isMobile ? "text-[10px]" : "text-xs"}`}>
+                      {referrers.slice(0, 10).map((ref, i) => (
+                        <span key={ref.referrer} className="flex items-center gap-1">
+                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: COLORS[i] }} />
+                          <span className="truncate max-w-[120px] text-[var(--muted-foreground)]">{ref.referrer}</span>
+                        </span>
+                      ))}
+                    </div>
+                    <ResponsiveContainer width="100%" height={TALL_CHART_H}>
+                      <LineChart data={referrerHistoryChart} margin={MARGIN}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                        <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
+                        <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(referrerHistoryChart, ...(referrers.slice(0, 10).map(r => r.referrer)))} />
+                        <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
+                        {referrers.slice(0, 10).map((ref, i) => (
+                          <Line key={ref.referrer} type="monotone" dataKey={ref.referrer} stroke={COLORS[i]} strokeWidth={2} dot={false} />
+                        ))}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : null}
               </div>
             ) : (
               <p className="text-sm text-[var(--muted-foreground)] text-center py-12">{t("repoDetail.noReferrerData")}</p>
@@ -510,27 +533,50 @@ export default function RepoDetail() {
             <CardDescription>{t("repoDetail.popularContentDesc")}</CardDescription>
           </CardHeader>
           <CardContent>
-            {pathHistoryChart && pathHistoryChart.length > 1 ? (
-              <div role="img" aria-label={t("repoDetail.popularContent")}>
-              <div className={`flex flex-wrap gap-x-3 gap-y-0.5 mb-2 ${isMobile ? "text-[10px]" : "text-xs"}`}>
-                {(paths?.slice(0, 5) || []).map((p, i) => (
-                  <span key={p.path} className="flex items-center gap-1">
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: COLORS[i] }} />
-                    <span className="truncate max-w-[120px] text-[var(--muted-foreground)]">{p.path}</span>
-                  </span>
-                ))}
-              </div>
-              <ResponsiveContainer width="100%" height={TALL_CHART_H}>
-                <LineChart data={pathHistoryChart} margin={MARGIN}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(pathHistoryChart, ...(paths?.slice(0, 5).map(p => p.path) ?? []))} />
-                  <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
-                  {(paths?.slice(0, 5) || []).map((p, i) => (
-                    <Line key={p.path} type="monotone" dataKey={p.path} stroke={COLORS[i]} strokeWidth={2} dot={false} />
+            {paths && paths.length > 0 ? (
+              <div className="space-y-4">
+                <div className="space-y-0.5">
+                  <div className="flex items-center justify-between px-1 pb-1 text-xs font-medium text-[var(--muted-foreground)]">
+                    <span>{t("repoDetail.contentPath")}</span>
+                    <span className="flex gap-6">
+                      <span className="w-16 text-right">{t("repoDetail.views")}</span>
+                      <span className="w-16 text-right">{t("repoDetail.uniqueVisitors")}</span>
+                    </span>
+                  </div>
+                  {paths.map((p) => (
+                    <div key={p.path} className="flex items-center justify-between rounded px-1 py-1.5 hover:bg-[var(--accent)]">
+                      <span className="truncate text-sm" title={p.title || p.path}>{p.path}</span>
+                      <span className="flex gap-6 text-sm tabular-nums text-[var(--muted-foreground)]">
+                        <span className="w-16 text-right">{(p.count ?? 0).toLocaleString()}</span>
+                        <span className="w-16 text-right">{(p.uniques ?? 0).toLocaleString()}</span>
+                      </span>
+                    </div>
                   ))}
-                </LineChart>
-              </ResponsiveContainer>
+                </div>
+                {pathHistoryChart && pathHistoryChart.length >= 2 ? (
+                  <div role="img" aria-label={t("repoDetail.popularContent")}>
+                    <p className="mb-2 text-xs font-medium text-[var(--muted-foreground)]">{t("repoDetail.trend")}</p>
+                    <div className={`flex flex-wrap gap-x-3 gap-y-0.5 mb-2 ${isMobile ? "text-[10px]" : "text-xs"}`}>
+                      {paths.slice(0, 10).map((p, i) => (
+                        <span key={p.path} className="flex items-center gap-1">
+                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: COLORS[i] }} />
+                          <span className="truncate max-w-[120px] text-[var(--muted-foreground)]">{p.path}</span>
+                        </span>
+                      ))}
+                    </div>
+                    <ResponsiveContainer width="100%" height={TALL_CHART_H}>
+                      <LineChart data={pathHistoryChart} margin={MARGIN}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                        <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
+                        <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(pathHistoryChart, ...(paths.slice(0, 10).map(p => p.path)))} />
+                        <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
+                        {paths.slice(0, 10).map((p, i) => (
+                          <Line key={p.path} type="monotone" dataKey={p.path} stroke={COLORS[i]} strokeWidth={2} dot={false} />
+                        ))}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : null}
               </div>
             ) : (
               <p className="text-sm text-[var(--muted-foreground)] text-center py-12">{t("repoDetail.noPopularContent")}</p>
