@@ -12,7 +12,7 @@ export function Card({ className, children, ...props }: HTMLAttributes<HTMLDivEl
 }
 
 export function CardHeader({ className, children, ...props }: HTMLAttributes<HTMLDivElement> & { children?: ReactNode }) {
-  return <div className={cn("flex flex-col space-y-1.5 p-6", className)} {...props}>{children}</div>;
+  return <div className={cn("flex flex-col space-y-1.5 p-4 sm:p-6", className)} {...props}>{children}</div>;
 }
 
 export function CardTitle({ className, children, ...props }: HTMLAttributes<HTMLHeadingElement> & { children?: ReactNode }) {
@@ -24,5 +24,5 @@ export function CardDescription({ className, children, ...props }: HTMLAttribute
 }
 
 export function CardContent({ className, children, ...props }: HTMLAttributes<HTMLDivElement> & { children?: ReactNode }) {
-  return <div className={cn("p-6 pt-0", className)} {...props}>{children}</div>;
+  return <div className={cn("p-4 pt-0 sm:p-6 sm:pt-0", className)} {...props}>{children}</div>;
 }

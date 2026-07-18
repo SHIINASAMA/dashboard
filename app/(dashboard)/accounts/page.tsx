@@ -83,10 +83,10 @@ export default function AccountsPage() {
       </div>
 
       {/* platform tabs */}
-      <div className="flex gap-1 border-b border-[var(--border)] overflow-x-auto">
+      <div className="mobile-tab-strip -mx-4 flex snap-x gap-1 overflow-x-auto border-b border-[var(--border)] px-4">
         {TABS.map(({ key, headingKey, Icon }) => (
           <button key={key} onClick={() => { setTab(key); setAdding(false); setEditing(null); }}
-            className={`flex items-center gap-1.5 px-4 py-2.5 min-h-11 text-sm font-medium border-b-2 transition-colors -mb-px shrink-0 ${tab === key ? "border-[var(--primary)] text-[var(--primary)]" : "border-transparent text-[var(--muted-foreground)] hover:text-[var(--foreground)]"}`}
+            className={`-mb-px flex min-h-11 shrink-0 snap-start items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${tab === key ? "border-[var(--primary)] text-[var(--primary)]" : "border-transparent text-[var(--muted-foreground)] hover:text-[var(--foreground)]"}`}
           >
             <Icon size={14} /> {t(headingKey)}
           </button>
@@ -123,11 +123,11 @@ export default function AccountsPage() {
                   className={`group ${!account.is_active ? "opacity-60 " : ""}cursor-pointer hover:border-[var(--primary)]/50 transition-colors`}
                   onClick={() => router.push(`${currentTab.basePath}/${account.id}`)}
                 >
-                  <CardContent className="p-5">
-                    <div className="flex items-start justify-between gap-4">
+                  <CardContent className="p-4 sm:p-5">
+                    <div className="mobile-account-card justify-between gap-4">
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-semibold text-base">{currentTab.formatUsername(account)}</span>
+                        <div className="mb-1 flex min-w-0 flex-wrap items-center gap-2">
+                          <span className="min-w-0 break-all text-base font-semibold">{currentTab.formatUsername(account)}</span>
                           <ArrowUpRight size={14} className="text-[var(--muted-foreground)] hover-reveal-icon" />
                           {!account.is_active && <Badge>{t("badge.inactive")}</Badge>}
                           {account.error_message && (
@@ -147,7 +147,7 @@ export default function AccountsPage() {
                           </div>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="mobile-account-actions shrink-0 items-center gap-2">
                         <button
                           onClick={(e) => { e.stopPropagation(); setEditing(account); setAdding(false); }}
                           className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors"
@@ -279,7 +279,7 @@ function AccountFormPanel({
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold">{editing ? t("editAccountForm.title") : t("addAccountForm.title")}</h3>
-        <button onClick={onClose} className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-sm">
+        <button onClick={onClose} className="min-h-11 rounded-md px-2 text-sm text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]">
           {t("addAccountForm.cancel")}
         </button>
       </div>
@@ -290,7 +290,7 @@ function AccountFormPanel({
         <div className="grid grid-cols-4 gap-2">
           {TABS.map(({ key, Icon }) => (
             <button key={key} type="button" onClick={() => setPlatform(key)}
-              className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border text-sm font-medium transition-colors ${platform === key ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]" : "border-[var(--border)] hover:bg-[var(--muted)]"}`}
+              className={`flex min-h-11 items-center justify-center gap-1.5 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors ${platform === key ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]" : "border-[var(--border)] hover:bg-[var(--muted)]"}`}
             >
               <Icon size={16} /> {t(`nav.${key === "twitter" ? "x" : key}`)}
             </button>
@@ -306,7 +306,7 @@ function AccountFormPanel({
           <legend className="text-sm font-medium mb-1.5">{t("addAccountForm.username")}</legend>
           <input type="text" value={screenName} onChange={(e) => setScreenName(e.target.value)}
             placeholder={platform === "github" ? "octocat" : platform === "gitlab" ? "your-username" : platform === "reddit" ? "spez" : "elonmusk"}
-            className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] text-sm" />
+            className="min-h-11 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring)]" />
           <p className="text-[12px] text-[var(--muted-foreground)] mt-1">
             {platform === "github" ? t("addAccountForm.helpGithubUsername")
               : platform === "gitlab" ? t("addAccountForm.helpGitlabUsername")
@@ -321,10 +321,10 @@ function AccountFormPanel({
             <legend className="text-sm font-medium mb-1.5">{t("addAccountForm.redditAuthType")}</legend>
             <div className="grid grid-cols-2 gap-2">
               <button type="button" onClick={() => setAuthType(null)}
-                className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${authType !== "reddit_public" ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]" : "border-[var(--border)] hover:bg-[var(--muted)]"}`}
+                className={`min-h-11 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${authType !== "reddit_public" ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]" : "border-[var(--border)] hover:bg-[var(--muted)]"}`}
               >{t("addAccountForm.redditOAuth")}</button>
               <button type="button" onClick={() => setAuthType("reddit_public")}
-                className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${authType === "reddit_public" ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]" : "border-[var(--border)] hover:bg-[var(--muted)]"}`}
+                className={`min-h-11 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${authType === "reddit_public" ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]" : "border-[var(--border)] hover:bg-[var(--muted)]"}`}
               >{t("addAccountForm.redditPublic")}</button>
             </div>
             <p className="text-[12px] text-[var(--muted-foreground)] mt-1">
@@ -352,7 +352,7 @@ function AccountFormPanel({
                 value={authToken}
                 onChange={(e) => setAuthToken(e.target.value)}
                 placeholder={platform === "github" ? "ghp_..." : platform === "gitlab" ? "glpat-..." : platform === "reddit" ? "your Reddit password" : "Your X auth_token cookie"}
-                className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] font-mono text-xs" />
+                className="min-h-11 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-[var(--ring)]" />
               <p className="text-[12px] text-[var(--muted-foreground)] mt-1">
                 {editing ? t("editAccountForm.tokenHint") : (
                   platform === "github" ? t("addAccountForm.helpGithubToken")
@@ -371,7 +371,7 @@ function AccountFormPanel({
             <legend className="text-sm font-medium mb-1.5">{t("addAccountForm.instanceUrl")}</legend>
             <input type="text" value={instanceUrl} onChange={(e) => setInstanceUrl(e.target.value)}
               placeholder="https://gitlab.com"
-              className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] text-sm" />
+              className="min-h-11 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring)]" />
             <p className="text-[12px] text-[var(--muted-foreground)] mt-1">{t("addAccountForm.helpInstanceUrl")}</p>
           </fieldset>
         )}
@@ -380,13 +380,13 @@ function AccountFormPanel({
         <fieldset>
           <legend className="text-sm font-medium mb-1.5">{t("addAccountForm.fetchInterval")}</legend>
           <input type="number" value={fetchInterval} onChange={(e) => setFetchInterval(Number(e.target.value))} min={5} max={1440}
-            className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] text-sm" />
+            className="min-h-11 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring)]" />
           <p className="text-[12px] text-[var(--muted-foreground)] mt-1">{t("addAccountForm.helpFetchInterval")}</p>
         </fieldset>
       </div>
 
       <button onClick={() => mutation.mutate()} disabled={!canSubmit}
-        className="w-full px-4 py-2 rounded-lg bg-[var(--primary)] text-white font-medium hover:opacity-90 disabled:opacity-40 text-sm">
+        className="min-h-11 w-full rounded-lg bg-[var(--primary)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-40">
         {mutation.isPending ? (editing ? t("editAccountForm.saving") : t("addAccountForm.adding")) : (editing ? t("editAccountForm.save") : t("addAccountForm.addAccount"))}
       </button>
     </div>
@@ -426,15 +426,15 @@ function CookieTable({
               <td className="py-1 pr-2">
                 <input type="text" value={row.key} onChange={(e) => updateRow(i, "key", e.target.value)}
                   placeholder="cookie name"
-                  className="w-full px-2 py-1.5 rounded border border-[var(--border)] bg-transparent focus:outline-none focus:ring-1 focus:ring-[var(--ring)] font-mono text-xs" />
+                  className="min-h-11 w-full rounded border border-[var(--border)] bg-transparent px-2 py-1.5 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[var(--ring)]" />
               </td>
               <td className="py-1 pr-2">
                 <input type="password" value={row.value} onChange={(e) => updateRow(i, "value", e.target.value)}
                   placeholder="..."
-                  className="w-full px-2 py-1.5 rounded border border-[var(--border)] bg-transparent focus:outline-none focus:ring-1 focus:ring-[var(--ring)] font-mono text-xs" />
+                  className="min-h-11 w-full rounded border border-[var(--border)] bg-transparent px-2 py-1.5 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[var(--ring)]" />
               </td>
               <td className="py-1">
-                <button onClick={() => removeRow(i)} className="p-1 rounded hover:bg-[var(--danger)]/10 text-[var(--danger)]/60 hover:text-[var(--danger)] transition-colors text-xs">
+                <button onClick={() => removeRow(i)} className="flex min-h-11 min-w-11 items-center justify-center rounded text-xs text-[var(--danger)]/60 transition-colors hover:bg-[var(--danger)]/10 hover:text-[var(--danger)]">
                   &times;
                 </button>
               </td>
@@ -443,7 +443,7 @@ function CookieTable({
         </tbody>
       </table>
       <button onClick={addRow}
-        className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-dashed border-[var(--border)] text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:border-[var(--primary)]/50 transition-colors w-full justify-center"
+        className="flex min-h-11 w-full items-center justify-center gap-1 rounded-lg border border-dashed border-[var(--border)] px-3 py-1.5 text-xs text-[var(--muted-foreground)] transition-colors hover:border-[var(--primary)]/50 hover:text-[var(--foreground)]"
       >
         + {t("addAccountForm.addCookieRow")}
       </button>

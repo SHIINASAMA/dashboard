@@ -99,7 +99,7 @@ export default function XDetail() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="detail-header">
         <div className="detail-header-body">
         <button onClick={() => router.push("/x")} className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("xDetail.backToX")} aria-label={t("xDetail.backToX")}>
@@ -154,14 +154,14 @@ export default function XDetail() {
       )}
 
       {account.stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
           <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold">{account.stats.followers_count?.toLocaleString() || "0"}</p><p className="text-xs text-[var(--muted-foreground)]">{t("xDetail.followers")}</p></CardContent></Card>
           <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold">{account.stats.following_count?.toLocaleString() || "0"}</p><p className="text-xs text-[var(--muted-foreground)]">{t("xDetail.following")}</p></CardContent></Card>
           <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold">{account.stats.tweet_count?.toLocaleString() || "0"}</p><p className="text-xs text-[var(--muted-foreground)]">{t("xDetail.tweets")}</p></CardContent></Card>
         </div>
       )}
 
-      <div className="flex items-center justify-end">
+      <div className="mobile-detail-controls">
         <TimeRangeSelector value={days} onChange={setDays} />
       </div>
 
@@ -229,13 +229,13 @@ export default function XDetail() {
             <div className="flex items-center gap-4 border-b border-[var(--border)] pb-0">
               <button
                 onClick={() => setTab("tweets")}
-                className={`pb-3 text-sm font-medium border-b-2 transition-colors ${tab === "tweets" ? "border-[var(--primary)] text-[var(--primary)]" : "border-transparent text-[var(--muted-foreground)] hover:text-[var(--foreground)]"}`}
+                className={`min-h-11 border-b-2 pb-3 text-sm font-medium transition-colors ${tab === "tweets" ? "border-[var(--primary)] text-[var(--primary)]" : "border-transparent text-[var(--muted-foreground)] hover:text-[var(--foreground)]"}`}
               >
                 {t("xDetail.recentTweets")}
               </button>
               <button
                 onClick={() => setTab("replies")}
-                className={`pb-3 text-sm font-medium border-b-2 transition-colors ${tab === "replies" ? "border-[var(--primary)] text-[var(--primary)]" : "border-transparent text-[var(--muted-foreground)] hover:text-[var(--foreground)]"}`}
+                className={`min-h-11 border-b-2 pb-3 text-sm font-medium transition-colors ${tab === "replies" ? "border-[var(--primary)] text-[var(--primary)]" : "border-transparent text-[var(--muted-foreground)] hover:text-[var(--foreground)]"}`}
               >
                 {t("xDetail.recentReplies")}
               </button>
@@ -254,7 +254,7 @@ export default function XDetail() {
                   <p className="text-sm whitespace-pre-wrap break-words">{tweet.full_text}</p>
                   <ExternalLink size={12} className="shrink-0 mt-1 text-[var(--muted-foreground)] hover-reveal-icon" />
                 </div>
-                <div className="flex items-center gap-4 text-xs text-[var(--muted-foreground)]">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-[var(--muted-foreground)]">
                   <span className="flex items-center gap-1"><Heart size={12} /> {tweet.favorite_count}</span>
                   <span className="flex items-center gap-1"><Repeat2 size={12} /> {tweet.retweet_count}</span>
                   <span className="flex items-center gap-1"><MessageSquare size={12} /> {tweet.reply_count}</span>
@@ -275,7 +275,7 @@ export default function XDetail() {
                   <p className="text-sm whitespace-pre-wrap break-words">{tweet.full_text}</p>
                   <ExternalLink size={12} className="shrink-0 mt-1 text-[var(--muted-foreground)] hover-reveal-icon" />
                 </div>
-                <div className="flex items-center gap-4 text-xs text-[var(--muted-foreground)]">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-[var(--muted-foreground)]">
                   <span className="flex items-center gap-1"><Heart size={12} /> {tweet.favorite_count}</span>
                   <span className="flex items-center gap-1"><Repeat2 size={12} /> {tweet.retweet_count}</span>
                   <span className="flex items-center gap-1"><MessageSquare size={12} /> {tweet.reply_count}</span>

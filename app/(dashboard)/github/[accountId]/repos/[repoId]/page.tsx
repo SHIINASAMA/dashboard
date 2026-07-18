@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type CSSProperties } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { api, type GithubRepo, type GithubRelease } from "@/lib/api";
@@ -19,6 +19,25 @@ import { useIsMobile } from "@/lib/client/useIsMobile";
 import { calcYAxisWidth } from "@/lib/client/utils";
 
 const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899", "#10b981", "#6366f1"];
+
+const CHART_TOOLTIP_CONTENT_STYLE = {
+  background: "var(--card)",
+  border: "1px solid var(--border)",
+  borderRadius: "6px",
+  fontSize: "12px",
+  maxWidth: "min(28rem, calc(100vw - 2rem))",
+  overflowWrap: "anywhere",
+  whiteSpace: "normal",
+} satisfies CSSProperties;
+
+const CHART_TOOLTIP_ITEM_STYLE = {
+  overflowWrap: "anywhere",
+  whiteSpace: "normal",
+} satisfies CSSProperties;
+
+const CHART_TOOLTIP_WRAPPER_STYLE = {
+  maxWidth: "calc(100% - 1rem)",
+} satisfies CSSProperties;
 
 type HistoryPoint = Record<string, string | number>;
 
@@ -54,11 +73,11 @@ function MultiSelectDropdown({ items, selected, onToggle, onSelectAll, onShowLat
 
   return (
     <div ref={ref} className="relative">
-      <div className="flex items-center gap-2 mb-2">
+      <div className="mb-2 flex flex-wrap items-center gap-1">
         <span className="text-xs text-[var(--muted-foreground)] font-medium">{label}</span>
-        <button onClick={onSelectAll} className="text-xs text-[var(--primary)] hover:underline">{t("repoDetail.selectAll")}</button>
-        <button onClick={onShowLatest} className="text-xs text-[var(--primary)] hover:underline">{latestLabel}</button>
-        <button onClick={onDeselectAll} className="text-xs text-[var(--primary)] hover:underline">{t("repoDetail.hideAll")}</button>
+        <button onClick={onSelectAll} className="min-h-11 rounded-md px-2 text-xs text-[var(--primary)] hover:bg-[var(--muted)]">{t("repoDetail.selectAll")}</button>
+        <button onClick={onShowLatest} className="min-h-11 rounded-md px-2 text-xs text-[var(--primary)] hover:bg-[var(--muted)]">{latestLabel}</button>
+        <button onClick={onDeselectAll} className="min-h-11 rounded-md px-2 text-xs text-[var(--primary)] hover:bg-[var(--muted)]">{t("repoDetail.hideAll")}</button>
       </div>
 
       {selectedItems.length > 0 && (
@@ -66,7 +85,7 @@ function MultiSelectDropdown({ items, selected, onToggle, onSelectAll, onShowLat
           {selectedItems.map((item) => (
             <span key={item.id} className="inline-flex items-center gap-1 px-2 py-1 bg-[var(--secondary)] rounded-md text-xs text-[var(--secondary-foreground)]">
               {item.label.length > (isMobile ? 8 : 15) ? item.label.slice(0, isMobile ? 8 : 15) + "..." : item.label}
-              <button onClick={() => onToggle(item.id)} className="ml-0.5 hover:text-[var(--foreground)] text-sm leading-none">&times;</button>
+              <button onClick={() => onToggle(item.id)} className="ml-0.5 flex min-h-8 min-w-8 items-center justify-center rounded text-sm leading-none hover:bg-[var(--border)] hover:text-[var(--foreground)]">&times;</button>
             </span>
           ))}
         </div>
@@ -74,7 +93,7 @@ function MultiSelectDropdown({ items, selected, onToggle, onSelectAll, onShowLat
 
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-3 py-2 border border-[var(--border)] rounded-md text-sm text-left hover:bg-[var(--accent)] transition-colors"
+        className="flex min-h-11 w-full items-center justify-between rounded-md border border-[var(--border)] px-3 py-2 text-left text-sm transition-colors hover:bg-[var(--accent)]"
       >
         <span className="text-[var(--muted-foreground)]">
           {selected.size === items.length ? t("repoDetail.allSelected") : t("repoDetail.nSelected", { count: selected.size })}
@@ -90,7 +109,7 @@ function MultiSelectDropdown({ items, selected, onToggle, onSelectAll, onShowLat
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t("repoDetail.searchVersions")}
-              className="w-full px-3 py-1.5 text-sm bg-[var(--background)] border border-[var(--border)] rounded-md outline-none focus:border-[var(--primary)]"
+              className="min-h-11 w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-1.5 text-sm outline-none focus:border-[var(--primary)]"
             />
           </div>
           <div className="overflow-y-auto max-h-48">
@@ -98,7 +117,7 @@ function MultiSelectDropdown({ items, selected, onToggle, onSelectAll, onShowLat
               <p className="px-3 py-2 text-sm text-[var(--muted-foreground)]">{t("repoDetail.noResults")}</p>
             ) : (
               filtered.map((item) => (
-                <label key={item.id} className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-[var(--accent)] text-sm select-none">
+                <label key={item.id} className="flex min-h-11 cursor-pointer select-none items-center gap-2 px-3 py-2 text-sm hover:bg-[var(--accent)]">
                   <input
                     type="checkbox"
                     checked={selected.has(item.id)}
@@ -193,10 +212,10 @@ function ReleaseDownloadsChart({ releases, isMobile }: { releases: GithubRelease
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3">
         <span className="text-xs text-[var(--muted-foreground)] font-medium">{t("repoDetail.assets")}</span>
-        <button onClick={() => setHiddenAssets(new Set())} className="text-xs text-[var(--primary)] hover:underline">{t("repoDetail.selectAll")}</button>
-        <button onClick={() => setHiddenAssets(new Set(topAssets))} className="text-xs text-[var(--primary)] hover:underline">{t("repoDetail.hideAll")}</button>
+        <button onClick={() => setHiddenAssets(new Set())} className="min-h-11 rounded-md px-2 text-xs text-[var(--primary)] hover:bg-[var(--muted)]">{t("repoDetail.selectAll")}</button>
+        <button onClick={() => setHiddenAssets(new Set(topAssets))} className="min-h-11 rounded-md px-2 text-xs text-[var(--primary)] hover:bg-[var(--muted)]">{t("repoDetail.hideAll")}</button>
         {topAssets.map((name, i) => (
-          <label key={name} className="flex items-center gap-1.5 cursor-pointer text-xs select-none">
+          <label key={name} className="flex min-h-8 cursor-pointer select-none items-center gap-1.5 text-xs">
             <input
               type="checkbox"
               checked={!hiddenAssets.has(name)}
@@ -220,7 +239,9 @@ function ReleaseDownloadsChart({ releases, isMobile }: { releases: GithubRelease
             <XAxis type="number" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
             <YAxis type="category" dataKey="tag_name" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={isMobile ? 50 : 120} tickFormatter={(v: string) => v.length > (isMobile ? 6 : 15) ? v.slice(0, isMobile ? 6 : 15) + "..." : v} />
             <Tooltip
-              contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }}
+              contentStyle={CHART_TOOLTIP_CONTENT_STYLE}
+              itemStyle={CHART_TOOLTIP_ITEM_STYLE}
+              wrapperStyle={CHART_TOOLTIP_WRAPPER_STYLE}
               formatter={(value, name) => [String(value), String(name)]}
               labelFormatter={(label) => {
                 const rel = releases.find((r) => r.tag_name === label);
@@ -357,7 +378,7 @@ export default function RepoDetail() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="detail-header">
         <div className="detail-header-body">
         <button onClick={() => router.push(`/github/${aid}`)} className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("repoDetail.backToAccount")} aria-label={t("repoDetail.backToAccount")}>
@@ -365,7 +386,7 @@ export default function RepoDetail() {
         </button>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-xl font-semibold">{repo.full_name}</h2>
+            <h2 className="text-xl font-semibold leading-tight">{repo.full_name}</h2>
             {repo.language && <Badge>{repo.language}</Badge>}
             {repo.is_fork ? <Badge>{t("badge.fork")}</Badge> : null}
           </div>
@@ -378,14 +399,14 @@ export default function RepoDetail() {
         </a>
       </div>
 
-      <div className="flex items-center justify-end">
+      <div className="mobile-detail-controls">
         <TimeRangeSelector value={days} onChange={setDays} />
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
         <Card><CardContent className="p-4 text-center"><Star size={16} className="inline mb-1 text-[var(--muted-foreground)]" /><p className="text-2xl font-bold">{repo.stars.toLocaleString()}</p><p className="text-xs text-[var(--muted-foreground)]">{t("repoDetail.stars")}</p></CardContent></Card>
         <Card><CardContent className="p-4 text-center"><GitFork size={16} className="inline mb-1 text-[var(--muted-foreground)]" /><p className="text-2xl font-bold">{repo.forks.toLocaleString()}</p><p className="text-xs text-[var(--muted-foreground)]">{t("repoDetail.forks")}</p></CardContent></Card>
-        <Card><CardContent className="p-4 text-center"><Activity size={16} className="inline mb-1 text-[var(--muted-foreground)]" /><p className="text-2xl font-bold">{repo.open_issues.toLocaleString()}</p><p className="text-xs text-[var(--muted-foreground)]">{t("repoDetail.openIssues")}</p></CardContent></Card>
+        <Card className="col-span-2 md:col-span-1"><CardContent className="p-4 text-center"><Activity size={16} className="inline mb-1 text-[var(--muted-foreground)]" /><p className="text-2xl font-bold">{repo.open_issues.toLocaleString()}</p><p className="text-xs text-[var(--muted-foreground)]">{t("repoDetail.openIssues")}</p></CardContent></Card>
       </div>
 
       <Card>
@@ -401,7 +422,7 @@ export default function RepoDetail() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                 <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(snapshots, "stars")} />
-                <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
+                <Tooltip contentStyle={CHART_TOOLTIP_CONTENT_STYLE} itemStyle={CHART_TOOLTIP_ITEM_STYLE} wrapperStyle={CHART_TOOLTIP_WRAPPER_STYLE} />
                 <Area type="monotone" dataKey="stars" stroke="var(--chart-3)" fill="color-mix(in oklch, var(--chart-3) 12%, transparent)" name={t("repoDetail.stars")} />
               </AreaChart>
             </ResponsiveContainer>
@@ -428,7 +449,7 @@ export default function RepoDetail() {
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                   <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(clones, "count", "uniques")} />
-                  <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
+                  <Tooltip contentStyle={CHART_TOOLTIP_CONTENT_STYLE} itemStyle={CHART_TOOLTIP_ITEM_STYLE} wrapperStyle={CHART_TOOLTIP_WRAPPER_STYLE} />
                   <Bar dataKey="count" fill="var(--chart-1)" radius={[4, 4, 0, 0]} name={t("repoDetail.clones")} />
                   <Bar dataKey="uniques" fill="var(--chart-3)" radius={[4, 4, 0, 0]} name={t("repoDetail.uniqueCloners")} />
                 </BarChart>
@@ -455,7 +476,7 @@ export default function RepoDetail() {
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                   <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(views, "count", "uniques")} />
-                  <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
+                  <Tooltip contentStyle={CHART_TOOLTIP_CONTENT_STYLE} itemStyle={CHART_TOOLTIP_ITEM_STYLE} wrapperStyle={CHART_TOOLTIP_WRAPPER_STYLE} />
                   <Bar dataKey="count" fill="var(--chart-2)" radius={[4, 4, 0, 0]} name={t("repoDetail.views")} />
                   <Bar dataKey="uniques" fill="var(--chart-5)" radius={[4, 4, 0, 0]} name={t("repoDetail.uniqueVisitors")} />
                 </BarChart>
@@ -487,9 +508,9 @@ export default function RepoDetail() {
                   {referrers.map((ref) => (
                     <div key={ref.referrer} className="flex items-center justify-between rounded px-1 py-1.5 hover:bg-[var(--accent)]">
                       <span className="truncate text-sm" title={ref.referrer}>{ref.referrer}</span>
-                      <span className="flex shrink-0 gap-6 text-sm tabular-nums text-[var(--muted-foreground)]">
-                        <span className="w-16 text-right">{(ref.count ?? 0).toLocaleString()}</span>
-                        <span className="w-16 text-right">{(ref.uniques ?? 0).toLocaleString()}</span>
+                      <span className="flex shrink-0 gap-2 text-sm tabular-nums text-[var(--muted-foreground)] sm:gap-6">
+                        <span className="w-12 text-right sm:w-16">{(ref.count ?? 0).toLocaleString()}</span>
+                        <span className="w-12 text-right sm:w-16">{(ref.uniques ?? 0).toLocaleString()}</span>
                       </span>
                     </div>
                   ))}
@@ -510,7 +531,7 @@ export default function RepoDetail() {
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                         <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                         <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(referrerHistoryChart, ...(referrers.slice(0, 10).map(r => r.referrer)))} />
-                        <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
+                        <Tooltip contentStyle={CHART_TOOLTIP_CONTENT_STYLE} itemStyle={CHART_TOOLTIP_ITEM_STYLE} wrapperStyle={CHART_TOOLTIP_WRAPPER_STYLE} />
                         {referrers.slice(0, 10).map((ref, i) => (
                           <Line key={ref.referrer} type="monotone" dataKey={ref.referrer} stroke={COLORS[i]} strokeWidth={2} dot={false} />
                         ))}
@@ -541,9 +562,9 @@ export default function RepoDetail() {
                   {paths.map((p) => (
                     <div key={p.path} className="flex items-center justify-between rounded px-1 py-1.5 hover:bg-[var(--accent)]">
                       <span className="truncate text-sm" title={p.title || p.path}>{p.path}</span>
-                      <span className="flex shrink-0 gap-6 text-sm tabular-nums text-[var(--muted-foreground)]">
-                        <span className="w-16 text-right">{(p.count ?? 0).toLocaleString()}</span>
-                        <span className="w-16 text-right">{(p.uniques ?? 0).toLocaleString()}</span>
+                      <span className="flex shrink-0 gap-2 text-sm tabular-nums text-[var(--muted-foreground)] sm:gap-6">
+                        <span className="w-12 text-right sm:w-16">{(p.count ?? 0).toLocaleString()}</span>
+                        <span className="w-12 text-right sm:w-16">{(p.uniques ?? 0).toLocaleString()}</span>
                       </span>
                     </div>
                   ))}
@@ -564,7 +585,7 @@ export default function RepoDetail() {
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                         <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
                         <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(pathHistoryChart, ...(paths.slice(0, 10).map(p => p.path)))} />
-                        <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
+                        <Tooltip contentStyle={CHART_TOOLTIP_CONTENT_STYLE} itemStyle={CHART_TOOLTIP_ITEM_STYLE} wrapperStyle={CHART_TOOLTIP_WRAPPER_STYLE} />
                         {paths.slice(0, 10).map((p, i) => (
                           <Line key={p.path} type="monotone" dataKey={p.path} stroke={COLORS[i]} strokeWidth={2} dot={false} />
                         ))}

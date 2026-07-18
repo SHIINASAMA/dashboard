@@ -80,17 +80,17 @@ export default function Admin() {
         </h3>
         <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--card)]">
           <form onSubmit={handleCreateUser} className="flex flex-col gap-3">
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               <input
                 name="username" placeholder={t("admin.username")} required
-                className="px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+                className="min-h-11 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
               />
               <input
                 name="password" type="password" placeholder={t("admin.password")} required
                 value={password} onChange={(e) => { setPassword(e.target.value); setCreateError(""); }}
-                className="px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+                className="min-h-11 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
               />
-              <select name="role" className="px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent text-sm">
+              <select name="role" className="min-h-11 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 text-sm">
                 <option value="user">{t("admin.roleUser")}</option>
               </select>
             </div>
@@ -98,13 +98,13 @@ export default function Admin() {
             <input
               name="confirmPassword" type="password" placeholder={t("admin.confirmPassword")} required
               value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); setCreateError(""); }}
-              className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+              className="min-h-11 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
             />
             {pwMismatch && <p className="text-xs text-[var(--danger)]">{t("admin.errorPasswordsDontMatch")}</p>}
             {createError && <p className="text-xs text-[var(--danger)]">{createError}</p>}
             <button
               type="submit"
-              className="self-start px-4 py-2 rounded-lg bg-[var(--primary)] text-white font-medium hover:opacity-90 text-sm"
+              className="min-h-11 w-full sm:w-auto sm:self-start rounded-lg bg-[var(--primary)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
             >
               {t("admin.createUser")}
             </button>
@@ -130,7 +130,7 @@ export default function Admin() {
                   {u.id !== 1 && (
                     <button
                       onClick={() => setDeleteUserId(u.id)}
-                      className="text-xs text-[var(--danger)] hover:underline flex items-center gap-1"
+                      className="flex min-h-11 items-center gap-1 rounded-md px-2 text-xs text-[var(--danger)] hover:bg-[var(--danger)]/10"
                     >
                       <Trash2 size={12} /> {t("common.delete")}
                     </button>

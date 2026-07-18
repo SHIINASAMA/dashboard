@@ -66,7 +66,7 @@ export default function ProjectDetail() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="detail-header">
         <div className="detail-header-body">
         <button onClick={() => router.push(`/gitlab/${aid}`)} className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("projectDetail.backToAccount")} aria-label={t("projectDetail.backToAccount")}>
@@ -88,11 +88,11 @@ export default function ProjectDetail() {
         </a>
       </div>
 
-      <div className="flex items-center justify-end">
+      <div className="mobile-detail-controls">
         <TimeRangeSelector value={days} onChange={setDays} />
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
         <Card><CardContent className="p-4 text-center"><Star size={16} className="inline mb-1 text-[var(--muted-foreground)]" /><p className="text-2xl font-bold">{project.stars.toLocaleString()}</p><p className="text-xs text-[var(--muted-foreground)]">{t("projectDetail.stars")}</p></CardContent></Card>
         <Card><CardContent className="p-4 text-center"><GitFork size={16} className="inline mb-1 text-[var(--muted-foreground)]" /><p className="text-2xl font-bold">{project.forks.toLocaleString()}</p><p className="text-xs text-[var(--muted-foreground)]">{t("projectDetail.forks")}</p></CardContent></Card>
         <Card><CardContent className="p-4 text-center"><Activity size={16} className="inline mb-1 text-[var(--muted-foreground)]" /><p className="text-2xl font-bold">{project.open_issues.toLocaleString()}</p><p className="text-xs text-[var(--muted-foreground)]">{t("projectDetail.openIssues")}</p></CardContent></Card>

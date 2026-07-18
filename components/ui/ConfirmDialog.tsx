@@ -60,7 +60,7 @@ export function ConfirmDialog({ open, onOpenChange, title, description, confirmL
     <Portal>
       <div className="fixed inset-0 z-50 flex items-center justify-center">
         <div className="absolute inset-0 bg-black/40" onClick={() => onOpenChange(false)} />
-        <div className="relative bg-[var(--card)] rounded-xl border border-[var(--border)] p-6 max-w-sm w-full mx-4 shadow-lg" role="dialog" aria-modal="true">
+        <div className="relative mx-4 max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-lg" role="dialog" aria-modal="true">
           <h3 className="text-sm font-semibold mb-1">{title}</h3>
           <p className="text-xs text-[var(--muted-foreground)] mb-4">{description}</p>
           <div className="bg-[var(--muted)] rounded-lg px-3 py-2 text-center font-mono text-lg tracking-widest select-all mb-4">
@@ -71,20 +71,20 @@ export function ConfirmDialog({ open, onOpenChange, title, description, confirmL
             value={input}
             onChange={(e) => setInput((e.target as HTMLInputElement).value)}
             placeholder={t("confirm.enterCode")}
-            className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+            className="mb-4 min-h-11 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
             autoFocus
           />
-          <div className="flex justify-end gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
             <button
               onClick={() => onOpenChange(false)}
-              className="px-3 py-1.5 text-xs rounded-lg border border-[var(--border)] hover:bg-[var(--muted)]"
+              className="min-h-11 rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs hover:bg-[var(--muted)]"
               >
               {t("common.cancel")}
             </button>
             <button
               onClick={handleConfirm}
               disabled={!match || loading}
-              className="px-3 py-1.5 text-xs rounded-lg bg-[var(--danger)] text-white hover:brightness-110 disabled:opacity-40"
+              className="min-h-11 rounded-lg bg-[var(--danger)] px-3 py-1.5 text-xs text-white hover:brightness-110 disabled:opacity-40"
             >
               {loading ? "..." : label}
             </button>

@@ -52,8 +52,8 @@ export default function Login() {
       </div>
 
       {/* Form card */}
-      <div className="relative z-10 w-full max-w-md mx-4">
-        <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-8 shadow-2xl">
+      <div className="relative z-10 w-full max-w-md sm:mx-4">
+        <div className="rounded-2xl border border-white/20 bg-white/10 p-5 sm:p-8 shadow-2xl backdrop-blur-xl">
           {/* Branding */}
           <div className="flex items-center gap-3 mb-8 justify-center">
             <div className="p-2.5 rounded-xl bg-white/15">
@@ -77,7 +77,7 @@ export default function Login() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="admin"
-                className="w-full px-3.5 py-2.5 rounded-lg border border-white/20 bg-white/10 text-white text-sm
+                className="min-h-11 w-full px-3.5 py-2.5 rounded-lg border border-white/20 bg-white/10 text-white text-sm
                   placeholder:text-white/30
                   focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-transparent
                   transition-shadow"
@@ -92,7 +92,7 @@ export default function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoFocus
-                  className="w-full px-3.5 py-2.5 pr-10 rounded-lg border border-white/20 bg-white/10 text-white text-sm
+                  className="min-h-11 w-full px-3.5 py-2.5 pr-10 rounded-lg border border-white/20 bg-white/10 text-white text-sm
                     placeholder:text-white/30
                     focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-transparent
                     transition-shadow"
@@ -115,7 +115,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading || !password}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg
+              className="min-h-11 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg
                 bg-white/90 text-gray-900 font-medium text-sm
                 hover:bg-white active:scale-[0.98]
                 transition-all disabled:opacity-40 disabled:pointer-events-none"

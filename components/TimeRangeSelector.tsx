@@ -21,7 +21,7 @@ export function TimeRangeSelector({ value, onChange }: Props) {
     <div
       role="group"
       aria-label={t("timeRange.label")}
-      className="inline-flex items-center gap-0.5 p-1 rounded-lg bg-[var(--muted)]"
+      className="flex w-full items-center gap-0.5 rounded-lg bg-[var(--muted)] p-1 sm:w-auto"
     >
       {OPTIONS.map((o) => {
         const active = o.value === value;
@@ -31,7 +31,7 @@ export function TimeRangeSelector({ value, onChange }: Props) {
             type="button"
             onClick={() => onChange(o.value)}
             aria-pressed={active}
-            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${active
+            className={`min-h-11 min-w-11 flex-1 rounded-md px-1.5 py-1 text-xs font-medium transition-colors sm:flex-none sm:px-2.5 ${active
               ? "bg-[var(--card)] text-[var(--foreground)] shadow-sm"
               : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"}`}
           >

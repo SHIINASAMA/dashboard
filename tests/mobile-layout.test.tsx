@@ -1,0 +1,133 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it, vi } from "vitest";
+import { renderToStaticMarkup } from "react-dom/server";
+
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({ t: (key: string) => key }),
+}));
+
+import { TimeRangeSelector } from "../components/TimeRangeSelector";
+
+function readProjectFile(path: string) {
+  return readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+}
+
+describe("mobile layout contracts", () => {
+  it("makes the time range selector fill narrow screens with touch-sized options", () => {
+    const html = renderToStaticMarkup(
+      <TimeRangeSelector value={30} onChange={() => undefined} />,
+    );
+
+    expect(html).toContain("w-full");
+    expect(html).toContain("sm:w-auto");
+    expect(html).toContain("min-h-11");
+    expect(html).toContain("min-w-11");
+    expect(html).toContain("flex-1");
+    expect(html).toContain("sm:flex-none");
+  });
+
+  it("keeps sidebar navigation items touch-sized", () => {
+    const source = readProjectFile("components/Layout.tsx");
+
+    expect(source).toContain("relative flex min-h-11 items-center gap-3");
+    expect(source).toContain("flex min-h-11 items-center gap-3");
+  });
+
+  it("hydrates the layout from a server-stable sidebar state", () => {
+    const source = readProjectFile("components/Layout.tsx");
+
+    expect(source).toContain("useState(true)");
+    expect(source).not.toContain("useState(loadVisible)");
+    expect(source).toContain("setIsOpen(loadVisible())");
+  });
+
+  it("waits for the client before rendering detected translations", () => {
+    const i18n = readProjectFile("lib/client/i18n.ts");
+    const providers = readProjectFile("app/providers.tsx");
+
+    expect(i18n).toContain('lng: isBrowser ? undefined : "en"');
+    expect(providers).toContain("const [mounted, setMounted] = useState(false)");
+    expect(providers).toContain("if (!mounted)");
+  });
+
+  it("gives the most-used detail pages a full-width mobile control row", () => {
+    const xDetail = readProjectFile("app/(dashboard)/x/[id]/page.tsx");
+    const repoDetail = readProjectFile("app/(dashboard)/github/[accountId]/repos/[repoId]/page.tsx");
+
+    expect(xDetail).toContain('className="mobile-detail-controls"');
+    expect(repoDetail).toContain('className="mobile-detail-controls"');
+  });
+
+  it("keeps detail header actions at their intrinsic width", () => {
+    const styles = readProjectFile("app/globals.css");
+
+    expect(styles).toMatch(/\.detail-header-actions\s*\{[^}]*align-self:\s*flex-start/s);
+  });
+
+  it("balances the three repository metrics in a two-column layout", () => {
+    const repoDetail = readProjectFile("app/(dashboard)/github/[accountId]/repos/[repoId]/page.tsx");
+
+    expect(repoDetail).toContain('className="col-span-2 md:col-span-1"');
+  });
+
+  it("constrains repository chart tooltips with wrapping long labels", () => {
+    const repoDetail = readProjectFile("app/(dashboard)/github/[accountId]/repos/[repoId]/page.tsx");
+
+    expect(repoDetail).toContain('maxWidth: "min(28rem, calc(100vw - 2rem))"');
+    expect(repoDetail.match(/contentStyle=\{CHART_TOOLTIP_CONTENT_STYLE\}/g)?.length ?? 0).toBeGreaterThanOrEqual(6);
+    expect(repoDetail.match(/itemStyle=\{CHART_TOOLTIP_ITEM_STYLE\}/g)?.length ?? 0).toBeGreaterThanOrEqual(6);
+  });
+
+  it("keeps four-metric account summaries compact on phones", () => {
+    const accountDetails = [
+      "app/(dashboard)/github/[accountId]/page.tsx",
+      "app/(dashboard)/gitlab/[accountId]/page.tsx",
+      "app/(dashboard)/reddit/[id]/page.tsx",
+    ].map(readProjectFile);
+
+    for (const source of accountDetails) {
+      expect(source).toContain("grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4");
+    }
+  });
+
+  it("separates account information from mobile card actions", () => {
+    const source = readProjectFile("app/(dashboard)/accounts/page.tsx");
+
+    expect(source).toContain("mobile-tab-strip");
+    expect(source).toContain("mobile-account-card");
+    expect(source).toContain("mobile-account-actions");
+  });
+
+  it("stacks admin and settings controls on narrow screens", () => {
+    const admin = readProjectFile("app/(dashboard)/admin/page.tsx");
+    const settings = readProjectFile("app/(dashboard)/settings/page.tsx");
+
+    expect(admin).toContain("grid grid-cols-1 gap-2 sm:grid-cols-3");
+    expect(admin).toContain("w-full sm:w-auto");
+    expect(settings).toContain("flex flex-col gap-2 sm:flex-row sm:items-center");
+  });
+
+  it("keeps admin and settings form controls touch-sized", () => {
+    const admin = readProjectFile("app/(dashboard)/admin/page.tsx");
+    const settings = readProjectFile("app/(dashboard)/settings/page.tsx");
+
+    expect(admin.match(/min-h-11/g)?.length ?? 0).toBeGreaterThanOrEqual(6);
+    expect(settings.match(/min-h-11/g)?.length ?? 0).toBeGreaterThanOrEqual(8);
+  });
+
+  it("keeps login and confirmation actions usable on narrow screens", () => {
+    const login = readProjectFile("app/login/page.tsx");
+    const confirmDialog = readProjectFile("components/ui/ConfirmDialog.tsx");
+
+    expect(login).toContain("p-5 sm:p-8");
+    expect(login.match(/min-h-11/g)?.length ?? 0).toBeGreaterThanOrEqual(4);
+    expect(confirmDialog).toContain("p-4 sm:p-6");
+    expect(confirmDialog.match(/min-h-11/g)?.length ?? 0).toBeGreaterThanOrEqual(3);
+  });
+
+  it("keeps account editor fields and cookie controls touch-sized", () => {
+    const accounts = readProjectFile("app/(dashboard)/accounts/page.tsx");
+
+    expect(accounts.match(/min-h-11/g)?.length ?? 0).toBeGreaterThanOrEqual(15);
+  });
+});

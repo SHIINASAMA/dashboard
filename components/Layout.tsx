@@ -40,7 +40,7 @@ function NavItem({ to, label, icon: Icon, isActive, onClick, onMouseEnter }: {
       onClick={onClick}
       onMouseEnter={onMouseEnter}
       onFocus={onMouseEnter}
-      className={`relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+      className={`relative flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${
         isActive
           ? "bg-[var(--primary)]/8 text-[var(--foreground)] font-semibold shadow-sm"
           : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
@@ -59,7 +59,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const queryClient = useQueryClient();
   const { url } = useBingWallpaper();
-  const [isOpen, setIsOpen] = useState(loadVisible);
+  const [isOpen, setIsOpen] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -71,6 +71,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       if (mobile) {
         setIsOpen(false);
         saveVisible(false);
+      } else {
+        setIsOpen(loadVisible());
       }
     };
     handler(mq);
@@ -172,7 +174,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <button
           onClick={handleLogout}
           disabled={loggingOut}
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-[var(--muted-foreground)] hover:text-[var(--danger)] hover:bg-[var(--danger)]/5 transition-colors disabled:opacity-40 w-full text-left"
+          className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium text-[var(--muted-foreground)] transition-colors hover:bg-[var(--danger)]/5 hover:text-[var(--danger)] disabled:opacity-40"
         >
           <LogOut size={18} />
           {loggingOut ? "…" : t("nav.logout")}

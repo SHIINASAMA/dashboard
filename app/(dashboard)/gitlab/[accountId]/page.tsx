@@ -136,7 +136,7 @@ export default function GitLabDetail() {
             <div className="flex-1"><Skeleton className="h-6 w-32 mb-2" /><Skeleton className="h-3 w-48" /></div>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)}
         </div>
         <ChartCardSkeleton />
@@ -154,7 +154,7 @@ export default function GitLabDetail() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="detail-header">
         <div className="detail-header-body">
         <button onClick={() => router.push("/gitlab")} className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("gitlabDetail.backToGitLab")} aria-label={t("gitlabDetail.backToGitLab")}>
@@ -200,7 +200,7 @@ export default function GitLabDetail() {
         <div className="text-center py-12 text-[var(--muted-foreground)]">{t("gitlabDetail.loadingGitLabData")}</div>
       ) : overview && overview.stats ? (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatCard title={t("gitlabDetail.projects")} value={overview.totalProjects} icon={<BookOpen size={20} />} />
             <StatCard title={t("gitlabDetail.totalStars")} value={overview.totalStars} icon={<Star size={20} />} />
             <StatCard title={t("gitlabDetail.totalForks")} value={overview.totalForks} icon={<GitFork size={20} />} />

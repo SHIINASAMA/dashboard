@@ -124,7 +124,7 @@ export default function Settings() {
               <button
                 key={value}
                 onClick={() => i18n.changeLanguage(value)}
-                className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`min-h-11 flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                   i18n.language === value
                     ? "bg-[var(--card)] text-[var(--foreground)] shadow-sm"
                     : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
@@ -143,7 +143,7 @@ export default function Settings() {
           <select
             value={tz}
             onChange={(e) => setTimezone(e.target.value)}
-            className="w-full text-sm px-3 py-2 rounded-lg bg-[var(--muted)] border border-[var(--border)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+            className="min-h-11 w-full rounded-lg border border-[var(--border)] bg-[var(--muted)] px-3 py-2 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
           >
             {COMMON_TIMEZONES.map((zone) => (
               <option key={zone} value={zone}>{zone.replace(/_/g, " ")}</option>
@@ -161,7 +161,7 @@ export default function Settings() {
               <label className="block text-xs font-medium mb-1 text-[var(--muted-foreground)]">{t("settings.currentPassword")}</label>
               <input
                 name="currentPassword" type="password" autoComplete="current-password"
-                className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] text-sm"
+                className="min-h-11 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
               />
             </div>
             <div>
@@ -169,7 +169,7 @@ export default function Settings() {
               <input
                 name="newPassword" type="password" autoComplete="new-password"
                 value={newPw} onChange={(e) => { setNewPw(e.target.value); setPwError(""); }}
-                className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] text-sm"
+                className="min-h-11 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
               />
               {newPw && <div className="mt-2"><PasswordHints rules={pwRules} t={t} namespace="settings" /></div>}
             </div>
@@ -178,7 +178,7 @@ export default function Settings() {
               <input
                 name="confirmPassword" type="password" autoComplete="new-password"
                 value={confirmPw} onChange={(e) => { setConfirmPw(e.target.value); setPwError(""); }}
-                className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--ring)] text-sm"
+                className="min-h-11 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
               />
               {pwMismatch && <p className="text-xs text-[var(--danger)] mt-1">{t("settings.passwordsDontMatch")}</p>}
             </div>
@@ -186,7 +186,7 @@ export default function Settings() {
             {pwSuccess && <p className="text-xs text-[var(--success)]">{pwSuccess}</p>}
             <button
               type="submit" disabled={pwLoading}
-              className="self-start px-4 py-2 rounded-lg bg-[var(--primary)] text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-40 text-sm"
+              className="min-h-11 w-full rounded-lg bg-[var(--primary)] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40 sm:w-auto sm:self-start"
             >
               {pwLoading ? t("settings.saving") : t("settings.changePassword")}
             </button>
@@ -208,7 +208,7 @@ export default function Settings() {
                   <button
                     key={value}
                     onClick={() => setSettings({ ...settings, mode: value })}
-                    className={`flex items-center justify-center gap-1.5 flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    className={`flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                       active
                         ? "bg-[var(--card)] text-[var(--foreground)] shadow-sm"
                         : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
@@ -260,12 +260,12 @@ function ThemeSelect({
   onChange: (id: string) => void;
 }) {
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-sm text-[var(--muted-foreground)] shrink-0 w-24">{label}</span>
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+      <span className="text-sm text-[var(--muted-foreground)] sm:w-24 sm:shrink-0">{label}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="flex-1 text-sm px-3 py-2 rounded-lg bg-[var(--muted)] border border-[var(--border)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+        className="min-h-11 w-full flex-1 rounded-lg border border-[var(--border)] bg-[var(--muted)] px-3 py-2 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
       >
         {options.map((t) => (
           <option key={t.id} value={t.id}>{t.name}</option>

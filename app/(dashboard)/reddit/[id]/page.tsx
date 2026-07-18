@@ -102,7 +102,7 @@ export default function RedditDetail() {
             <div className="flex-1"><Skeleton className="h-6 w-32 mb-2" /><Skeleton className="h-3 w-48" /></div>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)}
         </div>
         <ChartCardSkeleton />
@@ -120,7 +120,7 @@ export default function RedditDetail() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="detail-header">
         <div className="detail-header-body">
         <button onClick={() => router.push("/reddit")} className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("redditDetail.backToReddit")} aria-label={t("redditDetail.backToReddit")}>
@@ -166,11 +166,11 @@ export default function RedditDetail() {
         <div className="text-center py-12 text-[var(--muted-foreground)]">{t("redditDetail.loadingData")}</div>
       ) : overview ? (
         <>
-          <div className="flex items-center justify-end">
+          <div className="mobile-detail-controls">
             <TimeRangeSelector value={days} onChange={setDays} />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatCard title={t("redditDetail.postKarma")} value={overview.stats?.post_karma ?? 0} icon={<ThumbsUp size={20} />} />
             <StatCard title={t("redditDetail.commentKarma")} value={overview.stats?.comment_karma ?? 0} icon={<MessageSquare size={20} />} />
             <StatCard title={t("redditDetail.totalPosts")} value={overview.totalPosts} icon={<FileText size={20} />} />
