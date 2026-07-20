@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isReleaseAsset, sumFilteredDownloads } from "../utils/release-asset-filter";
+import { isReleaseAsset, sumFilteredDownloads } from "../lib/utils/release-asset-filter";
 
 describe("isReleaseAsset", () => {
   it("accepts platform installers", () => {

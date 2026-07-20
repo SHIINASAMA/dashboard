@@ -11,7 +11,7 @@ import { getDb } from "../db/connection";
 import { eq, and } from "drizzle-orm";
 import { github_releases, github_release_assets } from "@/db/schema";
 import { getLogger } from "../logger";
-import { fetchWithConfig } from "../http";
+import { fetchWithConfig, withNetworkRetry } from "../http";
 
 
 const GITHUB_API = "https://api.github.com";
@@ -23,14 +23,24 @@ async function ghFetch(path: string, token?: string) {
   };
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 30_000);
-  const res = await fetchWithConfig(`${GITHUB_API}${path}`, { headers, signal: controller.signal });
-  clearTimeout(timer);
+  // Retry only transport errors (e.g. "fetch failed"); HTTP status errors
+  // (403/404/...) are handled below and must not be retried.
+  const res = await withNetworkRetry(
+    async () => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 30_000);
+      try {
+        return await fetchWithConfig(`${GITHUB_API}${path}`, { headers, signal: controller.signal });
+      } finally {
+        clearTimeout(timer);
+      }
+    },
+    { label: "GitHub" },
+  );
+
   if (res.status === 403) {
     const body = await res.text().catch(() => "");
-    const err = new Error(`GitHub API 403: ${body.slice(0, 200)}`);
-    throw err;
+    throw new Error(`GitHub API 403: ${body.slice(0, 200)}`);
   }
   if (!res.ok) {
     throw new Error(`GitHub API ${res.status}: ${res.statusText}`);

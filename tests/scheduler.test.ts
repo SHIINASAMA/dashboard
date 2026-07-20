@@ -65,7 +65,7 @@ describe("scheduler", () => {
     getActiveAccounts.mockResolvedValue([staleActiveAccount]);
     getAccountById.mockResolvedValue({ ...staleActiveAccount, is_active: 0 });
 
-    const { runCycleOnceForTests } = await import("../scheduler");
+    const { runCycleOnceForTests } = await import("../lib/scheduler");
     await runCycleOnceForTests();
 
     expect(getAccountById).toHaveBeenCalledWith(7);

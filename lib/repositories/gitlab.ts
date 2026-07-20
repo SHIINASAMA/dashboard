@@ -1,12 +1,15 @@
 // @ts-nocheck — Drizzle ORM types are complex
 import { eq, and, desc, sql, gte, type SQL } from "drizzle-orm";
 import { getDb } from "../db/connection";
+import { isMockMode } from "../config";
+import * as mock from "../mock";
 import {
   gitlab_stats, gitlab_projects, gitlab_project_snapshots,
   gitlab_releases, gitlab_release_assets, gitlab_contributions,
 } from "@/db/schema";
 
 export async function getGitlabOverview(accountId: number) {
+  if (isMockMode()) return mock.gitlabOverview;
   const [latest] = await getDb().select().from(gitlab_stats)
     .where(eq(gitlab_stats.account_id, accountId)).orderBy(desc(gitlab_stats.recorded_at)).limit(1);
   const allProjects = await getDb().select().from(gitlab_projects)
@@ -21,6 +24,7 @@ export async function getGitlabOverview(accountId: number) {
 }
 
 export async function getGitlabTimeline(accountId: number, days = 30) {
+  if (isMockMode()) return mock.gitlabTimeline;
   const since = new Date(); since.setDate(since.getDate() - days);
   const sinceStr = since.toISOString();
   const { rows } = await getDb().execute<{
@@ -41,6 +45,7 @@ export async function getGitlabTimeline(accountId: number, days = 30) {
 }
 
 export async function getGitlabContributions(accountId: number, yr?: number) {
+  if (isMockMode()) return mock.gitlabContributions;
   const conditions: SQL<unknown>[] = [eq(gitlab_contributions.account_id, accountId)];
   if (yr) conditions.push(sql`EXTRACT(YEAR FROM ${gitlab_contributions.date}) = ${String(yr)}`);
   return getDb().select({ date: gitlab_contributions.date, count: gitlab_contributions.count })
@@ -55,6 +60,7 @@ export async function upsertGitlabProject(project: { account_id: number; project
 }
 
 export async function setPinnedGitlabProjects(accountId: number, projectIds: number[]) {
+  if (isMockMode()) return;
   const db = getDb();
   await db.update(gitlab_projects).set({ pinned: 0 }).where(eq(gitlab_projects.account_id, accountId));
   if (projectIds.length > 0) {
@@ -92,6 +98,7 @@ export async function upsertGitlabProjectSnapshot(s: { account_id: number; proje
 }
 
 export async function getGitlabProjectSnapshots(accountId: number, projectId: number, days = 30) {
+  if (isMockMode()) return mock.gitlabSnapshots;
   const since = new Date(); since.setDate(since.getDate() - days);
   const sinceStr = since.toISOString();
   return getDb().select({
@@ -110,6 +117,7 @@ export async function upsertGitlabRelease(r: { account_id: number; project_id: n
 }
 
 export async function getGitlabReleases(accountId: number, projectId: number) {
+  if (isMockMode()) return mock.gitlabReleases;
   const all = await getDb().select().from(gitlab_releases)
     .where(and(eq(gitlab_releases.account_id, accountId), eq(gitlab_releases.project_id, projectId)));
   const latest = new Map<string, typeof all[0]>();

@@ -155,9 +155,9 @@ export default function XDetail() {
 
       {account.stats && (
         <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
-          <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold">{account.stats.followers_count?.toLocaleString() || "0"}</p><p className="text-xs text-[var(--muted-foreground)]">{t("xDetail.followers")}</p></CardContent></Card>
-          <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold">{account.stats.following_count?.toLocaleString() || "0"}</p><p className="text-xs text-[var(--muted-foreground)]">{t("xDetail.following")}</p></CardContent></Card>
-          <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold">{account.stats.tweet_count?.toLocaleString() || "0"}</p><p className="text-xs text-[var(--muted-foreground)]">{t("xDetail.tweets")}</p></CardContent></Card>
+          <Card><CardContent className="p-4 sm:p-4 text-center"><p className="text-2xl font-bold">{account.stats.followers_count?.toLocaleString() || "0"}</p><p className="text-xs text-[var(--muted-foreground)]">{t("xDetail.followers")}</p></CardContent></Card>
+          <Card><CardContent className="p-4 sm:p-4 text-center"><p className="text-2xl font-bold">{account.stats.following_count?.toLocaleString() || "0"}</p><p className="text-xs text-[var(--muted-foreground)]">{t("xDetail.following")}</p></CardContent></Card>
+          <Card><CardContent className="p-4 sm:p-4 text-center"><p className="text-2xl font-bold">{account.stats.tweet_count?.toLocaleString() || "0"}</p><p className="text-xs text-[var(--muted-foreground)]">{t("xDetail.tweets")}</p></CardContent></Card>
         </div>
       )}
 

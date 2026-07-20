@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
+import { isMockMode } from "./lib/config";
 
 const SESSION_COOKIE = "dash_session";
 
@@ -13,7 +14,9 @@ function hexToBytes(hex: string): Uint8Array {
   return bytes;
 }
 
-const JWT_SECRET_KEY = hexToBytes(process.env.DASHBOARD_SECRET!);
+// Fallback key so importing this module without DASHBOARD_SECRET (e.g. mock
+// mode) doesn't crash. Only used when not in mock mode and the secret is set.
+const JWT_SECRET_KEY = hexToBytes(process.env.DASHBOARD_SECRET || "0".repeat(64));
 
 const PUBLIC_API_PATHS = [
   "/api/auth/login",
@@ -40,6 +43,21 @@ export async function proxy(req: NextRequest) {
 
   // Public page paths — pass through
   if (PUBLIC_PAGE_PATHS.includes(pathname)) {
+    return NextResponse.next();
+  }
+
+  // Mock/debug mode: accept any session token. Keep /login reachable and
+  // require a token for /api + protected pages so the login UX still works.
+  if (isMockMode()) {
+    const token = req.cookies.get(SESSION_COOKIE)?.value;
+    if (!token) {
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      const loginUrl = new URL("/login", req.url);
+      loginUrl.searchParams.set("from", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
     return NextResponse.next();
   }
 

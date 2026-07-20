@@ -2,6 +2,8 @@
 import { eq, and, desc, sql, inArray, gte, type SQL } from "drizzle-orm";
 import { getDb } from "../db/connection";
 import { latestSnapshotRows } from "../utils/latest-snapshot";
+import { isMockMode } from "../config";
+import * as mock from "../mock";
 import {
   github_stats, github_repos, github_contributions,
   github_repo_snapshots, github_traffic_clones, github_traffic_views,
@@ -10,6 +12,7 @@ import {
 
 
 export async function getGithubOverview(accountId: number) {
+  if (isMockMode()) return mock.githubOverview;
   const [latest] = await getDb().select().from(github_stats)
     .where(eq(github_stats.account_id, accountId))
     .orderBy(desc(github_stats.recorded_at)).limit(1);
@@ -25,6 +28,7 @@ export async function getGithubOverview(accountId: number) {
 }
 
 export async function getGithubTimeline(accountId: number, days = 30) {
+  if (isMockMode()) return mock.githubTimeline;
   const since = new Date(); since.setDate(since.getDate() - days);
   const sinceStr = since.toISOString();
   const { rows } = await getDb().execute<{
@@ -45,6 +49,7 @@ export async function getGithubTimeline(accountId: number, days = 30) {
 }
 
 export async function getGithubContributions(accountId: number, yr?: number) {
+  if (isMockMode()) return mock.githubContributions;
   const conditions: SQL<unknown>[] = [eq(github_contributions.account_id, accountId)];
   if (yr) conditions.push(sql`EXTRACT(YEAR FROM ${github_contributions.date}) = ${String(yr)}`);
   return getDb().select().from(github_contributions).where(and(...conditions)).orderBy(github_contributions.date);
@@ -58,6 +63,7 @@ export async function upsertGithubRepo(repo: { account_id: number; repo_id: numb
 }
 
 export async function setPinnedRepos(accountId: number, repoIds: number[]) {
+  if (isMockMode()) return;
   const db = getDb();
   await db.update(github_repos).set({ pinned: 0 }).where(eq(github_repos.account_id, accountId));
   if (repoIds.length > 0) {
@@ -95,6 +101,7 @@ export async function upsertGithubRepoSnapshot(s: { account_id: number; repo_id:
 }
 
 export async function getGithubRepoSnapshots(accountId: number, repoId: number, days = 30) {
+  if (isMockMode()) return mock.githubSnapshots;
   const since = new Date(); since.setDate(since.getDate() - days);
   const sinceStr = since.toISOString();
   return getDb().select({
@@ -113,6 +120,7 @@ export async function upsertGithubTrafficClones(t: { account_id: number; repo_id
 }
 
 export async function getGithubTrafficClones(accountId: number, repoId: number, days = 30) {
+  if (isMockMode()) return mock.githubClones;
   const since = new Date(); since.setDate(since.getDate() - days);
   const sinceStr = since.toISOString();
   return getDb().select().from(github_traffic_clones)
@@ -128,6 +136,7 @@ export async function upsertGithubTrafficViews(t: { account_id: number; repo_id:
 }
 
 export async function getGithubTrafficViews(accountId: number, repoId: number, days = 30) {
+  if (isMockMode()) return mock.githubViews;
   const since = new Date(); since.setDate(since.getDate() - days);
   const sinceStr = since.toISOString();
   return getDb().select().from(github_traffic_views)
@@ -143,6 +152,7 @@ export async function upsertGithubReferrer(t: { account_id: number; repo_id: num
 }
 
 export async function getGithubReferrers(accountId: number, repoId: number) {
+  if (isMockMode()) return mock.githubReferrers;
   const all = await getDb().select().from(github_referrers)
     .where(and(eq(github_referrers.account_id, accountId), eq(github_referrers.repo_id, repoId)))
     .orderBy(desc(github_referrers.count));
@@ -150,6 +160,7 @@ export async function getGithubReferrers(accountId: number, repoId: number) {
 }
 
 export async function getGithubReferrerHistory(accountId: number, repoId: number, days = 30) {
+  if (isMockMode()) return mock.githubReferrerHistory;
   const since = new Date(); since.setDate(since.getDate() - days);
   const sinceStr = since.toISOString();
   return getDb().select().from(github_referrers)
@@ -165,6 +176,7 @@ export async function upsertGithubPath(t: { account_id: number; repo_id: number;
 }
 
 export async function getGithubPaths(accountId: number, repoId: number) {
+  if (isMockMode()) return mock.githubPaths;
   const all = await getDb().select().from(github_paths)
     .where(and(eq(github_paths.account_id, accountId), eq(github_paths.repo_id, repoId)))
     .orderBy(desc(github_paths.count));
@@ -172,6 +184,7 @@ export async function getGithubPaths(accountId: number, repoId: number) {
 }
 
 export async function getGithubPathHistory(accountId: number, repoId: number, days = 30) {
+  if (isMockMode()) return mock.githubPathHistory;
   const since = new Date(); since.setDate(since.getDate() - days);
   const sinceStr = since.toISOString();
   return getDb().select().from(github_paths)
@@ -187,6 +200,7 @@ export async function upsertGithubRelease(r: { account_id: number; repo_id: numb
 }
 
 export async function getGithubReleases(accountId: number, repoId: number) {
+  if (isMockMode()) return mock.githubReleases;
   const all = await getDb().select().from(github_releases)
     .where(and(eq(github_releases.account_id, accountId), eq(github_releases.repo_id, repoId)));
   const latest = new Map<string, typeof all[0]>();
@@ -223,6 +237,7 @@ export async function insertGithubReleaseAsset(a: { release_db_id: number; name:
 }
 
 export async function getGithubReleaseAssets(releaseDbId: number) {
+  if (isMockMode()) return mock.githubReleaseAssets;
   return getDb().select().from(github_release_assets)
     .where(eq(github_release_assets.release_id, releaseDbId));
 }

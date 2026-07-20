@@ -3,6 +3,8 @@ import { eq, and, desc, sql, count, inArray, gte, like, type SQL } from "drizzle
 import { getDb } from "../db/connection";
 import { tweets, user_stats } from "@/db/schema";
 import type { OverviewStats } from "../../shared/types";
+import { isMockMode } from "../config";
+import * as mock from "../mock";
 
 export const EMPTY_OVERVIEW: OverviewStats = {
   tweet_count: 0, tweet_likes: 0, tweet_retweets: 0, tweet_views: 0,
@@ -15,6 +17,7 @@ function hasIds(ids?: number[]): ids is number[] { return Array.isArray(ids) && 
 function isExplicitEmpty(ids?: number[]): boolean { return Array.isArray(ids) && ids.length === 0; }
 
 export async function getOverviewStats(accountIds?: number[]) {
+  if (isMockMode()) return mock.overviewStats;
   if (isExplicitEmpty(accountIds)) return { ...EMPTY_OVERVIEW };
   const db = getDb();
   const tweetFilter = hasIds(accountIds) ? inArray(tweets.account_id, accountIds) : undefined;
@@ -80,6 +83,11 @@ export async function getOverviewStats(accountIds?: number[]) {
 }
 
 export async function getTweets(page: number, limit: number, sort: string, order: string, search?: string, accountIds?: number[], isReply?: number) {
+  if (isMockMode()) {
+    const data = isReply === undefined ? mock.tweets : mock.tweets.filter((t: any) => t.is_reply === isReply);
+    const total = data.length;
+    return { data: data.slice((page - 1) * limit, page * limit), total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
   if (isExplicitEmpty(accountIds)) return { data: [], total: 0, page, limit, totalPages: 0 };
   const db = getDb();
   const offset = (page - 1) * limit;
@@ -101,11 +109,13 @@ export async function getTweets(page: number, limit: number, sort: string, order
 }
 
 export async function getTweetById(id: string) {
+  if (isMockMode()) return mock.tweets.find((t: any) => t.id === id) ?? mock.tweets[0];
   const rows = await getDb().select().from(tweets).where(eq(tweets.id, id)).limit(1);
   return rows[0];
 }
 
 export async function getTimeline(days = 30, accountIds?: number[]) {
+  if (isMockMode()) return mock.timelineData;
   if (isExplicitEmpty(accountIds)) return { dailyTweets: [], followerGrowth: [] };
   const db = getDb();
   const since = new Date(); since.setDate(since.getDate() - days);
@@ -143,6 +153,7 @@ export async function getTimeline(days = 30, accountIds?: number[]) {
 }
 
 export async function getTopTweets(metric: string, limit: number, accountIds?: number[]) {
+  if (isMockMode()) return mock.topTweets.slice(0, limit);
   if (isExplicitEmpty(accountIds)) return [];
   const allowed: Record<string, SQL<unknown>> = {
     favorite_count: tweets.favorite_count, retweet_count: tweets.retweet_count,
@@ -155,6 +166,7 @@ export async function getTopTweets(metric: string, limit: number, accountIds?: n
 }
 
 export async function getCalendarData(yr: number, accountIds?: number[]) {
+  if (isMockMode()) return mock.calendarData;
   if (isExplicitEmpty(accountIds)) return [];
   const conditions: SQL<unknown>[] = [sql`EXTRACT(YEAR FROM ${tweets.created_at}) = ${String(yr)}`];
   if (hasIds(accountIds)) conditions.push(inArray(tweets.account_id, accountIds));
@@ -185,6 +197,7 @@ export async function insertUserStats(stats: { account_id: number; followers_cou
 }
 
 export async function getLatestUserStats(accountId: number) {
+  if (isMockMode()) return mock.latestUserStats;
   return getDb().select().from(user_stats)
     .where(eq(user_stats.account_id, accountId))
     .orderBy(desc(user_stats.recorded_at))

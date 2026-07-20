@@ -2,12 +2,15 @@
 import { eq, desc, sql, count, gte, and, type SQL } from "drizzle-orm";
 import { getDb } from "../db/connection";
 import { reddit_stats, reddit_posts, reddit_comments } from "@/db/schema";
+import { isMockMode } from "../config";
+import * as mock from "../mock";
 
 export async function insertRedditStats(stats: { account_id: number; post_karma: number; comment_karma: number }) {
   await getDb().insert(reddit_stats).values({ ...stats, recorded_at: sql`NOW()` });
 }
 
 export async function getRedditTimeline(accountId: number, days = 30) {
+  if (isMockMode()) return mock.redditTimeline;
   const since = new Date(); since.setDate(since.getDate() - days);
   const sinceStr = since.toISOString();
   const { rows } = await getDb().execute<{
@@ -40,6 +43,11 @@ export async function upsertRedditComment(comment: { id: string; account_id: num
 }
 
 export async function getRedditPosts(accountId: number, page: number, limit: number, sort = "score") {
+  if (isMockMode()) {
+    const data = [...mock.redditPosts].sort((a: any, b: any) => (b[sort] ?? b.score) - (a[sort] ?? a.score));
+    const total = data.length;
+    return { data: data.slice((page - 1) * limit, page * limit), total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
   const offset = (page - 1) * limit;
   const allowed: Record<string, SQL<unknown>> = { score: reddit_posts.score, num_comments: reddit_posts.num_comments, created_utc: reddit_posts.created_utc };
   const sortCol = allowed[sort] || reddit_posts.score;
@@ -50,6 +58,11 @@ export async function getRedditPosts(accountId: number, page: number, limit: num
 }
 
 export async function getRedditComments(accountId: number, page: number, limit: number) {
+  if (isMockMode()) {
+    const data = mock.redditComments;
+    const total = data.length;
+    return { data: data.slice((page - 1) * limit, page * limit), total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
   const offset = (page - 1) * limit;
   const [total] = await getDb().select({ count: count() }).from(reddit_comments).where(eq(reddit_comments.account_id, accountId));
   const data = await getDb().select().from(reddit_comments)
@@ -58,6 +71,7 @@ export async function getRedditComments(accountId: number, page: number, limit: 
 }
 
 export async function getRedditOverview(accountId: number) {
+  if (isMockMode()) return mock.redditOverview;
   const [latest] = await getDb().select().from(reddit_stats)
     .where(eq(reddit_stats.account_id, accountId)).orderBy(desc(reddit_stats.recorded_at)).limit(1);
   const [postCount] = await getDb().select({ count: count() }).from(reddit_posts).where(eq(reddit_posts.account_id, accountId));
@@ -73,6 +87,7 @@ export async function getRedditOverview(accountId: number) {
 }
 
 export async function getRedditDailyActivity(accountId: number, days = 30) {
+  if (isMockMode()) return mock.redditActivity.posts;
   const since = new Date(); since.setDate(since.getDate() - days);
   const sinceStr = since.toISOString();
   return getDb().select({
@@ -85,6 +100,7 @@ export async function getRedditDailyActivity(accountId: number, days = 30) {
 }
 
 export async function getRedditDailyCommentActivity(accountId: number, days = 30) {
+  if (isMockMode()) return mock.redditActivity.comments;
   const since = new Date(); since.setDate(since.getDate() - days);
   const sinceStr = since.toISOString();
   return getDb().select({
@@ -97,6 +113,7 @@ export async function getRedditDailyCommentActivity(accountId: number, days = 30
 }
 
 export async function getRedditSubredditDistribution(accountId: number) {
+  if (isMockMode()) return mock.redditSubreddits;
   const posts = await getDb().select({ subreddit: reddit_posts.subreddit, count: count() })
     .from(reddit_posts).where(eq(reddit_posts.account_id, accountId)).groupBy(reddit_posts.subreddit);
   const comments = await getDb().select({ subreddit: reddit_comments.subreddit, count: count() })

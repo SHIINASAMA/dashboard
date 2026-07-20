@@ -4,9 +4,16 @@ import { fetchAccount } from "@/lib/fetcher";
 import { fetchGithubAccount } from "@/lib/fetchers/github";
 import { fetchGitlabAccount } from "@/lib/fetchers/gitlab";
 import { fetchRedditAccount, fetchRedditPublicAccount } from "@/lib/fetchers/reddit";
+import { isMockMode } from "@/lib/config";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+
+  // Mock/debug mode: no real fetch — pretend it started.
+  if (isMockMode()) {
+    return NextResponse.json({ ok: true, message: `Mock fetch started for account ${id}` });
+  }
+
   const account = await getAccountById(Number(id));
   if (!account) return NextResponse.json({ error: "Account not found" }, { status: 404 });
   if (!account.is_active) {

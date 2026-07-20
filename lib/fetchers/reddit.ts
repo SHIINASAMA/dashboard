@@ -2,7 +2,8 @@
 import type { AccountRow } from "../repositories/accounts";
 import { insertRedditStats, upsertRedditPost, upsertRedditComment, updateAccount } from "../db";
 import { getLogger } from "../logger";
-import { fetchWithConfig } from "../http";
+import { fetchWithConfig, withNetworkRetry } from "../http";
+import { contentWindowDays } from "../config";
 import { execFileSync } from "child_process";
 
 async function getRedditAccessToken(refreshToken: string): Promise<string> {
@@ -38,16 +39,26 @@ async function getRedditAccessToken(refreshToken: string): Promise<string> {
 }
 
 async function redditFetch(path: string, token: string): Promise<Record<string, unknown>> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 30_000);
-  const res = await fetchWithConfig(`https://oauth.reddit.com${path}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "User-Agent": "dashboard/1.0",
+  // Retry only transport errors (e.g. "fetch failed", timeouts); HTTP status
+  // errors are handled below and must not be retried.
+  const res = await withNetworkRetry(
+    async () => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 30_000);
+      try {
+        return await fetchWithConfig(`https://oauth.reddit.com${path}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "User-Agent": "dashboard/1.0",
+          },
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timer);
+      }
     },
-    signal: controller.signal,
-  });
-  clearTimeout(timer);
+    { label: "Reddit" },
+  );
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     getLogger().error("Reddit", "OAuth API HTTP %d for %s: %s", res.status, path, body.slice(0, 300));
@@ -75,6 +86,10 @@ export async function fetchRedditAccount(account: AccountRow) {
   const refreshToken = account.auth_token;
   const username = account.screen_name;
 
+  // Content-age window (shared with X): skip posts/comments older than this.
+  const windowDays = contentWindowDays();
+  const cutoffUnix = Math.floor(Date.now() / 1000) - windowDays * 24 * 60 * 60;
+
   try {
     getLogger().info("Reddit", "Fetching @%s...", username);
 
@@ -101,6 +116,7 @@ export async function fetchRedditAccount(account: AccountRow) {
     // 3. Fetch posts
     getLogger().info("Reddit", "@%s: fetching posts...", username);
     let postCount = 0;
+    let skippedOldPosts = 0;
     let after: string | undefined;
     while (postCount < 200) {
       const path = `/user/${username}/submitted?limit=100&sort=new${after ? `&after=${after}` : ""}`;
@@ -108,9 +124,17 @@ export async function fetchRedditAccount(account: AccountRow) {
       const children = posts?.data?.children ?? [];
       if (children.length === 0) break;
 
+      let hitOld = false;
       for (const child of children) {
         const p = child.data;
         if (!p?.id) continue;
+        // Listing is newest-first; once an item is older than the window,
+        // every following item is too — stop fetching.
+        if (typeof p.created_utc === "number" && p.created_utc < cutoffUnix) {
+          skippedOldPosts++;
+          hitOld = true;
+          break;
+        }
         await upsertRedditPost({
           id: p.id,
           account_id: account.id,
@@ -127,16 +151,18 @@ export async function fetchRedditAccount(account: AccountRow) {
         });
         postCount++;
       }
+      if (hitOld) break;
 
       after = posts?.data?.after || undefined;
       if (!after) break;
       await sleep(1000);
     }
-    getLogger().info("Reddit", "@%s: %d posts saved", username, postCount);
+    getLogger().info("Reddit", "@%s: %d posts saved (%d skipped as older than %dd)", username, postCount, skippedOldPosts, windowDays);
 
     // 4. Fetch comments
     getLogger().info("Reddit", "@%s: fetching comments...", username);
     let commentCount = 0;
+    let skippedOldComments = 0;
     after = undefined;
     while (commentCount < 200) {
       const path = `/user/${username}/comments?limit=100&sort=new${after ? `&after=${after}` : ""}`;
@@ -144,9 +170,17 @@ export async function fetchRedditAccount(account: AccountRow) {
       const children = comments?.data?.children ?? [];
       if (children.length === 0) break;
 
+      let hitOld = false;
       for (const child of children) {
         const c = child.data;
         if (!c?.id) continue;
+        // Listing is newest-first; once an item is older than the window,
+        // every following item is too — stop fetching.
+        if (typeof c.created_utc === "number" && c.created_utc < cutoffUnix) {
+          skippedOldComments++;
+          hitOld = true;
+          break;
+        }
         await upsertRedditComment({
           id: c.id,
           account_id: account.id,
@@ -162,12 +196,13 @@ export async function fetchRedditAccount(account: AccountRow) {
         });
         commentCount++;
       }
+      if (hitOld) break;
 
       after = comments?.data?.after || undefined;
       if (!after) break;
       await sleep(1000);
     }
-    getLogger().info("Reddit", "@%s: %d comments saved", username, commentCount);
+    getLogger().info("Reddit", "@%s: %d comments saved (%d skipped as older than %dd)", username, commentCount, skippedOldComments, windowDays);
 
     // Success
     await updateAccount(account.id, {

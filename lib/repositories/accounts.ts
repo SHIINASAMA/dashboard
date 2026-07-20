@@ -2,6 +2,8 @@
 import { eq, and, desc, sql, isNull, type SQL } from "drizzle-orm";
 import { getDb } from "../db/connection";
 import { accounts } from "@/db/schema";
+import { isMockMode } from "../config";
+import { accounts as mockAccounts } from "../mock";
 
 export interface AccountRow {
   id: number;
@@ -23,6 +25,7 @@ export interface AccountRow {
 export type AccountPublic = Omit<AccountRow, "auth_token">;
 
 export async function getAccounts(ownerId?: number) {
+  if (isMockMode()) return ownerId === undefined ? mockAccounts : mockAccounts.filter((a: any) => a.owner_id === ownerId);
   const db = getDb();
   const conditions: SQL<unknown>[] = [isNull(accounts.deleted_at)];
   if (ownerId !== undefined) conditions.push(eq(accounts.owner_id, ownerId));
@@ -47,11 +50,13 @@ export async function getAccounts(ownerId?: number) {
 }
 
 export async function getActiveAccounts() {
+  if (isMockMode()) return mockAccounts.filter((a: any) => a.is_active);
   return getDb().select().from(accounts)
     .where(and(eq(accounts.is_active, 1), isNull(accounts.deleted_at))) as Promise<AccountRow[]>;
 }
 
 export async function getAccountById(id: number) {
+  if (isMockMode()) return mockAccounts.find((a: any) => a.id === id);
   const rows = await getDb().select().from(accounts).where(eq(accounts.id, id)).limit(1);
   return rows[0] as AccountRow | undefined;
 }
@@ -65,15 +70,18 @@ export async function createAccount(data: {
   instance_url: string | null;
   auth_type: string | null;
 }) {
+  if (isMockMode()) return { id: 999, ...data, user_id: null, last_fetched_at: null, error_message: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } as AccountRow;
   const inserted = await getDb().insert(accounts).values(data).returning();
   return inserted[0] as AccountRow;
 }
 
 export async function updateAccount(id: number, updates: Partial<AccountRow>) {
+  if (isMockMode()) return;
   await getDb().update(accounts).set({ ...updates, updated_at: sql`NOW()` }).where(eq(accounts.id, id));
 }
 
 export async function deleteAccount(id: number) {
+  if (isMockMode()) return;
   await getDb().update(accounts)
     .set({ deleted_at: sql`NOW()` })
     .where(eq(accounts.id, id));

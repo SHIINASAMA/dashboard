@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { SignJWT, jwtVerify } from "jose";
-import { initCrypto, getJwtSecret } from "../crypto";
+import { initCrypto, getJwtSecret } from "../lib/crypto";
 
 beforeAll(() => {
   initCrypto("a".repeat(64));

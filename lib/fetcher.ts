@@ -4,6 +4,7 @@ import { upsertTweet, insertUserStats } from "./repositories/twitter";
 import { updateAccount } from "./repositories/accounts";
 import { _xClient } from "../scripts/utils";
 import { getLogger } from "./logger";
+import { contentWindowDays } from "./config";
 
 const LOG_TAG = "X";
 
@@ -119,17 +120,22 @@ export async function fetchAccount(account: AccountRow) {
     // Collect pinned IDs upfront
     const pinnedIds: string[] = (legacy.pinnedTweetIdsStr as string[]) || [];
 
-    // ── Phase 2: Discover all own tweet IDs ─────────────────────────
+    // ── Phase 2: Discover own tweet IDs within the time window ───────
     await sleep(2000);
     logger.info("Fetcher", "@%s: discovering tweets...", account.screen_name);
 
+    const windowDays = contentWindowDays();
+    const cutoffMs = Date.now() - windowDays * 24 * 60 * 60 * 1000;
+
     const ownIds = new Set<string>();
+    // Pinned tweets are always included, regardless of age.
     for (const pid of pinnedIds) ownIds.add(pid);
 
     const maxTweets = 800;
     const batchSize = 100;
     let cursor: string | undefined;
     let totalFetched = 0;
+    let skippedOld = 0;
 
     while (totalFetched < maxTweets) {
       const params = { userId, count: batchSize, ...(cursor ? { cursor } : {}) } as Record<string, unknown>;
@@ -141,11 +147,17 @@ export async function fetchAccount(account: AccountRow) {
 
       if (entries.length === 0) break;
 
+      let batchNewest: number | null = null;
       for (const entry of entries) {
-        collectOwnTweets(entry, userId, ownIds);
+        const ts = entryCreatedAt(entry);
+        if (ts !== null) batchNewest = batchNewest === null ? ts : Math.max(batchNewest, ts);
+        skippedOld += collectOwnTweets(entry, userId, ownIds, cutoffMs);
       }
 
       totalFetched += entries.length;
+      // Timeline is newest-first; once a whole batch is older than the
+      // window, every following page is too — stop discovering.
+      if (batchNewest !== null && batchNewest < cutoffMs) break;
       const rawData = resp.data as Record<string, unknown>;
       const cursorObj = rawData.cursor as Record<string, any> | undefined;
       cursor = cursorObj?.bottom?.value || cursorObj?.top?.value;
@@ -154,7 +166,7 @@ export async function fetchAccount(account: AccountRow) {
     }
 
     const allIds = [...ownIds];
-    logger.info("Fetcher", "@%s: discovered %d own tweets (including %d pinned)", account.screen_name, allIds.length, pinnedIds.length);
+    logger.info("Fetcher", "@%s: discovered %d own tweets (%d pinned, %d skipped as older than %dd)", account.screen_name, allIds.length, pinnedIds.length, skippedOld, windowDays);
 
     // ── Phase 3: Fetch full details for each tweet ──────────────────
     logger.info("Fetcher", "@%s: fetching details for %d tweets...", account.screen_name, allIds.length);
@@ -213,34 +225,54 @@ export async function fetchAccount(account: AccountRow) {
 }
 
 // ── Helper: recursively collect own tweet IDs from timeline entries ──
+// Tweets older than cutoffMs are skipped (time-window). Returns the count
+// of own tweets skipped as too old.
 
-function collectOwnTweets(entry: Record<string, unknown>, userId: string, out: Set<string>) {
-  collectFromEntry(entry, userId, out);
+function collectOwnTweets(entry: Record<string, unknown>, userId: string, out: Set<string>, cutoffMs: number): number {
+  let skipped = collectFromEntry(entry, userId, out, cutoffMs);
 
   // Walk nested replies (level 1)
   const replies = entry.replies;
   if (Array.isArray(replies)) {
     for (const reply of replies) {
       if (reply && typeof reply === "object") {
-        collectFromEntry(reply, userId, out);
+        skipped += collectFromEntry(reply as Record<string, unknown>, userId, out, cutoffMs);
         // Walk nested replies (level 2)
-        const nested = reply.replies;
+        const nested = (reply as Record<string, unknown>).replies;
         if (Array.isArray(nested)) {
           for (const nr of nested) {
-            if (nr && typeof nr === "object") collectFromEntry(nr, userId, out);
+            if (nr && typeof nr === "object") skipped += collectFromEntry(nr as Record<string, unknown>, userId, out, cutoffMs);
           }
         }
       }
     }
   }
+  return skipped;
 }
 
-function collectFromEntry(entry: Record<string, unknown>, userId: string, out: Set<string>) {
+function collectFromEntry(entry: Record<string, unknown>, userId: string, out: Set<string>, cutoffMs: number): number {
   const t = entry.tweet || entry;
-  if (!t) return;
-  const legacy = t.legacy;
-  if (!legacy) return;
-  if (legacy.userIdStr !== userId) return;
-  const tid = String(legacy.idStr || t.restId || "");
-  if (tid) out.add(tid);
+  if (!t || typeof t !== "object") return 0;
+  const legacy = (t as Record<string, unknown>).legacy;
+  if (!legacy || typeof legacy !== "object") return 0;
+  if ((legacy as Record<string, unknown>).userIdStr !== userId) return 0;
+  const tid = String((legacy as Record<string, unknown>).idStr || (t as Record<string, unknown>).restId || "");
+  if (!tid) return 0;
+  const ca = (legacy as Record<string, unknown>).createdAt;
+  if (typeof ca === "string") {
+    const ts = new Date(ca).getTime();
+    if (!isNaN(ts) && ts < cutoffMs) return 1; // too old → skip
+  }
+  out.add(tid);
+  return 0;
+}
+
+function entryCreatedAt(entry: Record<string, unknown>): number | null {
+  const t = entry.tweet || entry;
+  if (!t || typeof t !== "object") return null;
+  const legacy = (t as Record<string, unknown>).legacy;
+  const ca = legacy && typeof legacy === "object" ? (legacy as Record<string, unknown>).createdAt : undefined;
+  if (typeof ca !== "string") return null;
+  const ts = new Date(ca).getTime();
+  return isNaN(ts) ? null : ts;
 }

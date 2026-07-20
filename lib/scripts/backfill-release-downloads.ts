@@ -1,7 +1,7 @@
 /**
  * One-time script: recalculate total_downloads for all existing GitHub releases.
  * Reads per-asset download counts from github_release_assets (already in DB).
- * Usage: bun run backfill:release-downloads
+ * Usage: pnpm backfill:release-downloads
  */
 
 import { getDb } from "@/lib/db/connection";

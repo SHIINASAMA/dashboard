@@ -130,7 +130,7 @@ export default function AccountListPage({
                   } as React.CSSProperties}
                   onClick={() => router.push(`/${urlPrefix}/${account.id}`)}
                 >
-                  <CardContent className="p-5">
+                  <CardContent className="p-5 sm:p-5">
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 mb-1">
@@ -173,7 +173,7 @@ export default function AccountListPage({
           </div>
         ) : (
           <Card>
-            <CardContent className="p-8 text-center">
+            <CardContent className="p-8 sm:p-8 text-center">
               <div className="flex flex-col items-center gap-3">
                 {emptyIcon ?? <Icon size={32} />}
                 <p className="text-sm text-[var(--muted-foreground)]">{emptyText}</p>

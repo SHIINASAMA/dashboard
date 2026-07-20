@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { resetTestDb, getTestPool, closeTestPool } from "./setup";
-import * as usersQ from "../repositories/users";
-import * as accountsQ from "../repositories/accounts";
-import * as twitterQ from "../repositories/twitter";
-import * as redditQ from "../repositories/reddit";
-import * as githubQ from "../repositories/github";
-import * as gitlabQ from "../repositories/gitlab";
+import * as usersQ from "../lib/repositories/users";
+import * as accountsQ from "../lib/repositories/accounts";
+import * as twitterQ from "../lib/repositories/twitter";
+import * as redditQ from "../lib/repositories/reddit";
+import * as githubQ from "../lib/repositories/github";
+import * as gitlabQ from "../lib/repositories/gitlab";
 
 beforeAll(async () => {
   await resetTestDb();

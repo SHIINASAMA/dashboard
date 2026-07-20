@@ -4,12 +4,12 @@ Multi-platform social & code dashboard with web UI. Track activity and stats acr
 
 ## Tech Stack
 
-Bun + Hono REST API + React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui + Drizzle ORM + SQLite
+pnpm + Next.js 16 (App Router) + React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui + Drizzle ORM + PostgreSQL (`pg`). Hono + `@hono/node-server` is retained only as a legacy standalone server (`tsx server/index.ts`, `legacy:*` scripts); the primary app is Next.js.
 
 ## Quick Start
 
 ```bash
-bun install && bun run dev
+pnpm install && pnpm run dev
 ```
 
 ## Documentation Index

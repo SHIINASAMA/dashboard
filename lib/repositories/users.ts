@@ -2,22 +2,33 @@
 import { eq, and, isNull, sql, count } from "drizzle-orm";
 import { getDb } from "../db/connection";
 import { users, accounts } from "@/db/schema";
+import { isMockMode } from "../config";
+import * as mock from "../mock";
 
 export async function getUserByUsername(username: string) {
+  if (isMockMode()) {
+    const found = mock.users.find((u: any) => u.username === username);
+    return found ?? mock.users[0];
+  }
   const rows = await getDb().select().from(users)
     .where(and(eq(users.username, username), isNull(users.deleted_at)))
     .limit(1);
   return rows[0];
 }
 
-export async function getUserById(id: number) {
+export async function getUserById(id: number): Promise<{ id: number; username: string; role: string; password_hash: string; created_at: string } | undefined> {
+  if (isMockMode()) {
+    const found = mock.users.find((u: any) => u.id === id);
+    return found ?? mock.users[0];
+  }
   const rows = await getDb().select().from(users)
     .where(and(eq(users.id, id), isNull(users.deleted_at)))
     .limit(1);
   return rows[0];
 }
 
-export async function getUsers() {
+export async function getUsers(): Promise<{ id: number; username: string; role: string; created_at: string }[]> {
+  if (isMockMode()) return mock.users;
   return getDb().select({
     id: users.id,
     username: users.username,
@@ -27,6 +38,7 @@ export async function getUsers() {
 }
 
 export async function getDeletedUserByUsername(username: string) {
+  if (isMockMode()) return undefined;
   const rows = await getDb().select().from(users)
     .where(and(eq(users.username, username), sql`${users.deleted_at} IS NOT NULL`))
     .limit(1);
@@ -34,6 +46,7 @@ export async function getDeletedUserByUsername(username: string) {
 }
 
 export async function insertUser(data: { username: string; password_hash: string; role: string }) {
+  if (isMockMode()) return { id: 999, username: data.username, role: data.role, created_at: new Date().toISOString() };
   const inserted = await getDb().insert(users).values({
     ...data,
     created_at: sql`NOW()`,
@@ -42,16 +55,19 @@ export async function insertUser(data: { username: string; password_hash: string
 }
 
 export async function reviveUser(id: number, passwordHash: string, role: string) {
+  if (isMockMode()) return;
   await getDb().update(users)
     .set({ password_hash: passwordHash, role, deleted_at: null })
     .where(eq(users.id, id));
 }
 
 export async function updateUserPassword(id: number, passwordHash: string) {
+  if (isMockMode()) return;
   await getDb().update(users).set({ password_hash: passwordHash }).where(eq(users.id, id));
 }
 
 export async function deleteUser(id: number) {
+  if (isMockMode()) return;
   const db = getDb();
   await db.transaction(async (tx) => {
     await tx.update(accounts).set({ deleted_at: sql`NOW()` }).where(eq(accounts.owner_id, id));
@@ -60,6 +76,7 @@ export async function deleteUser(id: number) {
 }
 
 export async function hasAnyUser(): Promise<boolean> {
+  if (isMockMode()) return true;
   const [row] = await getDb().select({ count: count() }).from(users).where(isNull(users.deleted_at));
   return row.count > 0;
 }

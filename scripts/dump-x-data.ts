@@ -1,7 +1,7 @@
 /**
  * Dump raw X/Twitter API responses to local files for analysis.
  *
- * Usage: bun run scripts/dump-x-data.ts
+ * Usage: tsx scripts/dump-x-data.ts
  *
  * Saves data to data/dumps/<screen_name>/
  */

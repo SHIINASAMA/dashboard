@@ -25,6 +25,13 @@ export function logMaxFiles(): number {
   return Number(process.env.LOG_MAX_FILES) || 5;
 }
 
+// Content older than this window is not discovered/fetched/recomputed.
+// Shared by the X and Reddit fetchers. Set TWEET_WINDOW_DAYS to tune;
+// old data has no processing value.
+export function contentWindowDays(): number {
+  return Number(process.env.TWEET_WINDOW_DAYS) || 90;
+}
+
 export function dataDir(): string {
   mkdirSync(DATA_DIR, { recursive: true });
   return DATA_DIR;
@@ -118,6 +125,17 @@ function defaultDb(): DatabaseConfig {
 function parseOrigins(raw: string | undefined): string[] {
   if (!raw?.trim()) return [];
   return raw.split(",").map(s => s.trim()).filter(Boolean);
+}
+
+// ── Mock / debug mode ─────────────────────────────────────────────
+// When MOCK_DATA is set (truthy), the app serves fixture data from lib/mock
+// instead of querying PostgreSQL, and skips DB bootstrap + real auth. This is
+// for debugging the frontend in isolation (no backend). Dev/debug ONLY — never
+// enable in production. The client reads the build-time mirror NEXT_PUBLIC_MOCK_DATA
+// to show a "MOCK MODE" banner.
+export function isMockMode(): boolean {
+  const v = process.env.MOCK_DATA;
+  return v === "1" || v === "true" || v === "yes" || v === "on";
 }
 
 // ── Encryption key ─────────────────────────────────────────────────

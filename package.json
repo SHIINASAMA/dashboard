@@ -5,6 +5,7 @@
   "packageManager": "pnpm@11.10.0",
   "scripts": {
     "dev": "next dev -p 3000",
+    "mock": "MOCK_DATA=1 NEXT_PUBLIC_MOCK_DATA=1 next dev -p 3000",
     "build": "next build --webpack",
     "start": "next start -p 3000",
     "lint": "next lint",

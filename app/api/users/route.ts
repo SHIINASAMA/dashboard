@@ -23,7 +23,8 @@ export async function POST(req: NextRequest) {
   if (password.length < 4) return NextResponse.json({ error: "Password must be at least 4 characters" }, { status: 400 });
   try {
     const user = await createUser(username, password, role || "user");
-    const pub = Object.fromEntries(Object.entries(user).filter(([k]) => k !== "password_hash"));
+    if (!user) return NextResponse.json({ error: "Failed to create user" }, { status: 500 });
+    const pub = { id: user.id, username: user.username, role: user.role, created_at: user.created_at };
     return NextResponse.json(pub, { status: 201 });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyCredentials, verifyPassword } from "@/lib/auth";
 import { createSessionToken, SESSION_MAX_AGE } from "@/lib/auth-helpers";
+import { isMockMode } from "@/lib/config";
 
 const SESSION_COOKIE = "dash_session";
 const IS_SECURE = process.env.HTTPS === "true";
@@ -23,6 +24,15 @@ function checkRateLimit(ip: string): boolean {
 }
 
 export async function POST(req: NextRequest) {
+  // Mock/debug mode: accept any credentials and issue a fake session cookie.
+  if (isMockMode()) {
+    const cookieStore = await cookies();
+    cookieStore.set(SESSION_COOKIE, "mock-session-token", {
+      path: "/", httpOnly: true, secure: IS_SECURE, sameSite: "lax", maxAge: SESSION_MAX_AGE,
+    });
+    return NextResponse.json({ ok: true, user: "admin", role: "admin" });
+  }
+
   try {
     const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
     if (!checkRateLimit(ip)) {

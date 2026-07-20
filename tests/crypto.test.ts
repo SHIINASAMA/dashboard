@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { encrypt, decrypt, sign, verifySignature, initCrypto, getJwtSecret } from "../crypto";
+import { encrypt, decrypt, sign, verifySignature, initCrypto, getJwtSecret } from "../lib/crypto";
 
 beforeAll(() => {
   initCrypto("a".repeat(64)); // deterministic key for testing

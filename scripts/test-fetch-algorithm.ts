@@ -2,7 +2,7 @@
  * Test the new X fetcher algorithm against real API data.
  * Does NOT write to database — only prints what would be collected.
  *
- * Usage: bun run scripts/test-fetch-algorithm.ts
+ * Usage: tsx scripts/test-fetch-algorithm.ts
  */
 import { _xClient } from "./utils";
 import { getDb } from "@/lib/db/connection";

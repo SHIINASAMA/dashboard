@@ -1,4 +1,5 @@
 import { createCipheriv, createDecipheriv, randomBytes, createHmac, timingSafeEqual } from "crypto";
+import { isMockMode } from "./config";
 
 const ALGO = "aes-256-gcm";
 const IV_LEN = 12;
@@ -37,6 +38,9 @@ function concatToU8(...bufs: (Buffer | Uint8Array)[]): Uint8Array {
 }
 
 export function encrypt(plaintext: string): string {
+  // In mock/debug mode there is no crypto key — pass through so the service
+  // layer (which round-trips tokens) works without a backend.
+  if (isMockMode()) return plaintext;
   const key = getKey();
   const iv = randomBytes(IV_LEN);
   const cipher = createCipheriv(ALGO, toU8(key), toU8(iv), { authTagLength: TAG_LEN });
@@ -46,6 +50,7 @@ export function encrypt(plaintext: string): string {
 }
 
 export function decrypt(ciphertext: string): string {
+  if (isMockMode()) return ciphertext;
   const key = getKey();
   const buf = Buffer.from(ciphertext, "hex");
   if (buf.length < IV_LEN + TAG_LEN + 1) throw new Error("Ciphertext too short");
@@ -59,10 +64,12 @@ export function decrypt(ciphertext: string): string {
 }
 
 export function sign(payload: string): string {
+  if (isMockMode()) return "mock-signature";
   return createHmac("sha256", toU8(getKey())).update(payload).digest("hex");
 }
 
 export function verifySignature(payload: string, signature: string): boolean {
+  if (isMockMode()) return true;
   try {
     const expected = Buffer.from(sign(payload), "hex");
     const actual = Buffer.from(signature, "hex");
@@ -73,5 +80,6 @@ export function verifySignature(payload: string, signature: string): boolean {
 
 /** Return the 32-byte key as Uint8Array for use with jose JWT */
 export function getJwtSecret(): Uint8Array {
+  if (isMockMode()) return new Uint8Array(32);
   return toU8(getKey());
 }

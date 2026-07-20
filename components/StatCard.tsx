@@ -13,7 +13,7 @@ interface StatCardProps {
 export function StatCard({ title, value, icon, description }: StatCardProps) {
   return (
     <Card className="overflow-hidden">
-      <CardContent className="flex items-center gap-3 p-3">
+      <CardContent className="flex items-center gap-3 p-3 sm:p-4">
         <div className="rounded-md bg-[var(--muted)] p-2 text-[var(--primary)] shrink-0">
           {icon}
         </div>

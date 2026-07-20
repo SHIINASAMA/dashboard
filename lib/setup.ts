@@ -1,8 +1,8 @@
-// @ts-nocheck — bun:sqlite is Bun-specific, only used for migration
+// @ts-nocheck — setup/bootstrap; types are loose
 import { join } from "path";
 import { existsSync } from "fs";
 import { initCrypto, encrypt, decrypt } from "./crypto";
-import { loadConfig, loadOrGenerateKey, dataDir } from "./config";
+import { loadConfig, loadOrGenerateKey, dataDir, isMockMode } from "./config";
 import { initPgPool, getPgPool } from "./db/connection";
 
 // ═══════════════════════════════════════════════════════════════════
@@ -10,6 +10,13 @@ import { initPgPool, getPgPool } from "./db/connection";
 // ═══════════════════════════════════════════════════════════════════
 
 export async function bootstrap() {
+  // Mock/debug mode: serve fixture data with no PostgreSQL. Skip all DB work
+  // so `next dev` boots without a backend.
+  if (isMockMode()) {
+    console.log("[Bootstrap] MOCK_DATA enabled — skipping database init, migrations, and admin bootstrap");
+    return;
+  }
+
   // 1. Parse config (DATABASE_URL → PostgreSQL)
   loadConfig();
 
@@ -28,7 +35,7 @@ export async function bootstrap() {
   // 4. Create missing tables (must run before migration)
   await createMissingTables();
 
-  // 5. Check for SQLite → PG migration
+  // 5. Check for legacy SQLite migration (no-op once flagged)
   await autoMigrate();
 
   // 6. Re-encrypt any tokens that were stored in plaintext
@@ -67,88 +74,17 @@ async function autoMigrate() {
     return;
   }
 
-  console.log("[Migrate] ═══ SQLite detected — starting migration ═══");
-
-  const { Database } = await import("bun:sqlite");
-  const src = new Database(sqlitePath);
-  src.exec("PRAGMA readonly = ON");
-
-  const tableRows = src.query(
-    "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_drizzle_%' ORDER BY name"
-  ).all() as { name: string }[];
-  const tables = new Set(tableRows.map(r => r.name));
-
-  // Migrate in FK-safe order
-  const ORDER = [
-    "users", "accounts", "settings",
-    "user_stats", "tweets",
-    "github_stats", "github_repos", "github_contributions",
-    "github_repo_snapshots", "github_traffic_clones", "github_traffic_views",
-    "github_referrers", "github_paths", "github_releases", "github_release_assets",
-    "gitlab_stats", "gitlab_projects", "gitlab_contributions",
-    "gitlab_project_snapshots", "gitlab_releases", "gitlab_release_assets",
-    "reddit_stats", "reddit_posts", "reddit_comments",
-  ];
-
-  let totalRows = 0;
-  let migratedTables = 0;
-
-  for (const table of ORDER) {
-    if (!tables.has(table)) continue;
-
-    // Check if PG already has data in this table
-    const { rows: pgCount } = await pool.query(`SELECT COUNT(*) as n FROM ${table}`);
-    if (Number(pgCount[0].n) > 0) {
-      console.log(`[Migrate]   ${table}: already has data, skipping`);
-      continue;
-    }
-
-    const cols = src.query(`PRAGMA table_info(${table})`).all() as { name: string }[];
-    const colNames = cols.map(c => c.name);
-    const rows = src.query(`SELECT * FROM ${table}`).all() as Record<string, unknown>[];
-    if (rows.length === 0) continue;
-
-    const colQuoted = colNames.map(c => `"${c}"`).join(", ");
-    const placeholders = colNames.map((_, i) => `$${i + 1}`).join(", ");
-    const insertSQL = `INSERT INTO ${table} (${colQuoted}) VALUES (${placeholders}) ON CONFLICT DO NOTHING`;
-
-    let inserted = 0;
-    for (const row of rows) {
-      try {
-        await pool.query(insertSQL, colNames.map(c => row[c]));
-        inserted++;
-      } catch {
-        // duplicate, skip
-      }
-    }
-
-    console.log(`[Migrate]   ${table}: ${inserted}/${rows.length} rows`);
-    totalRows += inserted;
-    migratedTables++;
-  }
-
-  // Reset sequences
-  for (const table of ORDER) {
-    if (!tables.has(table)) continue;
-    const cols = src.query(`PRAGMA table_info(${table})`).all() as { name: string }[];
-    if (!cols.some(c => c.name === "id")) continue;
-    const maxRow = src.query(`SELECT MAX(id) as m FROM ${table}`).get() as { m: number } | null;
-    const maxId = maxRow?.m || 0;
-    if (maxId > 0) {
-      try {
-        await pool.query(`SELECT setval('${table}_id_seq', $1, true)`, [maxId]);
-      } catch { /* sequence may not exist for text-PK tables */ }
-    }
-  }
-
-  src.close();
-
-  // Mark migration done
-  await pool.query(
-    `INSERT INTO settings (key, value) VALUES ('migrated_from_sqlite', NOW()::text) ON CONFLICT (key) DO NOTHING`
+  // A legacy SQLite database exists without a migration flag. The SQLite →
+  // PostgreSQL migration previously required Bun's `bun:sqlite`, which is no
+  // longer present in the pnpm/Node runtime. Migration is complete in all
+  // deployed environments, so we no longer attempt it here — warn instead of
+  // importing `bun:sqlite` and crashing bootstrap.
+  console.warn(
+    "[Migrate] Legacy SQLite database found at %s without a migration flag. " +
+    "SQLite → PostgreSQL migration is disabled in this runtime; historical data " +
+    "will not be imported.",
+    sqlitePath,
   );
-
-  console.log(`[Migrate] ═══ Done: ${totalRows} rows across ${migratedTables} tables ═══`);
 }
 
 // ═══════════════════════════════════════════════════════════════════
