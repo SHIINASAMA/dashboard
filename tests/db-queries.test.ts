@@ -108,6 +108,35 @@ describe("twitter queries", () => {
     expect(latest!.followers_count).toBe(100);
   });
 
+  it("returns only the latest user stats snapshot per date in the timeline", async () => {
+    const pool = getTestPool();
+    const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+    await pool.query(
+      `INSERT INTO user_stats (account_id, followers_count, following_count, tweet_count, recorded_at) VALUES
+       ($1, 100, 50, 200, $2), ($1, 95, 52, 205, $3),
+       ($1, 110, 55, 210, $4), ($1, 108, 56, 212, $5)`,
+      [
+        acctId,
+        `${twoDaysAgo}T08:00:00.000Z`,
+        `${twoDaysAgo}T20:00:00.000Z`,
+        `${dayAgo}T08:00:00.000Z`,
+        `${dayAgo}T20:00:00.000Z`,
+      ]
+    );
+
+    const timeline = await twitterQ.getTimeline(30, [acctId]);
+    const growth = timeline.followerGrowth.filter(
+      (r) => r.date === twoDaysAgo || r.date === dayAgo
+    );
+
+    expect(growth).toEqual([
+      { date: twoDaysAgo, followers_count: 95, following_count: 52, tweet_count: 205 },
+      { date: dayAgo, followers_count: 108, following_count: 56, tweet_count: 212 },
+    ]);
+  });
+
   it("upserts and retrieves a tweet", async () => {
     await twitterQ.upsertTweet({
       id: "999",

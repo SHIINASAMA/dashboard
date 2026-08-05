@@ -162,7 +162,11 @@
     "retweets": "转发",
     "recentTweets": "最近推文",
     "recentReplies": "最近回复",
-    "views": "查看量"
+    "views": "查看量",
+    "followerGrowth": "粉丝增长",
+    "followersCount": "粉丝数",
+    "followerGrowthA11y": "所选时间段内的粉丝数量",
+    "followerGrowthEmpty": "粉丝历史数据不足，暂无法显示增长趋势。"
   },
   "github": {
     "heading": "GitHub",

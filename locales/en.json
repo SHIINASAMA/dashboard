@@ -162,7 +162,11 @@
     "retweets": "Retweets",
     "recentTweets": "Recent Tweets",
     "recentReplies": "Recent Replies",
-    "views": "Views"
+    "views": "Views",
+    "followerGrowth": "Follower Growth",
+    "followersCount": "Followers",
+    "followerGrowthA11y": "Follower count over the selected period",
+    "followerGrowthEmpty": "Not enough follower history to show a growth trend yet."
   },
   "github": {
     "heading": "GitHub",

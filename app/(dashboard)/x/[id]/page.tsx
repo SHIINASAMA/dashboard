@@ -21,6 +21,7 @@ import {
 import { useIsMobile } from "@/lib/client/useIsMobile";
 import { StatCardSkeleton, ChartCardSkeleton, Skeleton } from "@/components/Skeleton";
 import { TimeRangeSelector } from "@/components/TimeRangeSelector";
+import { XFollowerGrowthChart } from "@/components/XFollowerGrowthChart";
 
 export default function XDetail() {
   const { t } = useTranslation();
@@ -164,6 +165,12 @@ export default function XDetail() {
       <div className="mobile-detail-controls">
         <TimeRangeSelector value={days} onChange={setDays} />
       </div>
+
+      {timeline && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <XFollowerGrowthChart data={timeline.followerGrowth} />
+        </div>
+      )}
 
       {timeline && timeline.dailyTweets.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
