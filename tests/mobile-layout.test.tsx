@@ -46,7 +46,7 @@ describe("mobile layout contracts", () => {
     const providers = readProjectFile("app/providers.tsx");
 
     expect(i18n).toContain('lng: isBrowser ? undefined : "en"');
-    expect(providers).toContain("const [mounted, setMounted] = useState(false)");
+    expect(providers).toContain("useSyncExternalStore");
     expect(providers).toContain("if (!mounted)");
   });
 
