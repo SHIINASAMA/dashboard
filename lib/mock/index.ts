@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-nocheck — mock fixtures use loose shapes
 // ─────────────────────────────────────────────────────────────────────────
 // Mock / debug fixtures.
 //

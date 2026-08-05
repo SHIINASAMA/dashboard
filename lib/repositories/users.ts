@@ -7,7 +7,7 @@ import * as mock from "../mock";
 
 export async function getUserByUsername(username: string) {
   if (isMockMode()) {
-    const found = mock.users.find((u: any) => u.username === username);
+    const found = mock.users.find((u) => u.username === username);
     return found ?? mock.users[0];
   }
   const rows = await getDb().select().from(users)
@@ -18,7 +18,7 @@ export async function getUserByUsername(username: string) {
 
 export async function getUserById(id: number): Promise<{ id: number; username: string; role: string; password_hash: string; created_at: string } | undefined> {
   if (isMockMode()) {
-    const found = mock.users.find((u: any) => u.id === id);
+    const found = mock.users.find((u) => u.id === id);
     return found ?? mock.users[0];
   }
   const rows = await getDb().select().from(users)

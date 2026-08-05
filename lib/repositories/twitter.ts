@@ -84,7 +84,7 @@ export async function getOverviewStats(accountIds?: number[]) {
 
 export async function getTweets(page: number, limit: number, sort: string, order: string, search?: string, accountIds?: number[], isReply?: number) {
   if (isMockMode()) {
-    const data = isReply === undefined ? mock.tweets : mock.tweets.filter((t: any) => t.is_reply === isReply);
+    const data = isReply === undefined ? mock.tweets : mock.tweets.filter((t) => t.is_reply === isReply);
     const total = data.length;
     return { data: data.slice((page - 1) * limit, page * limit), total, page, limit, totalPages: Math.ceil(total / limit) };
   }
@@ -109,7 +109,7 @@ export async function getTweets(page: number, limit: number, sort: string, order
 }
 
 export async function getTweetById(id: string) {
-  if (isMockMode()) return mock.tweets.find((t: any) => t.id === id) ?? mock.tweets[0];
+  if (isMockMode()) return mock.tweets.find((t) => t.id === id) ?? mock.tweets[0];
   const rows = await getDb().select().from(tweets).where(eq(tweets.id, id)).limit(1);
   return rows[0];
 }

@@ -141,7 +141,7 @@ export async function fetchAccount(account: AccountRow) {
       const params = { userId, count: batchSize, ...(cursor ? { cursor } : {}) } as Record<string, unknown>;
       const resp = await apiCall(() =>
         // @ts-ignore — Twitter API types are loose
-        (client.getTweetApi() as any).getUserTweetsAndReplies(params),
+        (client.getTweetApi() as { getUserTweetsAndReplies(params: Record<string, unknown>): Promise<Record<string, unknown>> }).getUserTweetsAndReplies(params),
       ) as Record<string, unknown>;
       const entries = (((resp.data as Record<string, unknown>)?.data || []) as Array<Record<string, unknown>>);
 
@@ -159,7 +159,7 @@ export async function fetchAccount(account: AccountRow) {
       // window, every following page is too — stop discovering.
       if (batchNewest !== null && batchNewest < cutoffMs) break;
       const rawData = resp.data as Record<string, unknown>;
-      const cursorObj = rawData.cursor as Record<string, any> | undefined;
+      const cursorObj = rawData.cursor as { bottom?: { value?: string }; top?: { value?: string } } | undefined;
       cursor = cursorObj?.bottom?.value || cursorObj?.top?.value;
       if (!cursor) break;
       await sleep(2000);

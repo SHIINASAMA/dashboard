@@ -25,7 +25,7 @@ export interface AccountRow {
 export type AccountPublic = Omit<AccountRow, "auth_token">;
 
 export async function getAccounts(ownerId?: number) {
-  if (isMockMode()) return ownerId === undefined ? mockAccounts : mockAccounts.filter((a: any) => a.owner_id === ownerId);
+  if (isMockMode()) return ownerId === undefined ? mockAccounts : mockAccounts.filter((a) => a.owner_id === ownerId);
   const db = getDb();
   const conditions: SQL<unknown>[] = [isNull(accounts.deleted_at)];
   if (ownerId !== undefined) conditions.push(eq(accounts.owner_id, ownerId));
@@ -50,13 +50,13 @@ export async function getAccounts(ownerId?: number) {
 }
 
 export async function getActiveAccounts() {
-  if (isMockMode()) return mockAccounts.filter((a: any) => a.is_active);
+  if (isMockMode()) return mockAccounts.filter((a) => a.is_active);
   return getDb().select().from(accounts)
     .where(and(eq(accounts.is_active, 1), isNull(accounts.deleted_at))) as Promise<AccountRow[]>;
 }
 
 export async function getAccountById(id: number) {
-  if (isMockMode()) return mockAccounts.find((a: any) => a.id === id);
+  if (isMockMode()) return mockAccounts.find((a) => a.id === id);
   const rows = await getDb().select().from(accounts).where(eq(accounts.id, id)).limit(1);
   return rows[0] as AccountRow | undefined;
 }

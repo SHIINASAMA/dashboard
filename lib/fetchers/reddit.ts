@@ -250,7 +250,7 @@ async function redditPublicFetchCurl(path: string, cookies: Record<string, strin
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     getLogger().error("Reddit", "Public API (curl) failed for %s: %s", path, msg.slice(0, 200));
-    throw new Error(`Reddit public API curl failed for ${path}: ${msg.slice(0, 200)}`);
+    throw new Error(`Reddit public API curl failed for ${path}: ${msg.slice(0, 200)}`, { cause: err });
   }
 
   const lastNewline = stdout.lastIndexOf("\n");

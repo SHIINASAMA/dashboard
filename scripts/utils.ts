@@ -1,5 +1,5 @@
 import { TwitterOpenApi } from "twitter-openapi-typescript";
-import { TwitterApi } from 'twitter-api-v2';
+import { TwitterApi, type ITwitterApiBeforeRequestHookArgs } from 'twitter-api-v2';
 
 function getProxyUrl(): string | undefined {
   return process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.https_proxy || process.env.http_proxy;
@@ -56,7 +56,7 @@ export const login = async (AUTH_TOKEN: string) => {
   const client = await api.getClientFromCookies(cookie);
 
   const plugin = {
-    onBeforeRequest: async (params: any) => {
+    onBeforeRequest: async (params: ITwitterApiBeforeRequestHookArgs) => {
       params.computedParams.headers = {
         ...params.computedParams.headers,
         ...client.config.apiKey,

@@ -5,7 +5,7 @@ import { getAccounts, createAccount } from "@/lib/services/accounts";
 import { getOverviewStats } from "@/lib/repositories/twitter";
 import { getUserByUsername } from "@/lib/services/users";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const cookieStore = await cookies();
   const token = cookieStore.get("dash_session")?.value;
   const session = token ? await validateSession(token) : null;

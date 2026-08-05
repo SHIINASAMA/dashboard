@@ -248,7 +248,7 @@ function ReleaseDownloadsChart({ releases, isMobile }: { releases: GithubRelease
                 return rel ? `${rel.name || rel.tag_name} — ${rel.published_at ? formatDate(rel.published_at) : ""}` : label;
               }}
             />
-            {visibleAssets.map((name, i) => (
+            {visibleAssets.map((name) => (
               <Bar
                 key={name}
                 dataKey={name}

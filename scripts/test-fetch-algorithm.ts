@@ -120,7 +120,6 @@ while (totalFetched < maxTweets) {
   }
 
   let ownInPage = 0;
-  let otherInPage = 0;
   for (const entry of entries) {
     // Collect all own tweet IDs from this entry and its nested replies
     const collectFrom = (obj: any) => {
@@ -157,7 +156,7 @@ while (totalFetched < maxTweets) {
     }
   }
 
-  otherInPage = entries.length - ownInPage;
+  const otherInPage = entries.length - ownInPage;
 
   totalFetched += entries.length;
   console.log(`  Page ${pageCount}: ${entries.length} entries — ${ownInPage} own, ${otherInPage} other — cumulative own: ${ownTweetIds.size}`);

@@ -44,7 +44,7 @@ export async function upsertRedditComment(comment: { id: string; account_id: num
 
 export async function getRedditPosts(accountId: number, page: number, limit: number, sort = "score") {
   if (isMockMode()) {
-    const data = [...mock.redditPosts].sort((a: any, b: any) => (b[sort] ?? b.score) - (a[sort] ?? a.score));
+    const data = [...mock.redditPosts].sort((a, b) => (b[sort] ?? b.score) - (a[sort] ?? a.score));
     const total = data.length;
     return { data: data.slice((page - 1) * limit, page * limit), total, page, limit, totalPages: Math.ceil(total / limit) };
   }
