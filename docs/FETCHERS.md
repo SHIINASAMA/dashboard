@@ -1,10 +1,10 @@
 # Fetchers
 
-The scheduler (`server/scheduler.ts`) runs every 60 seconds, dispatching a single platform per tick in round-robin order. First run is delayed 60–90 seconds (jittered) to avoid hammering APIs on restart.
+The scheduler (`lib/scheduler.ts`) runs every 60 seconds, dispatching a single platform per tick in round-robin order. First run is delayed 60–90 seconds (jittered) to avoid hammering APIs on restart.
 
-## X (Twitter) — `server/fetcher.ts`
+## X (Twitter) — `lib/fetcher.ts`
 
-Note: The X fetcher lives at `server/fetcher.ts` (not in `server/fetchers/`). It uses the `twitter-openapi-typescript` library.
+Note: The X fetcher lives at `lib/fetcher.ts` (not in `server/fetchers/`). It uses the `twitter-openapi-typescript` library.
 
 Uses `twitter-openapi-typescript` library (wraps `twitter-openapi-typescript-generated`). Auth token stored from X.com cookies.
 
@@ -47,7 +47,7 @@ Without recursive reply walking, only ~29 of 82 own tweets were found (35%). Wit
 - `user_stats` (followers, following, tweet count snapshots)
 - `tweets` (with engagement counts)
 
-## GitHub — `server/fetchers/github.ts`
+## GitHub — `lib/fetchers/github.ts`
 
 ### Fetch flow
 1. User profile stats via REST API
@@ -66,7 +66,7 @@ Without recursive reply walking, only ~29 of 82 own tweets were found (35%). Wit
 
 Steps 4–5 are silently skipped if no PAT is configured on the account.
 
-## GitLab — `server/fetchers/gitlab.ts`
+## GitLab — `lib/fetchers/gitlab.ts`
 
 ### Fetch flow
 1. User profile stats via GitLab API
@@ -81,7 +81,7 @@ Steps 4–5 are silently skipped if no PAT is configured on the account.
 - `gitlab_releases` + `gitlab_release_assets`
 - `gitlab_contributions`
 
-## Reddit — `server/fetchers/reddit.ts`
+## Reddit — `lib/fetchers/reddit.ts`
 
 Supports two auth modes:
 

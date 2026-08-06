@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { Link } from "react-router";

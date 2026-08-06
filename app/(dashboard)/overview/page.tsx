@@ -1,5 +1,3 @@
-"use client";
-
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";

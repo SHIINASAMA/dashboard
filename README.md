@@ -14,7 +14,7 @@ Multi-platform data dashboard with web UI. Track activity and stats across X (Tw
 - **Encrypted credentials** — AES-256-GCM encryption for tokens and API keys at rest
 - **Responsive design** — works on desktop and mobile with adaptive sidebar
 - **i18n** — English and Chinese locale support
-- **Theming** — multiple light and dark themes
+- **Theming** — 12 light and dark themes
 
 ## Quick Start
 
@@ -27,7 +27,7 @@ openssl rand -hex 32  # generate a secret
 docker compose up -d
 ```
 
-Open `http://localhost:3000`. On first run, log in as `admin` with empty password, then set a password in Settings.
+Open `http://localhost:3000`. On first run, the bootstrap prints an initial admin password (or use `ADMIN_PASSWORD_HASH` to preset one), then set a password in Settings.
 
 ### Standalone
 
@@ -43,15 +43,15 @@ The app starts on port 3000.
 | Layer | Technology |
 |-------|-----------|
 | **Runtime** | Node.js 22 + pnpm |
-| **Backend** | Next.js Route Handlers |
-| **Frontend** | React 19 + Next.js App Router + TypeScript |
-| **Build** | Next.js standalone |
+| **Backend** | React Router 7 route handlers (same process, under `app/api/`) |
+| **Frontend** | React 19 + React Router 7 Framework Mode + TypeScript |
+| **Build** | `react-router build` (client + server, memory-bounded passes) |
 | **Styling** | Tailwind CSS v4 + shadcn/ui |
 | **Charts** | Recharts |
 | **Icons** | lucide-react |
 | **Data Fetching** | @tanstack/react-query |
 | **ORM** | Drizzle ORM |
-| **Database** | PostgreSQL (SQLite legacy) |
+| **Database** | PostgreSQL |
 | **Auth** | Argon2id + JWT (HS256) session cookies |
 | **Encryption** | AES-256-GCM for credentials at rest |
 | **i18n** | react-i18next |
@@ -74,7 +74,7 @@ cp .env.example .env
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `DATABASE_URL` | — | PostgreSQL connection string |
+| `DATABASE_URL` | — | PostgreSQL connection string (takes priority) |
 | `PG_HOST` | `localhost` | PostgreSQL host |
 | `PG_PORT` | `5432` | PostgreSQL port |
 | `PG_DB` | `dashboard` | Database name |
@@ -120,6 +120,8 @@ cp .env.example .env
 | `LOG_MAX_SIZE` | `10m` | Max size per log file before rotation |
 | `LOG_MAX_FILES` | `5` | Number of rotated log files to keep |
 
+See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for the full reference, including mock mode (`MOCK_DATA=1`).
+
 ## Deployment
 
 ### Docker Compose
@@ -139,6 +141,8 @@ pnpm install --frozen-lockfile
 pnpm run build
 pnpm run start
 ```
+
+The production app runs as a single Node process (`node server/index.mjs`) using `@react-router/node` with a hand-written static-file server for `build/client`.
 
 ### Kubernetes
 
@@ -167,25 +171,29 @@ server {
 
 ```
 dashboard/
-├── app/                    # Next.js pages and API routes
+├── app/                    # React Router pages + API route handlers
 ├── components/             # Shared UI components
 ├── db/schema/              # Drizzle ORM schema files
-├── lib/                    # Server/client shared utilities, DB, fetchers
+├── lib/                    # Server/client shared utilities, DB, fetchers, config
+├── server/                 # Production entry (server/index.mjs)
+├── shared/                 # Shared TypeScript types
+├── tests/                  # Vitest test suite
 ├── docs/                   # Project documentation
-└── data/                   # Runtime data (config, db, logs)
+└── data/                   # Runtime data (logs, legacy SQLite db)
 ```
 
 ## API Overview
 
-All endpoints require authentication (JWT cookie) unless noted.
+Base path: `/api`. All endpoints require the `dash_session` JWT cookie unless noted. See [docs/API.md](docs/API.md) for the full reference.
 
 ### Auth
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/login` | Login with username/password |
-| POST | `/api/logout` | Logout |
-| GET | `/api/auth/me` | Check authentication status |
+| POST | `/api/auth/login` | Login with username/password (public) |
+| GET | `/api/auth/me` | Check authentication status (public) |
+| POST | `/api/auth/logout` | Logout |
+| POST | `/api/auth/change-password` | Change password |
 
 ### Accounts
 
@@ -195,7 +203,7 @@ All endpoints require authentication (JWT cookie) unless noted.
 | POST | `/api/accounts` | Create account |
 | PUT | `/api/accounts/:id` | Update account |
 | DELETE | `/api/accounts/:id` | Delete account (requires confirmation) |
-| POST | `/api/accounts/:id/fetch` | Trigger immediate fetch |
+| POST | `/api/fetch/:id` | Trigger immediate fetch |
 
 ### Platform Data
 
@@ -207,7 +215,7 @@ Each platform (x, github, gitlab, reddit) has dedicated endpoints for stats, tim
 
 - Node.js 22+
 - pnpm
-- PostgreSQL
+- PostgreSQL (or use `MOCK_DATA=1` / `pnpm run mock` for fixture mode)
 
 ### Setup
 
@@ -218,35 +226,14 @@ cp .env.example .env
 pnpm run dev
 ```
 
-### Commands
+### Scripts
 
 | Command | Description |
 |---------|-------------|
-| `pnpm run dev` | Start Next.js dev server |
-| `pnpm run start` | Start production server |
-| `pnpm test` | Run tests |
-| `pnpm run typecheck` | TypeScript type checking |
+| `pnpm run dev` | Start React Router dev server |
+| `pnpm run mock` | Dev server in mock/fixture mode (no DB needed) |
+| `pnpm run build` | Build client + server (memory-bounded passes) |
+| `pnpm run start` | Run the production server |
 | `pnpm run lint` | ESLint |
-
-### Architecture
-
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed architecture documentation.
-
-## Documentation
-
-- [Architecture](docs/ARCHITECTURE.md) — Tech stack, source layout, data flow, key patterns
-- [Frontend](docs/FRONTEND.md) — React architecture, routing, theming, i18n
-- [API Reference](docs/API.md) — REST endpoint documentation
-- [Configuration](docs/CONFIGURATION.md) — All environment variables
-- [Deployment](docs/DEPLOYMENT.md) — Docker, standalone, Kubernetes
-- [Database](docs/DATABASE.md) — Schema files, migrations
-- [Fetchers](docs/FETCHERS.md) — Platform fetcher internals
-- [Testing](docs/TESTING.md) — Test setup and coverage
-- [Issues](docs/ISSUES.md) — Known bugs and regressions
-- [TODO](docs/TODO.md) — Feature backlog
-
-## License
-
-[Apache License 2.0](LICENSE)
-
-This work is a derivative of software originally released under the MIT License (Copyright 2024 xiaoxiunique).
+| `pnpm run typecheck` | TypeScript check |
+| `pnpm test` | Vitest test suite |

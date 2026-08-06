@@ -1,6 +1,13 @@
 # Configuration
 
-All configuration is via environment variables. No filesystem config files are used at runtime (the old `data/config.json` has been replaced).
+All configuration is via environment variables. There is no filesystem config file: the legacy `data/config.json` is no longer read by any code.
+
+Copy `.env.example` to `.env` and fill in `DASHBOARD_SECRET`:
+
+```bash
+cp .env.example .env
+# Edit .env, set DASHBOARD_SECRET=$(openssl rand -hex 32)
+```
 
 ## Required
 
@@ -12,17 +19,17 @@ All configuration is via environment variables. No filesystem config files are u
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `HOST` | `0.0.0.0` | Bind address |
-| `PORT` | `3001` | Listen port |
-| `HTTPS` | `false` | Set `true` for HTTPS mode |
-| `DATA_DIR` | `./data` | Root data directory (config, db, logs) |
+| `HOST` | `0.0.0.0` | Bind address (legacy config; the production server binds all interfaces) |
+| `PORT` | `3000` | Listen port — `server/index.mjs` uses `Number(process.env.PORT \|\| 3000)` |
+| `HTTPS` | `false` | Set `true` to mark session cookies `Secure` and use `https://` in the bootstrap login URL (does not terminate TLS itself) |
+| `DATA_DIR` | `./data` | Root data directory (logs, legacy SQLite db/dumps) |
 | `NODE_ENV` | — | Set `production` for prod mode |
 
 ## Database
 
-The app uses PostgreSQL (via Drizzle ORM + `pg` driver). SQLite support is legacy.
+The app uses PostgreSQL via Drizzle ORM + `pg` driver. SQLite is legacy only.
 
-**Option A: `DATABASE_URL`**
+**Option A: `DATABASE_URL`** (takes priority)
 
 ```
 DATABASE_URL=postgresql://user:password@host:5432/dbname
@@ -42,22 +49,28 @@ DATABASE_URL=postgresql://user:password@host:5432/dbname
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ADMIN_PASSWORD_HASH` | `""` | Argon2id hash for bootstrap admin password |
+| `ADMIN_PASSWORD_HASH` | `""` | Argon2id hash used when bootstrapping the initial `admin` user. If empty, a random password is generated and printed to the console on first bootstrap |
 
 ## CORS
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ALLOWED_ORIGINS` | `""` (none) | Comma-separated allowed origins. `*` for all. |
+| `ALLOWED_ORIGINS` | `""` | Comma-separated allowed origins. The production server sets `Access-Control-Allow-Origin` on `/api/*` responses to this value (or `*` when unset) |
 
 ## Logging
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `LOG_DIR` | `data/logs` | Log file directory |
-| `LOG_LEVEL` | `info` | Level: `debug`, `info`, `warn`, `error` |
+| `LOG_LEVEL` | `info` | Level: `trace`, `debug`, `info`, `warn`, `error`, `fatal` |
 | `LOG_MAX_SIZE` | `10m` | Max size per log file before rotation |
 | `LOG_MAX_FILES` | `5` | Number of rotated log files to keep |
+
+## Fetcher Window
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `TWEET_WINDOW_DAYS` | `90` | Content older than this window is not discovered/fetched/recomputed (shared by X and Reddit fetchers) |
 
 ## Proxy
 
@@ -79,11 +92,22 @@ DATABASE_URL=postgresql://user:password@host:5432/dbname
 | `REDDIT_CLIENT_ID` | Reddit API client ID (for OAuth mode) |
 | `REDDIT_CLIENT_SECRET` | Reddit API client secret |
 
-## .env.example
+## Mock / Debug Mode
 
-A complete `.env.example` is provided in the project root. Copy it to `.env` and fill in `DASHBOARD_SECRET`:
+| Variable | Description |
+|----------|-------------|
+| `MOCK_DATA` | Set to `1`/`true`/`yes`/`on` to serve fixture data from `lib/mock`, skipping PostgreSQL and real auth. Dev/debug only — never in production |
+| `NEXT_PUBLIC_MOCK_DATA` | Build-time mirror used by the client to show the "MOCK MODE" banner (`vite.config.ts` inlines it via `define`) |
 
-```bash
-cp .env.example .env
-# Edit .env, set DASHBOARD_SECRET=$(openssl rand -hex 32)
-```
+`pnpm run mock` sets both.
+
+## Scripts
+
+| Variable | Description |
+|----------|-------------|
+| `AUTH_TOKEN` | X auth token for `scripts/dump-x-data.ts` / `scripts/test-fetch-algorithm.ts` |
+| `GET_ID_X_TOKEN` | X guest token for the same scripts |
+
+## Build Memory
+
+The client and server bundles are built in separate bounded passes (`build:client` with `RR_SKIP_SSR=1`, `build:server` with `RR_SKIP_CLIENT=1`), each with a constrained Node heap (`NODE_OPTIONS=--max-old-space-size=… --max-semi-space-size=8`) to keep CI memory usage under control. See [DEPLOYMENT.md](DEPLOYMENT.md).

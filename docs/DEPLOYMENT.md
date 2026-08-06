@@ -16,10 +16,10 @@ The compose stack includes:
 
 ### Volumes
 
-| Volume | Container Path | Contents |
-|--------|---------------|----------|
-| `dashboard_data` | `/app/data` | Database, logs |
-| `pg_data` | `/var/lib/postgresql/data` | PostgreSQL data |
+| Volume / Mount | Container Path | Contents |
+|----------------|---------------|----------|
+| `${DATA_HOST_DIR:-./data}` (bind mount) | `/app/data` | Logs (and legacy SQLite db/dumps) |
+| `pg_data` (named volume) | `/var/lib/postgresql/data` | PostgreSQL data |
 
 ### Environment Variables
 
@@ -74,11 +74,11 @@ The app uses Drizzle ORM with the `pg` driver. On first run, tables are created 
 
 ### Migrations
 
-Migrations and bootstrap setup run automatically on startup. The startup flow:
-1. Creates tables if they don't exist
-2. Adds missing columns (e.g., `owner_id`, `deleted_at`)
-3. Creates indexes
-4. Bootstraps the admin user
+Migrations and bootstrap run automatically on the first request (lazy, once per process, via `app/auth-middleware.server.ts`). The bootstrap flow in `lib/setup.ts`:
+1. Connects to PostgreSQL and verifies connectivity
+2. Creates any missing tables (`CREATE TABLE IF NOT EXISTS`, indexes included in the DDL)
+3. Re-encrypts any legacy plaintext auth tokens
+4. Bootstraps the admin user (using `ADMIN_PASSWORD_HASH` if set, otherwise a generated password printed to the console)
 
 ### Backup
 

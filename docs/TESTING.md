@@ -6,6 +6,8 @@
 pnpm test
 ```
 
+Runs `vitest run` against the test suite in `tests/`. Config lives in `vitest.config.ts` (resolves the `@/` alias to the project root).
+
 ## Test Files
 
 | File | Coverage | Description |
@@ -14,11 +16,17 @@ pnpm test
 | `crypto.test.ts` | Encryption & signing | AES-256-GCM encrypt/decrypt, HMAC sign/verify, JWT secret |
 | `db-queries.test.ts` | Database queries | Users, accounts, Twitter, Reddit, GitHub, GitLab CRUD |
 | `release-asset-filter.test.ts` | Release filtering | Filter release assets by platform, sum downloads |
+| `github-latest-snapshot.test.ts` | GitHub snapshots | Latest snapshot resolution logic |
+| `scheduler.test.ts` | Scheduler | Per-platform dispatch, cooldowns, and cycle guards (mocked fetchers) |
+| `logger.test.ts` | Logging | File logger rotation and level filtering |
+| `mobile-layout.test.tsx` | Responsive UI contracts | SSR-rendered components satisfy mobile touch/width contracts |
+| `traffic-metric-list.test.tsx` | GitHub traffic UI | Traffic metric list rendering |
+| `x-follower-growth-chart.test.tsx` | X chart UI | Follower growth chart rendering |
 
 ## Setup
 
-- `setup.ts` — creates a test database (PostgreSQL), runs migrations, provides `getTestPool()` / `closeTestPool()`
-- `migrate-helper.ts` — migration utilities for test setup
+- `setup.ts` — creates a test PostgreSQL pool (`getTestPool()` / `closeTestPool()`), defaults to database `dashboard_test` (override via `PG_DB`), and provides `resetTestDb()` which drops and re-creates all tables from the migration DDL
+- `migrate-helper.ts` — `createMissingTables(pool)` with the same `CREATE TABLE IF NOT EXISTS` statements used by `lib/setup.ts`
 
 Tests use `vitest` with `describe`, `it`, `expect`.
 
@@ -47,12 +55,17 @@ Tests use `vitest` with `describe`, `it`, `expect`.
 - GitHub queries (insert stats, upsert contribution, retrieve)
 - GitLab queries (insert stats, upsert contribution, retrieve)
 
+### Scheduler (`scheduler.test.ts`)
+- Round-robin platform dispatch
+- Per-platform cooldown enforcement
+- Single-cycle concurrency guard
+
 ## Adding Tests
 
-1. Create a file in `server/__tests__/` following the `*.test.ts` naming convention
+1. Create a file in `tests/` following the `*.test.ts` / `*.test.tsx` naming convention
 2. Import from `vitest`: `describe`, `it`, `expect`, `beforeAll`, `afterAll`
-3. Use `setup.ts` helpers for database access
-4. Run with `pnpm test -- server/__tests__/your-file.test.ts`
+3. For DB tests, use `setup.ts` helpers (`getTestPool`, `resetTestDb`, `closeTestPool`)
+4. Run with `pnpm test`
 
 ### Example
 
@@ -68,4 +81,4 @@ describe("my feature", () => {
 
 ## CI
 
-Tests are not yet wired into CI pipelines. The GitLab CI pipeline currently only builds and deploys.
+Tests are not yet wired into CI pipelines. The GitLab CI pipeline (`.gitlab-ci.yml`) currently only builds and deploys.

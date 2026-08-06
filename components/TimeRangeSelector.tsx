@@ -1,5 +1,3 @@
-"use client";
-
 import { useTranslation } from "react-i18next";
 
 const OPTIONS: { value: number; labelKey: string }[] = [

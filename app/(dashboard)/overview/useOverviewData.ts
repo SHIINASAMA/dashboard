@@ -1,5 +1,3 @@
-"use client";
-
 import { useQuery, useQueries } from "@tanstack/react-query";
 import { api, type OverviewStats, type TimelineData, type Account } from "@/lib/api";
 

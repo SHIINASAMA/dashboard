@@ -1,5 +1,3 @@
-"use client";
-
 import { useMemo } from "react";
 import { Link } from "react-router";
 import { useQuery } from "@tanstack/react-query";

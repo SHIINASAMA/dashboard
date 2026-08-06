@@ -1,5 +1,3 @@
-"use client";
-
 // Brand icons as inline SVGs (Simple Icons path data) to avoid pulling the
 // entire ~5 MB react-icons/si index into the webpack graph at build time.
 

@@ -1,5 +1,3 @@
-"use client";
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router";
 import { useTranslation } from "react-i18next";

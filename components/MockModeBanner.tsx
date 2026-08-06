@@ -1,5 +1,3 @@
-"use client";
-
 import { useTranslation } from "react-i18next";
 
 // Small fixed badge shown when the app runs in mock/debug mode

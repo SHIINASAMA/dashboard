@@ -1,5 +1,3 @@
-"use client";
-
 import { useTranslation } from "react-i18next";
 import { type OverviewStats, type TimelineData, type Tweet, type Account } from "@/lib/api";
 import { StatCard } from "@/components/StatCard";

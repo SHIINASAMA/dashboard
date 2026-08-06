@@ -32,13 +32,19 @@ async function POST(req: Request) {
     return json({ ok: true, user: "admin", role: "admin" }, { headers: { "set-cookie": setCookie } });
   }
 
+  let username: string | undefined;
+  let password: string | undefined;
+  try {
+    ({ username, password } = await req.json());
+  } catch {
+    return json({ error: "Invalid request body" }, { status: 400 });
+  }
+
   try {
     const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
     if (!checkRateLimit(ip)) {
       return json({ error: "Too many login attempts. Please try again later." }, { status: 429 });
     }
-
-    const { username, password } = await req.json();
 
     if (username && username !== "admin") {
       const result = await verifyCredentials(username, password || "");
@@ -57,7 +63,7 @@ async function POST(req: Request) {
       return json({ ok: true, user: username, role: result.role }, { headers: { "set-cookie": setCookie } });
     }
 
-    const valid = await verifyPassword(password);
+    const valid = await verifyPassword(password || "");
     if (!valid) {
       await new Promise((r) => setTimeout(r, 800));
       return json({ error: "Invalid password" }, { status: 401 });
@@ -71,8 +77,11 @@ async function POST(req: Request) {
       maxAge: SESSION_MAX_AGE,
     });
     return json({ ok: true, user: "admin", role: "admin" }, { headers: { "set-cookie": setCookie } });
-  } catch {
-    return json({ error: "Invalid request" }, { status: 400 });
+  } catch (err) {
+    // Do not mask real failures (DB down, missing schema, ...) as a client
+    // error - log them and return 500 so the operator can see what happened.
+    console.error("[login] unexpected error:", err);
+    return json({ error: "Internal server error" }, { status: 500 });
   }
 }
 

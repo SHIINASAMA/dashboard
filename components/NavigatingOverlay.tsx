@@ -1,5 +1,3 @@
-"use client";
-
 import { useLocation } from "react-router";
 import { useTranslation } from "react-i18next";
 

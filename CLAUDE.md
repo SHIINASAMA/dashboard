@@ -4,7 +4,17 @@ Multi-platform data dashboard with web UI. Track activity and stats across X (Tw
 
 ## Tech Stack
 
-pnpm + Next.js 16 (App Router) + React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui + Drizzle ORM + PostgreSQL (`pg`). Hono + `@hono/node-server` is retained only as a legacy standalone server (`tsx server/index.ts`, `legacy:*` scripts); the primary app is Next.js.
+pnpm + React Router 7 (Framework Mode) + React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui-style components + Drizzle ORM + PostgreSQL (`pg`). The production server is a single Node.js process (`node server/index.mjs`) using `@react-router/node` plus a hand-written static-file server for `build/client`. API routes live in `app/api/*/route.ts` (declared in `app/routes.ts`).
+
+## Key Facts
+
+- **Runtime** — Node.js 22 (no Bun). The old Hono standalone server and `bun:sqlite` are gone.
+- **Database** — PostgreSQL only. `bootstrap()` in `lib/setup.ts` creates missing tables and seeds `admin`; it is triggered lazily on the first request by `app/auth-middleware.server.ts` (once per process).
+- **Mock mode** — `MOCK_DATA=1` (plus `NEXT_PUBLIC_MOCK_DATA=1` for the client banner) serves fixtures from `lib/mock` and skips PostgreSQL/auth.
+- **Config** — env-only via `lib/config.ts`; `data/config.json` is a legacy artifact and is never read.
+- **React Router version** — pinned to `7.18.2` (with a pnpm patch in `patches/`) for stability; do not upgrade to v8 without explicit approval.
+- **Memory-constrained builds** — always use the `build:client` / `build:server` split (`RR_SKIP_SSR=1` / `RR_SKIP_CLIENT=1`) with bounded Node heaps; CI OOMs otherwise.
+- **`"use client"` is not used** — React Router v7 does not need it; do not reintroduce it.
 
 ## Quick Start
 

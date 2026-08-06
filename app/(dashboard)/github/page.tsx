@@ -1,5 +1,3 @@
-"use client";
-
 import { useTranslation } from "react-i18next";
 import AccountListPage from "@/components/AccountListPage";
 import { GithubIcon } from "@/components/BrandIcons";

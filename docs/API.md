@@ -1,12 +1,16 @@
 # API Reference
 
-Base path: `/api` (configurable via `BASE` in server config)
+Base path: `/api` (fixed in `lib/api.ts` as `API_BASE = "/api"`; routes are declared in `app/routes.ts` and implemented as React Router route handlers under `app/api/*/route.ts`).
+
+All endpoints except the public list below require a valid `dash_session` cookie. `app/auth-middleware.server.ts` returns `401` for unauthenticated API calls (or `302` to `/login` for pages).
+
+Public API paths: `POST /auth/login`, `GET /auth/me`, `GET /reddit/callback`, `GET /bing-wallpaper`, `GET /health`.
 
 ## Auth
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/auth/login` | Authenticate with `{ username, password }`, sets session cookie |
+| POST | `/auth/login` | Authenticate with `{ username, password }`, sets session cookie. `400` invalid body, `401` bad credentials, `429` rate limited (10/min/IP), `500` internal error |
 | GET | `/auth/me` | Check current session → `{ authenticated, username, role }` |
 | POST | `/auth/logout` | Clear session cookie |
 | POST | `/auth/change-password` | Change password `{ currentPassword, newPassword }` (requires session) |
@@ -47,6 +51,12 @@ Base path: `/api` (configurable via `BASE` in server config)
 | PUT | `/accounts/:id` | Update account fields |
 | DELETE | `/accounts/:id` | Delete account + all related data (requires `{ confirmToken }`) |
 
+## Fetch API
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/fetch/:id` | Trigger an immediate fetch for a specific account |
+
 ## X (Twitter)
 
 | Method | Path | Description |
@@ -54,7 +64,7 @@ Base path: `/api` (configurable via `BASE` in server config)
 | GET | `/stats/overview` | Aggregated tweet stats (totals, today, followers) |
 | GET | `/tweets?page=&limit=&sort=&order=&search=&accountIds=` | Paginated tweets with search/sort/account filter |
 | GET | `/tweets/:id` | Single tweet |
-| GET | `/stats/timeline?months=6` | Daily tweet counts + follower growth |
+| GET | `/stats/timeline?days=` | Daily tweet counts + follower growth |
 | GET | `/stats/top?metric=&limit=10` | Top tweets by metric (favorite_count, retweet_count, etc.) |
 | GET | `/stats/calendar?year=` | Tweet calendar heatmap data |
 
@@ -73,6 +83,7 @@ Base path: `/api` (configurable via `BASE` in server config)
 | GET | `/github/:accountId/repos/:repoId/paths` | Popular content paths |
 | GET | `/github/:accountId/repos/:repoId/paths/history` | Path history over time |
 | GET | `/github/:accountId/repos/:repoId/releases` | Releases with download stats |
+| GET | `/github/:accountId/repos/:repoId/releases/:releaseId/assets` | Release asset download counts |
 | PUT | `/github/repos/pin` | Set pinned repos `{ accountId, repoIds }` |
 
 ## GitLab
@@ -96,9 +107,4 @@ Base path: `/api` (configurable via `BASE` in server config)
 | GET | `/reddit/comments/:accountId?page=&limit=` | Paginated comments |
 | GET | `/reddit/activity/:accountId` | Daily post + comment activity counts |
 | GET | `/reddit/subreddits/:accountId` | Subreddit distribution |
-
-## Fetch API
-
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/fetch/:id` | Trigger an immediate fetch for a specific account |
+| GET | `/reddit/callback` | Reddit OAuth callback — completes the OAuth flow, then redirects to `/accounts` |

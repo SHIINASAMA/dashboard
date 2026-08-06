@@ -1,5 +1,3 @@
-"use client";
-
 import { useTranslation } from "react-i18next";
 import { StatCard } from "@/components/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

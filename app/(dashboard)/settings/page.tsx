@@ -1,5 +1,3 @@
-"use client";
-
 import { Sun, Moon, Monitor, Key, Clock } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/components/useTheme";

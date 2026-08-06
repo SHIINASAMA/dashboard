@@ -11,10 +11,8 @@ This file defines behavior rules for AI coding assistants.
 ## Prohibited Actions
 
 - NEVER commit or `git push` without explicit user permission
-- NEVER run destructive database operations (drop, truncate, delete rows/config) without explicit permission
-- NEVER delete or modify `data/config.json` — contains password hash and URL prefix
-- NEVER delete `data/db/dashboard.db` — use Drizzle schemas + migrations for schema changes
-- NEVER create documentation files unless explicitly requested
+- NEVER run destructive database operations (drop, truncate, delete rows) without explicit permission
+- NEVER create documentation files unless explicitly requested (updating existing docs is fine when requested)
 
 ## Must Follow
 

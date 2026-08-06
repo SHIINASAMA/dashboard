@@ -1,5 +1,3 @@
-"use client";
-
 import { Star, GitFork } from "lucide-react";
 import { languageColor } from "./constants";
 

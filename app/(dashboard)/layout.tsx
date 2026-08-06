@@ -1,5 +1,3 @@
-"use client";
-
 import { Outlet } from "react-router";
 import Layout from "@/components/Layout";
 import { MockModeBanner } from "@/components/MockModeBanner";

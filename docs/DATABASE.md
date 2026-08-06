@@ -1,10 +1,20 @@
 # Database
 
-SQLite database at `data/db/dashboard.db`. Accessed via Drizzle ORM with `@libsql/client`.
+PostgreSQL database, accessed via Drizzle ORM (`drizzle-orm/node-postgres`) with the `pg` driver. The old SQLite (`data/db/dashboard.db`) is legacy only: it is no longer read for queries, and the SQLite → PostgreSQL import is disabled in the Node runtime.
+
+## Connection
+
+`lib/db/connection.ts` owns the database connection:
+
+- `initPgPool()` — creates a shared `pg` `Pool` (max 5 connections) from config, verifies connectivity
+- `getDb()` — returns a cached Drizzle instance wrapping the pool (singleton, survives module identity splits via `globalThis`)
+- `closeDb()` — ends the pool (used by tests)
+
+Config comes from `DATABASE_URL` (priority) or individual `PG_*` variables; see [CONFIGURATION.md](CONFIGURATION.md).
 
 ## Schema Files
 
-All Drizzle ORM schemas live in `db/schema/`:
+All Drizzle ORM schemas live in `db/schema/` and are re-exported from `db/schema/index.ts`:
 
 | File | Tables |
 |------|--------|
@@ -16,41 +26,43 @@ All Drizzle ORM schemas live in `db/schema/`:
 | `reddit.ts` | `reddit_stats`, `reddit_posts`, `reddit_comments` |
 | `settings.ts` | `settings` |
 
-Legacy migration system: `db/schema.legacy.ts` (reference only, not used for new tables).
-
 ## Query Layer
 
 Database access is organized in three layers:
 
-- **Repositories** (`server/repositories/`) — Drizzle ORM queries per domain (users, accounts, twitter, github, gitlab, reddit, settings). Each file exports typed query functions.
-- **Services** (`server/services/`) — Business logic that orchestrates repository calls. Handles multi-user isolation, validation, and cross-domain operations.
-- **Connection** (`server/db/connection.ts`) — Singleton Drizzle client factory. `getDb()` returns a cached instance.
+- **Repositories** (`lib/repositories/`) — Drizzle query functions per domain (users, accounts, twitter, github, gitlab, reddit, settings). Each file exports typed query functions.
+- **Services** (`lib/services/`) — Business logic that orchestrates repository calls. Handles multi-user isolation, validation, and cross-domain operations.
+- **Connection** (`lib/db/connection.ts`) — Singleton pool + Drizzle client factory. `getDb()` returns a cached instance.
 
-## Migrations
+`lib/db.ts` re-exports all repositories for convenience.
 
-### One-shot (`db/migrate.ts`)
+## Bootstrap & Migrations
 
-Run automatically via `bootstrap()` in `server/setup.ts`. Handles:
+Migrations are idempotent `CREATE TABLE IF NOT EXISTS` statements executed by `bootstrap()` in `lib/setup.ts`. Bootstrap runs lazily on the first request via `app/auth-middleware.server.ts` (once per process). It:
 
-- Creating `users` table (if not exists)
-- Adding `owner_id` column to `accounts`
-- Adding `deleted_at` to `accounts` and `users`
-- Bootstrapping admin user from `data/config.json` password hash
+1. Parses config and validates `DASHBOARD_SECRET`
+2. Creates the PostgreSQL pool and verifies connectivity
+3. Creates any missing tables from the schema list (indexes included in the DDL)
+4. Checks for a legacy SQLite file — if found without a migration flag, logs a warning and skips (the old `bun:sqlite` import is not available in the Node runtime)
+5. Re-encrypts any plaintext `auth_token` values found in `accounts`
+6. Bootstraps the `admin` user if it does not exist (using `ADMIN_PASSWORD_HASH` if set, otherwise a generated random password printed to the console)
 
-### Adding a new table
+`db/migrate.ts` exists only as a backward-compat re-export of `bootstrap()`.
+
+## Adding a new table
 
 1. Create a Drizzle schema file in `db/schema/`
-2. Export from `db/schema/index.ts`
-3. Add corresponding repository in `server/repositories/`
-4. If the table needs to be created in existing databases, add a migration to `db/migrate.ts`
+2. Export it from `db/schema/index.ts`
+3. Add the `CREATE TABLE IF NOT EXISTS` DDL to the `SCHEMA` list in `lib/setup.ts` so existing deployments pick it up
+4. Add a repository in `lib/repositories/`
 
 ## Key Conventions
 
-- **AUTOINCREMENT** on `id` columns via `integer("id").primaryKey({ autoIncrement: true })`
-- **Timestamps** use `text` type with `default("(datetime('now'))")`
-- **Soft-delete** via nullable `deleted_at` text column
-- **Unique constraints** on per-platform natural keys (e.g. `account_id + tweet_id`, `account_id + repo_id`)
-- **PRAGMA `journal_mode = WAL`** for better concurrent read/write performance
+- **Primary keys** — `serial("id").primaryKey()` (auto-increment integer)
+- **Timestamps** — `text` type with `NOW()` as the default value
+- **Soft-delete** — nullable `deleted_at` text column; list queries filter `deleted_at IS NULL`
+- **Unique constraints** — per-platform natural keys (e.g. `owner_id + screen_name + platform` for accounts, `account_id + tweet_id`, `account_id + repo_id`)
+- **Connection pool** — one shared `pg` pool (max 5), never per-request connections
 
 ## Multi-User Isolation
 
@@ -60,13 +72,17 @@ The `owner_id` column on `accounts` links to `users.id`. All account queries fil
 
 ```sql
 -- Delete: mark as deleted
-UPDATE users SET deleted_at = datetime('now') WHERE id = ?;
+UPDATE users SET deleted_at = NOW() WHERE id = $1;
 
 -- List: exclude deleted
 SELECT * FROM users WHERE deleted_at IS NULL;
 
 -- Revive: clear deleted_at
-UPDATE users SET deleted_at = NULL WHERE id = ?;
+UPDATE users SET deleted_at = NULL WHERE id = $1;
 ```
 
 `getUserByUsername` and `getUserById` both filter with `deleted_at IS NULL`. Reviving a soft-deleted user on re-creation is handled in `createUser()`.
+
+## Tests
+
+Unit/integration tests use a separate database (default `dashboard_test`) and re-create all tables from the same DDL via `tests/setup.ts` + `tests/migrate-helper.ts`. See [TESTING.md](TESTING.md).

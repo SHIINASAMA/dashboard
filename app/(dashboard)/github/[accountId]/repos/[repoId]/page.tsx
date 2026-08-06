@@ -1,5 +1,3 @@
-"use client";
-
 import { useQuery } from "@tanstack/react-query";
 import { useState, useRef, useEffect, type CSSProperties } from "react";
 import { useNavigate, useParams } from "react-router";

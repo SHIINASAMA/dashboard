@@ -35,7 +35,7 @@ app/
 │   ├── gitlab/         # GitLab account list + detail + project detail
 │   └── reddit/         # Reddit account list + detail
 ├── login/page.tsx      # Login page
-└── api/                # Hono route handlers (auth, accounts, fetchers, stats, …)
+└── api/                # React Router route handlers (auth, accounts, fetchers, stats, …)
 components/
 ├── Layout.tsx          # Sidebar + title bar + content shell (responsive)
 ├── AccountListPage.tsx # Reusable account list component
@@ -91,7 +91,7 @@ Routes are declared in `app/routes.ts` (React Router Framework Mode). All pages 
 - Uses @tanstack/react-query for caching and refetching.
 - `QueryClient` is created in `app/providers.tsx` with `retry: 1` and `staleTime: 3 minutes`.
 - API client in `lib/api.ts` wraps fetch calls against the route handlers under `app/api/`.
-- `MOCK_DATA=1` (or `NEXT_PUBLIC_MOCK_DATA=1`) makes the API serve fixture data and shows the `MockModeBanner`.
+- `MOCK_DATA=1` makes the server serve fixture data from `lib/mock`; `NEXT_PUBLIC_MOCK_DATA=1` is the build-time mirror that shows the `MockModeBanner` (both are set by `pnpm run mock`).
 
 ## i18n
 
