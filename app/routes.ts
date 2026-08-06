@@ -67,5 +67,7 @@ route("api/accounts/:id", "api/accounts/[id]/route.ts"),
   route("api/tweets", "api/tweets/route.ts"),
   route("api/users/:id", "api/users/[id]/route.ts"),
   route("api/users", "api/users/route.ts"),
+  route("api/*", "catch-all/api-route.ts"),
+  route("*", "catch-all/route.tsx"),
 
 ] satisfies RouteConfig;
