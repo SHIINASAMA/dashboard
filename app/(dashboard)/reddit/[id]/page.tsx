@@ -186,7 +186,7 @@ export default function RedditDetail() {
               </CardHeader>
               <CardContent>
                 <div role="img" aria-label={t("redditDetail.karmaTimeline")}>
-                <div className={`flex flex-wrap gap-x-3 gap-y-0.5 mb-2 ${isMobile ? "text-[10px]" : "text-xs"}`}>
+                <div className={`flex flex-wrap gap-x-3 gap-y-0.5 mb-2 ${isMobile ? "text-[11px]" : "text-xs"}`}>
                   {legendPayload.map((e) => (
                     <span key={e.value} className="flex items-center gap-1">
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: e.color }} />
@@ -197,8 +197,8 @@ export default function RedditDetail() {
                 <ResponsiveContainer width="100%" height={CHART_H}>
                   <LineChart data={timeline} margin={MARGIN}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                    <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(timeline, "post_karma", "comment_karma")} />
+                    <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
+                    <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(timeline, "post_karma", "comment_karma")} />
                     <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
                     <Line type="monotone" dataKey="post_karma" stroke="var(--chart-4)" name={t("redditDetail.postKarma")} dot={false} />
                     <Line type="monotone" dataKey="comment_karma" stroke="var(--chart-1)" name={t("redditDetail.commentKarma")} dot={false} />
@@ -219,7 +219,7 @@ export default function RedditDetail() {
                 </CardHeader>
                 <CardContent>
                   <div role="img" aria-label={t("redditDetail.dailyActivity")}>
-                  <div className={`flex flex-wrap gap-x-3 gap-y-0.5 mb-2 ${isMobile ? "text-[10px]" : "text-xs"}`}>
+                  <div className={`flex flex-wrap gap-x-3 gap-y-0.5 mb-2 ${isMobile ? "text-[11px]" : "text-xs"}`}>
                     <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: "var(--chart-4)" }} /><span className="text-[var(--muted-foreground)]">{t("redditDetail.totalPosts")}</span></span>
                     <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: "var(--chart-1)" }} /><span className="text-[var(--muted-foreground)]">{t("redditDetail.recentComments")}</span></span>
                   </div>
@@ -234,8 +234,8 @@ export default function RedditDetail() {
                       return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
                     })()} margin={MARGIN}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                      <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                      <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth((() => {
+                      <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
+                      <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} width={calcYAxisWidth((() => {
                         const map: Record<string, { date: string; posts: number; comments: number }> = {};
                         for (const p of activity.posts) map[p.date] = { ...map[p.date], date: p.date, posts: p.count, comments: 0 };
                         for (const c of activity.comments) {
@@ -263,7 +263,7 @@ export default function RedditDetail() {
                   <div role="img" aria-label={t("redditDetail.topSubreddits")}>
                   <ResponsiveContainer width="100%" height={CHART_H}>
                     <PieChart>
-                      <Pie data={subreddits} dataKey="count" nameKey="subreddit" cx="50%" cy="50%" outerRadius={80} label={(props: { name?: string; value?: number }) => `r/${props.name ?? ""} (${props.value ?? 0})`}>
+                      <Pie data={subreddits} dataKey="count" nameKey="subreddit" cx="50%" cy="50%" outerRadius={isMobile ? 60 : 80} label={isMobile ? false : (props: { name?: string; value?: number }) => `r/${props.name ?? ""} (${props.value ?? 0})`} labelLine={isMobile ? false : { stroke: "var(--muted-foreground)", strokeWidth: 0.5 }}>
                         {subreddits.map((_, i) => (
                           <Cell key={i} fill={`var(--chart-${(i % 5) + 1})`} />
                         ))}
@@ -289,7 +289,7 @@ export default function RedditDetail() {
                     <div key={post.id} className="flex items-start gap-3 p-3 rounded-lg bg-[var(--muted)]">
                       <ThumbsUp size={16} className="text-[var(--chart-4)] mt-1 shrink-0" />
                       <div className="min-w-0 flex-1">
-                        <a href={`https://reddit.com${post.permalink}`} target="_blank" rel="noopener noreferrer" className="text-sm font-medium hover:underline line-clamp-2">{post.title}</a>
+                        <a href={`https://reddit.com${post.permalink}`} target="_blank" rel="noopener noreferrer" className="min-h-11 text-sm font-medium hover:underline line-clamp-2">{post.title}</a>
                         <div className="flex items-center gap-3 text-xs text-[var(--muted-foreground)] mt-1">
                           <span>r/{post.subreddit}</span>
                           <span className="flex items-center gap-0.5"><ThumbsUp size={10} /> {post.score.toLocaleString()}</span>

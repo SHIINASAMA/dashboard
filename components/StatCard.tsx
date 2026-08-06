@@ -21,7 +21,7 @@ export function StatCard({ title, value, icon, description }: StatCardProps) {
           <p className="text-[11px] text-[var(--muted-foreground)] truncate">{title}</p>
           <p className="text-lg font-bold tabular-nums" style={{ fontFamily: "var(--font-mono, 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace)" }}>{value.toLocaleString()}</p>
           {description && (
-            <p className="text-[10px] text-[var(--muted-foreground)]">{description}</p>
+            <p className="text-[11px] text-[var(--muted-foreground)]">{description}</p>
           )}
         </div>
       </CardContent>

@@ -66,7 +66,7 @@ export default function Overview() {
         {allAccounts.length > 0 && (
           <div className="flex flex-wrap gap-1.5 sm:justify-end">
             {allAccounts.map((acc: { id: number; platform: string; screen_name: string; error_message?: string | null }) => (
-              <Badge key={acc.id} className="text-[10px] px-1.5 py-0.5 gap-0.5">
+              <Badge key={acc.id} className="text-[11px] px-1.5 py-0.5 gap-0.5">
                 {acc.platform === "twitter" ? <XIcon /> : acc.platform === "github" ? <GithubIcon /> : acc.platform === "gitlab" ? <GitlabIcon /> : <RedditIcon />}
                 {acc.platform === "twitter" ? `@${acc.screen_name}` : acc.screen_name}
                 {acc.error_message && <span className="text-[var(--danger)] ml-0.5">!</span>}

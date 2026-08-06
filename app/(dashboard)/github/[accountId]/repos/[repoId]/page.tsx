@@ -75,9 +75,9 @@ function MultiSelectDropdown({ items, selected, onToggle, onSelectAll, onShowLat
     <div ref={ref} className="relative">
       <div className="mb-2 flex flex-wrap items-center gap-1">
         <span className="text-xs text-[var(--muted-foreground)] font-medium">{label}</span>
-        <button onClick={onSelectAll} className="min-h-11 rounded-md px-2 text-xs text-[var(--primary)] hover:bg-[var(--muted)]">{t("repoDetail.selectAll")}</button>
-        <button onClick={onShowLatest} className="min-h-11 rounded-md px-2 text-xs text-[var(--primary)] hover:bg-[var(--muted)]">{latestLabel}</button>
-        <button onClick={onDeselectAll} className="min-h-11 rounded-md px-2 text-xs text-[var(--primary)] hover:bg-[var(--muted)]">{t("repoDetail.hideAll")}</button>
+        <button onClick={onSelectAll} className="min-h-11 min-w-11 rounded-md px-2.5 text-xs text-[var(--primary)] hover:bg-[var(--muted)]">{t("repoDetail.selectAll")}</button>
+        <button onClick={onShowLatest} className="min-h-11 min-w-11 rounded-md px-2.5 text-xs text-[var(--primary)] hover:bg-[var(--muted)]">{latestLabel}</button>
+        <button onClick={onDeselectAll} className="min-h-11 min-w-11 rounded-md px-2.5 text-xs text-[var(--primary)] hover:bg-[var(--muted)]">{t("repoDetail.hideAll")}</button>
       </div>
 
       {selectedItems.length > 0 && (
@@ -85,7 +85,7 @@ function MultiSelectDropdown({ items, selected, onToggle, onSelectAll, onShowLat
           {selectedItems.map((item) => (
             <span key={item.id} className="inline-flex items-center gap-1 px-2 py-1 bg-[var(--secondary)] rounded-md text-xs text-[var(--secondary-foreground)]">
               {item.label.length > (isMobile ? 8 : 15) ? item.label.slice(0, isMobile ? 8 : 15) + "..." : item.label}
-              <button onClick={() => onToggle(item.id)} className="ml-0.5 flex min-h-8 min-w-8 items-center justify-center rounded text-sm leading-none hover:bg-[var(--border)] hover:text-[var(--foreground)]">&times;</button>
+              <button onClick={() => onToggle(item.id)} className="ml-0.5 flex min-h-11 min-w-11 items-center justify-center rounded text-sm leading-none hover:bg-[var(--border)] hover:text-[var(--foreground)]">&times;</button>
             </span>
           ))}
         </div>
@@ -212,10 +212,10 @@ function ReleaseDownloadsChart({ releases, isMobile }: { releases: GithubRelease
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3">
         <span className="text-xs text-[var(--muted-foreground)] font-medium">{t("repoDetail.assets")}</span>
-        <button onClick={() => setHiddenAssets(new Set())} className="min-h-11 rounded-md px-2 text-xs text-[var(--primary)] hover:bg-[var(--muted)]">{t("repoDetail.selectAll")}</button>
-        <button onClick={() => setHiddenAssets(new Set(topAssets))} className="min-h-11 rounded-md px-2 text-xs text-[var(--primary)] hover:bg-[var(--muted)]">{t("repoDetail.hideAll")}</button>
+        <button onClick={() => setHiddenAssets(new Set())} className="min-h-11 min-w-11 rounded-md px-2.5 text-xs text-[var(--primary)] hover:bg-[var(--muted)]">{t("repoDetail.selectAll")}</button>
+        <button onClick={() => setHiddenAssets(new Set(topAssets))} className="min-h-11 min-w-11 rounded-md px-2.5 text-xs text-[var(--primary)] hover:bg-[var(--muted)]">{t("repoDetail.hideAll")}</button>
         {topAssets.map((name, i) => (
-          <label key={name} className="flex min-h-8 cursor-pointer select-none items-center gap-1.5 text-xs">
+          <label key={name} className="flex min-h-11 cursor-pointer select-none items-center gap-1.5 text-xs">
             <input
               type="checkbox"
               checked={!hiddenAssets.has(name)}
@@ -236,8 +236,8 @@ function ReleaseDownloadsChart({ releases, isMobile }: { releases: GithubRelease
         <ResponsiveContainer width="100%" height={chartHeight}>
           <BarChart data={chartData} layout="vertical" margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-            <XAxis type="number" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
-            <YAxis type="category" dataKey="tag_name" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={isMobile ? 50 : 120} tickFormatter={(v: string) => v.length > (isMobile ? 6 : 15) ? v.slice(0, isMobile ? 6 : 15) + "..." : v} />
+            <XAxis type="number" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+            <YAxis type="category" dataKey="tag_name" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} width={isMobile ? 50 : 120} tickFormatter={(v: string) => v.length > (isMobile ? 6 : 15) ? v.slice(0, isMobile ? 6 : 15) + "..." : v} />
             <Tooltip
               contentStyle={CHART_TOOLTIP_CONTENT_STYLE}
               itemStyle={CHART_TOOLTIP_ITEM_STYLE}
@@ -404,9 +404,9 @@ export default function RepoDetail() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
-        <Card><CardContent className="p-4 sm:p-4 text-center"><Star size={16} className="inline mb-1 text-[var(--muted-foreground)]" /><p className="text-2xl font-bold">{repo.stars.toLocaleString()}</p><p className="text-xs text-[var(--muted-foreground)]">{t("repoDetail.stars")}</p></CardContent></Card>
-        <Card><CardContent className="p-4 sm:p-4 text-center"><GitFork size={16} className="inline mb-1 text-[var(--muted-foreground)]" /><p className="text-2xl font-bold">{repo.forks.toLocaleString()}</p><p className="text-xs text-[var(--muted-foreground)]">{t("repoDetail.forks")}</p></CardContent></Card>
-        <Card className="col-span-2 md:col-span-1"><CardContent className="p-4 sm:p-4 text-center"><Activity size={16} className="inline mb-1 text-[var(--muted-foreground)]" /><p className="text-2xl font-bold">{repo.open_issues.toLocaleString()}</p><p className="text-xs text-[var(--muted-foreground)]">{t("repoDetail.openIssues")}</p></CardContent></Card>
+        <Card><CardContent className="p-4 sm:p-4 text-center"><Star size={16} className="inline mb-1 text-[var(--muted-foreground)]" /><p className="text-2xl font-bold font-mono tabular-nums">{repo.stars.toLocaleString()}</p><p className="text-xs text-[var(--muted-foreground)]">{t("repoDetail.stars")}</p></CardContent></Card>
+        <Card><CardContent className="p-4 sm:p-4 text-center"><GitFork size={16} className="inline mb-1 text-[var(--muted-foreground)]" /><p className="text-2xl font-bold font-mono tabular-nums">{repo.forks.toLocaleString()}</p><p className="text-xs text-[var(--muted-foreground)]">{t("repoDetail.forks")}</p></CardContent></Card>
+        <Card className="col-span-2 md:col-span-1"><CardContent className="p-4 sm:p-4 text-center"><Activity size={16} className="inline mb-1 text-[var(--muted-foreground)]" /><p className="text-2xl font-bold font-mono tabular-nums">{repo.open_issues.toLocaleString()}</p><p className="text-xs text-[var(--muted-foreground)]">{t("repoDetail.openIssues")}</p></CardContent></Card>
       </div>
 
       <Card>
@@ -420,8 +420,8 @@ export default function RepoDetail() {
             <ResponsiveContainer width="100%" height={CHART_H}>
               <AreaChart data={snapshots} margin={MARGIN}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(snapshots, "stars")} />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
+                <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(snapshots, "stars")} />
                 <Tooltip contentStyle={CHART_TOOLTIP_CONTENT_STYLE} itemStyle={CHART_TOOLTIP_ITEM_STYLE} wrapperStyle={CHART_TOOLTIP_WRAPPER_STYLE} />
                 <Area type="monotone" dataKey="stars" stroke="var(--chart-3)" fill="color-mix(in oklch, var(--chart-3) 12%, transparent)" name={t("repoDetail.stars")} />
               </AreaChart>
@@ -447,8 +447,8 @@ export default function RepoDetail() {
               <ResponsiveContainer width="100%" height={CHART_H}>
                 <BarChart data={clones} margin={MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(clones, "count", "uniques")} />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
+                  <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(clones, "count", "uniques")} />
                   <Tooltip contentStyle={CHART_TOOLTIP_CONTENT_STYLE} itemStyle={CHART_TOOLTIP_ITEM_STYLE} wrapperStyle={CHART_TOOLTIP_WRAPPER_STYLE} />
                   <Bar dataKey="count" fill="var(--chart-1)" radius={[4, 4, 0, 0]} name={t("repoDetail.clones")} />
                   <Bar dataKey="uniques" fill="var(--chart-3)" radius={[4, 4, 0, 0]} name={t("repoDetail.uniqueCloners")} />
@@ -474,8 +474,8 @@ export default function RepoDetail() {
               <ResponsiveContainer width="100%" height={CHART_H}>
                 <BarChart data={views} margin={MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(views, "count", "uniques")} />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
+                  <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(views, "count", "uniques")} />
                   <Tooltip contentStyle={CHART_TOOLTIP_CONTENT_STYLE} itemStyle={CHART_TOOLTIP_ITEM_STYLE} wrapperStyle={CHART_TOOLTIP_WRAPPER_STYLE} />
                   <Bar dataKey="count" fill="var(--chart-2)" radius={[4, 4, 0, 0]} name={t("repoDetail.views")} />
                   <Bar dataKey="uniques" fill="var(--chart-5)" radius={[4, 4, 0, 0]} name={t("repoDetail.uniqueVisitors")} />
@@ -518,7 +518,7 @@ export default function RepoDetail() {
                 {referrerHistoryChart && referrerHistoryChart.length >= 2 ? (
                   <div role="img" aria-label={t("repoDetail.referringSites")}>
                     <p className="mb-2 text-xs font-medium text-[var(--muted-foreground)]">{t("repoDetail.trend")}</p>
-                    <div className={`flex flex-wrap gap-x-3 gap-y-0.5 mb-2 ${isMobile ? "text-[10px]" : "text-xs"}`}>
+                    <div className={`flex flex-wrap gap-x-3 gap-y-0.5 mb-2 ${isMobile ? "text-[11px]" : "text-xs"}`}>
                       {referrers.slice(0, 10).map((ref, i) => (
                         <span key={ref.referrer} className="flex items-center gap-1">
                           <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: COLORS[i] }} />
@@ -529,8 +529,8 @@ export default function RepoDetail() {
                     <ResponsiveContainer width="100%" height={TALL_CHART_H}>
                       <LineChart data={referrerHistoryChart} margin={MARGIN}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                        <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                        <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(referrerHistoryChart, ...(referrers.slice(0, 10).map(r => r.referrer)))} />
+                        <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
+                        <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(referrerHistoryChart, ...(referrers.slice(0, 10).map(r => r.referrer)))} />
                         <Tooltip contentStyle={CHART_TOOLTIP_CONTENT_STYLE} itemStyle={CHART_TOOLTIP_ITEM_STYLE} wrapperStyle={CHART_TOOLTIP_WRAPPER_STYLE} />
                         {referrers.slice(0, 10).map((ref, i) => (
                           <Line key={ref.referrer} type="monotone" dataKey={ref.referrer} stroke={COLORS[i]} strokeWidth={2} dot={false} />
@@ -572,7 +572,7 @@ export default function RepoDetail() {
                 {pathHistoryChart && pathHistoryChart.length >= 2 ? (
                   <div role="img" aria-label={t("repoDetail.popularContent")}>
                     <p className="mb-2 text-xs font-medium text-[var(--muted-foreground)]">{t("repoDetail.trend")}</p>
-                    <div className={`flex flex-wrap gap-x-3 gap-y-0.5 mb-2 ${isMobile ? "text-[10px]" : "text-xs"}`}>
+                    <div className={`flex flex-wrap gap-x-3 gap-y-0.5 mb-2 ${isMobile ? "text-[11px]" : "text-xs"}`}>
                       {paths.slice(0, 10).map((p, i) => (
                         <span key={p.path} className="flex items-center gap-1">
                           <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: COLORS[i] }} />
@@ -583,8 +583,8 @@ export default function RepoDetail() {
                     <ResponsiveContainer width="100%" height={TALL_CHART_H}>
                       <LineChart data={pathHistoryChart} margin={MARGIN}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                        <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                        <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(pathHistoryChart, ...(paths.slice(0, 10).map(p => p.path)))} />
+                        <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
+                        <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(pathHistoryChart, ...(paths.slice(0, 10).map(p => p.path)))} />
                         <Tooltip contentStyle={CHART_TOOLTIP_CONTENT_STYLE} itemStyle={CHART_TOOLTIP_ITEM_STYLE} wrapperStyle={CHART_TOOLTIP_WRAPPER_STYLE} />
                         {paths.slice(0, 10).map((p, i) => (
                           <Line key={p.path} type="monotone" dataKey={p.path} stroke={COLORS[i]} strokeWidth={2} dot={false} />

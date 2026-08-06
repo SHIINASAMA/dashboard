@@ -23,9 +23,9 @@ export default function Reddit() {
       cardBorderAccent="var(--chart-4)"
       renderBadge={(account: Account) => (
         <>
-          <Badge className="text-[10px] px-1.5 bg-[var(--chart-4)]/15 text-[var(--chart-4)]">{t("badge.reddit")}</Badge>
+          <Badge className="text-[11px] px-1.5 bg-[var(--chart-4)]/15 text-[var(--chart-4)]">{t("badge.reddit")}</Badge>
           {account.auth_type === "reddit_public" && (
-            <Badge className="text-[10px] px-1.5 bg-[var(--success)]/10 text-[var(--success)]">
+            <Badge className="text-[11px] px-1.5 bg-[var(--success)]/10 text-[var(--success)]">
               {t("badge.redditPublic")}
             </Badge>
           )}

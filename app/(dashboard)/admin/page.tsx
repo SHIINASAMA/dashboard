@@ -125,7 +125,7 @@ export default function Admin() {
                 <div key={u.id} className="flex items-center justify-between py-2 border-t border-[var(--border)] first:border-0">
                   <span className="text-sm">
                     {u.username}
-                    <span className="text-[10px] text-[var(--muted-foreground)] ml-1.5">({u.role})</span>
+                    <span className="text-[11px] text-[var(--muted-foreground)] ml-1.5">({u.role})</span>
                   </span>
                   {u.id !== 1 && (
                     <button

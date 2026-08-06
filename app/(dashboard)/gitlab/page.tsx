@@ -22,14 +22,14 @@ export default function GitLab() {
       emptyText={t("gitlab.emptyState")}
       cardBorderAccent="var(--chart-4)"
       renderBadge={() => (
-        <Badge className="text-[10px] px-1.5 bg-[var(--chart-4)]/15 text-[var(--chart-4)]">{t("badge.gitlab")}</Badge>
+        <Badge className="text-[11px] px-1.5 bg-[var(--chart-4)]/15 text-[var(--chart-4)]">{t("badge.gitlab")}</Badge>
       )}
       renderMeta={(account: Account) => {
         const instanceLabel = account.instance_url
           ? new URL(account.instance_url).hostname
           : "gitlab.com";
         return (
-          <span className="text-[10px] text-[var(--muted-foreground)]">{instanceLabel}</span>
+          <span className="text-[11px] text-[var(--muted-foreground)]">{instanceLabel}</span>
         );
       }}
       renderHeader={() => (

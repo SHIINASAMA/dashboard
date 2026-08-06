@@ -217,7 +217,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             onClick={closeMobile}
           />
           <aside
-            className="fixed inset-y-0 left-0 z-40 border-r border-[var(--border)] bg-[var(--card)] flex flex-col overflow-y-auto pb-[env(safe-area-inset-bottom)]"
+            className="fixed inset-y-0 left-0 z-40 border-r border-[var(--border)] bg-[var(--card)] flex flex-col overflow-y-auto overscroll-contain touch-pan-y pb-[env(safe-area-inset-bottom)]"
             style={{
               width: SIDEBAR_WIDTH,
               transform: isOpen ? "translateX(0)" : "translateX(-100%)",
@@ -258,7 +258,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </button>
           <div className="flex items-center gap-2 shrink-0">
             <LayoutDashboard size={18} className="text-[var(--primary)]" />
-            <span className="text-sm font-semibold">{t("common.dashboard")}</span>
+            <span className="hidden min-[360px]:inline text-sm font-semibold">{t("common.dashboard")}</span>
           </div>
         </div>
 

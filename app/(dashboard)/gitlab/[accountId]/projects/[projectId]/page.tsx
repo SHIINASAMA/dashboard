@@ -93,9 +93,9 @@ export default function ProjectDetail() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
-        <Card><CardContent className="p-4 sm:p-4 text-center"><Star size={16} className="inline mb-1 text-[var(--muted-foreground)]" /><p className="text-2xl font-bold">{project.stars.toLocaleString()}</p><p className="text-xs text-[var(--muted-foreground)]">{t("projectDetail.stars")}</p></CardContent></Card>
-        <Card><CardContent className="p-4 sm:p-4 text-center"><GitFork size={16} className="inline mb-1 text-[var(--muted-foreground)]" /><p className="text-2xl font-bold">{project.forks.toLocaleString()}</p><p className="text-xs text-[var(--muted-foreground)]">{t("projectDetail.forks")}</p></CardContent></Card>
-        <Card><CardContent className="p-4 sm:p-4 text-center"><Activity size={16} className="inline mb-1 text-[var(--muted-foreground)]" /><p className="text-2xl font-bold">{project.open_issues.toLocaleString()}</p><p className="text-xs text-[var(--muted-foreground)]">{t("projectDetail.openIssues")}</p></CardContent></Card>
+        <Card><CardContent className="p-4 sm:p-4 text-center"><Star size={16} className="inline mb-1 text-[var(--muted-foreground)]" /><p className="text-2xl font-bold font-mono tabular-nums">{project.stars.toLocaleString()}</p><p className="text-xs text-[var(--muted-foreground)]">{t("projectDetail.stars")}</p></CardContent></Card>
+        <Card><CardContent className="p-4 sm:p-4 text-center"><GitFork size={16} className="inline mb-1 text-[var(--muted-foreground)]" /><p className="text-2xl font-bold font-mono tabular-nums">{project.forks.toLocaleString()}</p><p className="text-xs text-[var(--muted-foreground)]">{t("projectDetail.forks")}</p></CardContent></Card>
+        <Card><CardContent className="p-4 sm:p-4 text-center"><Activity size={16} className="inline mb-1 text-[var(--muted-foreground)]" /><p className="text-2xl font-bold font-mono tabular-nums">{project.open_issues.toLocaleString()}</p><p className="text-xs text-[var(--muted-foreground)]">{t("projectDetail.openIssues")}</p></CardContent></Card>
       </div>
 
       <Card>
@@ -109,8 +109,8 @@ export default function ProjectDetail() {
             <ResponsiveContainer width="100%" height={CHART_H}>
               <AreaChart data={snapshots} margin={MARGIN}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(snapshots, "stars")} />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
+                <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(snapshots, "stars")} />
                 <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
                 <Area type="monotone" dataKey="stars" stroke="var(--chart-3)" fill="color-mix(in oklch, var(--chart-3) 12%, transparent)" name={t("projectDetail.stars")} />
               </AreaChart>
@@ -135,8 +135,8 @@ export default function ProjectDetail() {
             <ResponsiveContainer width="100%" height={Math.max(isMobile ? 140 : 200, releases.length * (isMobile ? 36 : 60))}>
               <BarChart data={releases} layout="vertical" margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis type="number" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
-                <YAxis type="category" dataKey="release_tag" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={isMobile ? 50 : 120} tickFormatter={(v: string) => v.length > (isMobile ? 6 : 15) ? v.slice(0, isMobile ? 6 : 15) + "…" : v} />
+                <XAxis type="number" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+                <YAxis type="category" dataKey="release_tag" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} width={isMobile ? 50 : 120} tickFormatter={(v: string) => v.length > (isMobile ? 6 : 15) ? v.slice(0, isMobile ? 6 : 15) + "…" : v} />
                 <Tooltip
                   contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }}
                   labelFormatter={(label) => {

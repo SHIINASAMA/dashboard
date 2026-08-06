@@ -47,15 +47,15 @@ export function RedditSection({ postKarma, commentKarma, totalPosts, totalCommen
           <CardContent className="pt-0">
             {karmaTimeline.length > 0 ? (
               <div role="img" aria-label={t("overview.charts.redditKarma")}>
-              <div className={`flex flex-wrap gap-x-3 gap-y-0.5 mb-1 ${isMobile ? "text-[10px]" : "text-xs"}`}>
+              <div className={`flex flex-wrap gap-x-3 gap-y-0.5 mb-1 ${isMobile ? "text-[11px]" : "text-xs"}`}>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: "var(--chart-4)" }} /><span className="text-[var(--muted-foreground)]">{t("overview.charts.redditPostKarma")}</span></span>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: "var(--chart-1)" }} /><span className="text-[var(--muted-foreground)]">{t("overview.charts.redditCommentKarma")}</span></span>
               </div>
               <ResponsiveContainer width="100%" height={CHART_H}>
                 <LineChart data={karmaTimeline} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v: string) => v.slice(5)} />
-                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(karmaTimeline, "post_karma", "comment_karma")} />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v: string) => v.slice(5)} />
+                  <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(karmaTimeline, "post_karma", "comment_karma")} />
                   <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
                   <Line type="monotone" dataKey="post_karma" stroke="var(--chart-4)" name={t("overview.charts.redditPostKarma")} dot={false} />
                   <Line type="monotone" dataKey="comment_karma" stroke="var(--chart-1)" name={t("overview.charts.redditCommentKarma")} dot={false} />
@@ -76,8 +76,8 @@ export function RedditSection({ postKarma, commentKarma, totalPosts, totalCommen
               <ResponsiveContainer width="100%" height={CHART_H}>
                 <BarChart data={dailyActivity}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v: string) => v.slice(5)} />
-                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(dailyActivity, "posts", "comments")} />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v: string) => v.slice(5)} />
+                  <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(dailyActivity, "posts", "comments")} />
                   <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
                   <Bar dataKey="posts" fill="var(--primary)" radius={[3, 3, 0, 0]} name={t("overview.stats.redditPosts")} />
                   <Bar dataKey="comments" fill="var(--chart-4)" radius={[3, 3, 0, 0]} name={t("overview.stats.redditComments")} />

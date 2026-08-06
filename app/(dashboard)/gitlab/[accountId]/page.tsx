@@ -237,7 +237,7 @@ export default function GitLabDetail() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-medium">{p.path_with_namespace}</span>
                           {p.language && <Badge className="shrink-0">{p.language}</Badge>}
-                          {p.visibility !== "public" && <Badge className="shrink-0 text-[10px]">{p.visibility}</Badge>}
+                          {p.visibility !== "public" && <Badge className="shrink-0 text-[11px]">{p.visibility}</Badge>}
                         </div>
                         {p.description && <p className="text-xs text-[var(--muted-foreground)] mt-0.5 line-clamp-1">{p.description}</p>}
                         <div className="flex items-center gap-3 text-xs text-[var(--muted-foreground)] mt-1">
