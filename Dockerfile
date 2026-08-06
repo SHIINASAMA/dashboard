@@ -20,11 +20,18 @@ RUN pnpm install --frozen-lockfile --child-concurrency=1 --network-concurrency=4
 
 # Copy source, typecheck, then build client + SSR in separate passes.
 COPY . .
-RUN pnpm exec tsc --noEmit
+# tsc cold-check needs ~440MB heap (432 OOMs, 448 passes) and peaks
+# ~580MB RSS in a cold x86_64 container; the 256MB baseline ENV is too
+# tight, so this single step gets its own heap. Keep it as tight as
+# possible - CI kaniko has no explicit resources limits.
+RUN NODE_OPTIONS="--max-old-space-size=448" pnpm exec tsc --noEmit
 RUN pnpm build
 
 # ── Stage 2: Production runner ──────────────────────────────────────
 FROM node:22-slim AS runner
+ENV PNPM_HOME=/pnpm
+ENV PATH=$PNPM_HOME:$PATH
+RUN corepack enable
 WORKDIR /app
 
 # curl is needed by the Reddit public fetcher and compose healthcheck.
