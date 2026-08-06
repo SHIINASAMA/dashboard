@@ -10,7 +10,9 @@ async function GET() {
     const data = (await res.json()) as { images?: { url: string }[] };
     const img = data.images?.[0];
     if (!img) return json({ error: "No image" }, { status: 502 });
-    throw redirect(`https://www.bing.com${img.url}`);
+    // Return the redirect response (not throw): throwing inside this try/catch
+    // would be swallowed and turned into a 500 JSON error.
+    return redirect(`https://www.bing.com${img.url}`);
   } catch (e: unknown) {
     return json({ error: e instanceof Error ? e.message : String(e) }, { status: 500 });
   }
