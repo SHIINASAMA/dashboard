@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import { api, type GithubOverview, type GithubContribution, type GithubRepo } from "@/lib/api";
 import { formatDateTime } from "@/lib/client/datetime";
@@ -96,6 +97,16 @@ export default function GitHubDetail() {
     queryClient.invalidateQueries({ queryKey: ["github", "overview", accountId] });
     setShowPinDialog(false);
   };
+
+  // Close the pin dialog with Escape
+  useEffect(() => {
+    if (!showPinDialog) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowPinDialog(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [showPinDialog]);
 
   const { data: account, isLoading: accountLoading } = useQuery({
     queryKey: ["account", accountId],
@@ -230,8 +241,8 @@ export default function GitHubDetail() {
               {overview.repos.length > 0 ? (
                 <div className="space-y-2">
                   {overview.repos.map((repo: GithubRepo) => (
-                    <div key={repo.id}
-                      onClick={() => router.push(`/github/${accountId}/repos/${repo.repo_id}`)}
+                    <Link key={repo.id}
+                      href={`/github/${accountId}/repos/${repo.repo_id}`}
                       className="flex items-center gap-3 p-3 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] cursor-pointer transition-colors"
                     >
                       <BookOpen size={16} className="text-[var(--muted-foreground)] shrink-0" />
@@ -246,8 +257,8 @@ export default function GitHubDetail() {
                           <span className="flex items-center gap-1"><GitFork size={12} /> {repo.forks}</span>
                         </div>
                       </div>
-                      <ArrowUpRight size={14} className="text-[var(--muted-foreground)]" />
-                    </div>
+                      <ArrowUpRight size={14} className="text-[var(--muted-foreground)] shrink-0" />
+                    </Link>
                   ))}
                 </div>
               ) : (
@@ -262,7 +273,7 @@ export default function GitHubDetail() {
           {showPinDialog && (
             <Portal>
               <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowPinDialog(false)}>
-                <div className="bg-[var(--card)] rounded-xl p-6 w-full max-w-lg mx-4 shadow-lg border border-[var(--border)] max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+                <div role="dialog" aria-modal="true" aria-label={t("githubDetail.managePins")} className="bg-[var(--card)] rounded-xl p-6 w-full max-w-lg mx-4 shadow-lg border border-[var(--border)] max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-semibold">{t("githubDetail.managePins")}</h2>
                     <button onClick={() => setShowPinDialog(false)} className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]">{t("common.cancel")}</button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
@@ -40,6 +40,7 @@ function NavItem({ to, label, icon: Icon, isActive, onClick, onMouseEnter }: {
       onClick={onClick}
       onMouseEnter={onMouseEnter}
       onFocus={onMouseEnter}
+      aria-current={isActive ? "page" : undefined}
       className={`relative flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${
         isActive
           ? "bg-[var(--primary)]/8 text-[var(--foreground)] font-semibold shadow-sm"
@@ -59,9 +60,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const queryClient = useQueryClient();
   const { url } = useBingWallpaper();
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.matchMedia("(max-width: 767px)").matches ? false : loadVisible();
+  });
   const [loggingOut, setLoggingOut] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches
+  );
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const drawerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
@@ -115,6 +123,26 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       saveVisible(false);
     }
   }, [isMobile]);
+
+  // Close the mobile drawer with Escape
+  useEffect(() => {
+    if (!isMobile || !isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        closeMobile();
+        toggleRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [isMobile, isOpen, closeMobile]);
+
+  // Move focus into the drawer when it opens (and out of it when closed)
+  useEffect(() => {
+    if (isMobile && isOpen) {
+      drawerRef.current?.querySelector<HTMLElement>("a, button")?.focus();
+    }
+  }, [isMobile, isOpen]);
 
   const isActive = (path: string) => {
     if (path === "/") return pathname === "/";
@@ -192,6 +220,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {!isMobile && (
         <aside
           className="h-full border-r border-[var(--border)] bg-[var(--card)] flex flex-col overflow-y-auto relative z-20 shrink-0"
+          inert={!isOpen}
           style={{
             width: isOpen ? SIDEBAR_WIDTH : 0,
             transition: "width 0.3s ease",
@@ -214,9 +243,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               pointerEvents: isOpen ? "auto" : "none",
               transition: "opacity 0.3s ease",
             }}
-            onClick={closeMobile}
+            onClick={() => {
+              closeMobile();
+              toggleRef.current?.focus();
+            }}
           />
           <aside
+            ref={drawerRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("common.dashboard")}
+            aria-hidden={!isOpen}
+            inert={!isOpen}
             className="fixed inset-y-0 left-0 z-40 border-r border-[var(--border)] bg-[var(--card)] flex flex-col overflow-y-auto overscroll-contain touch-pan-y pb-[env(safe-area-inset-bottom)]"
             style={{
               width: SIDEBAR_WIDTH,
@@ -244,7 +282,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           style={{ minHeight: `calc(${TITLEBAR_H}px + env(safe-area-inset-top))` }}
         >
           <button
+            ref={toggleRef}
             onClick={toggle}
+            aria-expanded={isOpen}
             className="p-2.5 ml-2 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
             title={isOpen ? t("common.collapseSidebar") : t("common.expandSidebar")}
             aria-label={isOpen ? t("common.collapseSidebar") : t("common.expandSidebar")}

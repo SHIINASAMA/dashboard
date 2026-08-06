@@ -343,7 +343,7 @@ function AccountFormPanel({
           </legend>
 
           {isRedditPublic ? (
-            cookieLoading ? <p className="text-sm text-[var(--muted-foreground)]">Loading...</p> :
+            cookieLoading ? <p className="text-sm text-[var(--muted-foreground)]">{t("common.loading")}</p> :
             <CookieTable entries={cookieEntries} onChange={syncCookieToken} t={t} />
           ) : (
             <div>

@@ -64,7 +64,7 @@ export default function Login() {
             {t("common.dashboard")}
           </h1>
           <p className="text-sm text-white/60 text-center mb-8">
-            Track your X, GitHub, GitLab, and Reddit activity in one place.
+            {t("login.tagline")}
           </p>
 
           <h2 className="text-base font-medium text-white/90 mb-4">{t("login.login")}</h2>

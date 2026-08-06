@@ -279,14 +279,22 @@ export default function XDetail() {
       {(tweets || replies) && (
         <Card>
           <CardHeader>
-            <div className="flex items-center gap-4 border-b border-[var(--border)] pb-0">
+            <div role="tablist" aria-label={t("xDetail.recentTweets")} className="flex items-center gap-4 border-b border-[var(--border)] pb-0">
               <button
+                id="tab-tweets"
+                role="tab"
+                aria-selected={tab === "tweets"}
+                aria-controls="panel-tweets"
                 onClick={() => setTab("tweets")}
                 className={`min-h-11 border-b-2 pb-3 text-sm font-medium transition-colors ${tab === "tweets" ? "border-[var(--primary)] text-[var(--primary)]" : "border-transparent text-[var(--muted-foreground)] hover:text-[var(--foreground)]"}`}
               >
                 {t("xDetail.recentTweets")}
               </button>
               <button
+                id="tab-replies"
+                role="tab"
+                aria-selected={tab === "replies"}
+                aria-controls="panel-replies"
                 onClick={() => setTab("replies")}
                 className={`min-h-11 border-b-2 pb-3 text-sm font-medium transition-colors ${tab === "replies" ? "border-[var(--primary)] text-[var(--primary)]" : "border-transparent text-[var(--muted-foreground)] hover:text-[var(--foreground)]"}`}
               >
@@ -294,7 +302,12 @@ export default function XDetail() {
               </button>
             </div>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent
+            role="tabpanel"
+            id={tab === "tweets" ? "panel-tweets" : "panel-replies"}
+            aria-labelledby={tab === "tweets" ? "tab-tweets" : "tab-replies"}
+            className="space-y-3"
+          >
             {tab === "tweets" && tweets && tweets.data.length > 0 && tweets.data.slice(0, 20).map((tweet: Tweet) => (
               <TweetListItem key={tweet.id} tweet={tweet} screenName={account.screen_name} />
             ))}

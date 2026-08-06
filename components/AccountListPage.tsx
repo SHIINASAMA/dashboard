@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { api, type Account } from "@/lib/api";
@@ -47,8 +47,6 @@ export default function AccountListPage({
   cardBorderAccent,
 }: AccountListPageProps) {
   const { t } = useTranslation();
-  const router = useRouter();
-
   const { data, isLoading } = useQuery({
     queryKey: ["accounts"],
     queryFn: api.getAccounts,
@@ -116,8 +114,12 @@ export default function AccountListPage({
               const isStale = staleMap.get(account.id) ?? false;
 
               return (
-                <Card
+                <Link
                   key={account.id}
+                  href={`/${urlPrefix}/${account.id}`}
+                  className="block"
+                >
+                <Card
                   className={
                     "group border-l-2 " +
                     (!account.is_active ? "opacity-60 " : "") +
@@ -128,7 +130,6 @@ export default function AccountListPage({
                   } as React.CSSProperties : {
                     borderLeftColor: "transparent",
                   } as React.CSSProperties}
-                  onClick={() => router.push(`/${urlPrefix}/${account.id}`)}
                 >
                   <CardContent className="p-5 sm:p-5">
                     <div className="flex items-start justify-between gap-4">
@@ -168,6 +169,7 @@ export default function AccountListPage({
                     </div>
                   </CardContent>
                 </Card>
+                </Link>
               );
             })}
           </div>

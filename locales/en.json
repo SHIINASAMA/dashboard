@@ -24,7 +24,8 @@
     "password": "Password",
     "login": "Log in",
     "loggingIn": "Logging in…",
-    "invalidPassword": "Invalid password"
+    "invalidPassword": "Invalid password",
+    "tagline": "Track your X, GitHub, GitLab, and Reddit activity in one place."
   },
   "confirm": {
     "enterCode": "Enter the code above"
@@ -88,10 +89,10 @@
       "today": "{{count}} today",
       "perTweet": "per tweet",
       "following": "Following {{count}}",
-    "postKarma": "Post Karma",
-    "commentKarma": "Comment Karma",
-    "redditPosts": "Posts",
-    "redditComments": "Comments",
+      "postKarma": "Post Karma",
+      "commentKarma": "Comment Karma",
+      "redditPosts": "Posts",
+      "redditComments": "Comments",
       "dash": "—"
     },
     "charts": {
@@ -157,7 +158,7 @@
     "tweets": "Tweets",
     "tweetActivity": "Tweet Activity",
     "noTweetData": "No tweet activity in the selected period.",
-      "tweetsCount": "Tweets",
+    "tweetsCount": "Tweets",
     "engagement": "Engagement",
     "likes": "Likes",
     "retweets": "Retweets",
@@ -540,5 +541,9 @@
     "hintLowercase": "At least one lowercase letter",
     "hintSpecial": "At least one special character",
     "errorCreateFailed": "Failed to create user"
+  },
+  "mockMode": {
+    "banner": "MOCK MODE — fixture data",
+    "title": "Serving fixture data — no backend connected"
   }
 }

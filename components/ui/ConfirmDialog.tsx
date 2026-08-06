@@ -60,7 +60,7 @@ export function ConfirmDialog({ open, onOpenChange, title, description, confirmL
     <Portal>
       <div className="fixed inset-0 z-50 flex items-center justify-center">
         <div className="absolute inset-0 bg-black/40" onClick={() => onOpenChange(false)} />
-        <div className="relative mx-4 max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-lg" role="dialog" aria-modal="true">
+        <div className="relative mx-4 max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-lg" role="dialog" aria-modal="true" aria-label={title}>
           <h3 className="text-sm font-semibold mb-1">{title}</h3>
           <p className="text-xs text-[var(--muted-foreground)] mb-4">{description}</p>
           <div className="bg-[var(--muted)] rounded-lg px-3 py-2 text-center font-mono text-lg tracking-widest select-all mb-4">
