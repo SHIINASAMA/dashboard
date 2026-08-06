@@ -8,29 +8,30 @@ const fetchGitlabAccount = vi.fn();
 const fetchRedditAccount = vi.fn();
 const fetchRedditPublicAccount = vi.fn();
 
-vi.mock("../services/accounts", () => ({
+vi.mock("../lib/services/accounts", () => ({
   getActiveAccounts,
   getAccountById,
+  updateAccount: vi.fn(),
 }));
 
-vi.mock("../fetcher", () => ({
+vi.mock("../lib/fetcher", () => ({
   fetchAccount,
 }));
 
-vi.mock("../fetchers/github", () => ({
+vi.mock("../lib/fetchers/github", () => ({
   fetchGithubAccount,
 }));
 
-vi.mock("../fetchers/gitlab", () => ({
+vi.mock("../lib/fetchers/gitlab", () => ({
   fetchGitlabAccount,
 }));
 
-vi.mock("../fetchers/reddit", () => ({
+vi.mock("../lib/fetchers/reddit", () => ({
   fetchRedditAccount,
   fetchRedditPublicAccount,
 }));
 
-vi.mock("../logger", () => ({
+vi.mock("../lib/logger", () => ({
   getLogger: () => ({
     info: vi.fn(),
     warn: vi.fn(),
