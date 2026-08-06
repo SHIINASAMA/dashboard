@@ -12,3 +12,7 @@ docs
 .github
 .DS_Store
 test.db
+.claude
+.superpowers
+.mimocode
+*.tsbuildinfo

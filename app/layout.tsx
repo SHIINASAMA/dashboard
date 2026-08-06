@@ -1,6 +1,8 @@
 import "./globals.css";
 import { Providers } from "./providers";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Dashboard",
   description: "Multi-platform social & code dashboard",

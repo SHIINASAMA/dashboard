@@ -3,17 +3,24 @@ FROM node:22-slim AS base
 ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_OPTIONS=--max-old-space-size=512
+# Keep every Node process on a tight heap so the memory-limited CI kaniko
+# container never sees a runaway V8 allocation. tsc/install only need 256 MB;
+# the webpack build gets 352 MB (measured: ~0.86 GB total RSS with externals
+# + worker threads + all pages forced dynamic).
+ENV NODE_OPTIONS=--max-old-space-size=256
 RUN corepack enable
 WORKDIR /app
 
-# Install deps first for better layer reuse.
+# Install deps first for better layer reuse. Serialize build scripts
+# (node-gyp for argon2, sharp prebuilds, esbuild, unrs-resolver) so native
+# compiles never run in parallel and spike memory.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --child-concurrency=1 --network-concurrency=4
 
 # Copy source and build the standalone output.
 COPY . .
 RUN pnpm exec tsc -p tsconfig.build.json --noEmit
+ENV NODE_OPTIONS=--max-old-space-size=352
 ENV SKIP_NEXT_TYPECHECK=1
 RUN pnpm build
 

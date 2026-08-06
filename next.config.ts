@@ -2,7 +2,14 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  serverExternalPackages: ["argon2"],
+  serverExternalPackages: [
+    "argon2",
+    "drizzle-orm",
+    "pg",
+    "jose",
+    "twitter-api-v2",
+    "twitter-openapi-typescript",
+  ],
   typescript: {
     ignoreBuildErrors: process.env.SKIP_NEXT_TYPECHECK === "1",
     tsconfigPath: process.env.NODE_ENV === "production" ? "tsconfig.build.json" : "tsconfig.json",
@@ -13,6 +20,7 @@ const nextConfig: NextConfig = {
     staticGenerationMinPagesPerWorker: 29,
     webpackBuildWorker: false,
     webpackMemoryOptimizations: true,
+    workerThreads: true,
   },
   async headers() {
     return [
