@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Dashboard",
-  description: "Multi-platform social & code dashboard",
+  description: "Multi-platform data dashboard",
   icons: {
     icon: [
       { url: "/favicon.ico" },

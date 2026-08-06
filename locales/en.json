@@ -8,7 +8,7 @@
     "1y": "1 year"
   },
   "common": {
-    "dashboard": "Social Data Hub",
+    "dashboard": "Data Hub",
     "loading": "Loading...",
     "cancel": "Cancel",
     "delete": "Delete",
@@ -17,7 +17,7 @@
     "collapseSidebar": "Collapse sidebar",
     "expandSidebar": "Expand sidebar",
     "save": "Save",
-    "copyright": "© 2026 Social Data Hub"
+    "copyright": "© 2026 Data Hub"
   },
   "login": {
     "username": "Username",

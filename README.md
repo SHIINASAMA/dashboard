@@ -1,6 +1,6 @@
 # Dashboard
 
-Multi-platform social & code dashboard with web UI. Track activity and stats across X (Twitter), GitHub, GitLab, and Reddit — all in one place.
+Multi-platform data dashboard with web UI. Track activity and stats across X (Twitter), GitHub, GitLab, and Reddit — all in one place.
 
 ## Features
 
