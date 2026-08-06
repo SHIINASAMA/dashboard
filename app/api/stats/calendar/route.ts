@@ -1,8 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import { json, getSearchParams } from "@/lib/api-server";
+import type { LoaderFunctionArgs } from "react-router";
 import { getCalendarData } from "@/lib/repositories/twitter";
 
-export async function GET(req: NextRequest) {
-  const year = Number(req.nextUrl.searchParams.get("year")) || new Date().getFullYear();
+async function GET(req: Request) {
+  const year = Number(getSearchParams(req).get("year")) || new Date().getFullYear();
   const data = await getCalendarData(year);
-  return NextResponse.json(data);
+  return json(data);
+}
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  if (request.method !== "GET") return json({ error: "Method not allowed" }, { status: 405 });
+  return GET(request);
 }

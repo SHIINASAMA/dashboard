@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
+import { useNavigate, useParams } from "react-router";
+import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { api, type GithubOverview, type GithubContribution, type GithubRepo } from "@/lib/api";
 import { formatDateTime } from "@/lib/client/datetime";
@@ -77,8 +77,8 @@ const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--cha
 
 export default function GitHubDetail() {
   const { t } = useTranslation();
-  const { accountId: id } = useParams<{ accountId: string }>();
-  const router = useRouter();
+  const { accountId: id } = useParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const accountId = Number(id);
   const [showPinDialog, setShowPinDialog] = useState(false);
@@ -129,7 +129,7 @@ export default function GitHubDetail() {
 
   const deleteMutation = useMutation({
     mutationFn: () => api.deleteAccount(accountId),
-    onSuccess: () => router.push("/github"),
+    onSuccess: () => navigate("/github"),
   });
 
   const triggerMutation = useMutation({
@@ -161,7 +161,7 @@ export default function GitHubDetail() {
     return (
       <div className="text-center py-12">
         <p className="text-[var(--muted-foreground)]">{t("githubDetail.notFound")}</p>
-        <button onClick={() => router.push("/github")} className="mt-4 text-sm text-[var(--primary)] hover:underline">{t("githubDetail.backToGitHub")}</button>
+        <button onClick={() => navigate("/github")} className="mt-4 text-sm text-[var(--primary)] hover:underline">{t("githubDetail.backToGitHub")}</button>
       </div>
     );
   }
@@ -170,7 +170,7 @@ export default function GitHubDetail() {
     <div className="space-y-4 sm:space-y-6">
       <div className="detail-header">
         <div className="detail-header-body">
-        <button onClick={() => router.push("/github")} className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("githubDetail.backToGitHub")} aria-label={t("githubDetail.backToGitHub")}>
+        <button onClick={() => navigate("/github")} className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("githubDetail.backToGitHub")} aria-label={t("githubDetail.backToGitHub")}>
           <ArrowLeft size={20} />
         </button>
         <div className="flex items-start gap-2 min-w-0 flex-1">
@@ -242,7 +242,7 @@ export default function GitHubDetail() {
                 <div className="space-y-2">
                   {overview.repos.map((repo: GithubRepo) => (
                     <Link key={repo.id}
-                      href={`/github/${accountId}/repos/${repo.repo_id}`}
+                      to={`/github/${accountId}/repos/${repo.repo_id}`}
                       className="flex items-center gap-3 p-3 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] cursor-pointer transition-colors"
                     >
                       <BookOpen size={16} className="text-[var(--muted-foreground)] shrink-0" />
@@ -322,14 +322,14 @@ export default function GitHubDetail() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap justify-center gap-6">
-                {/* eslint-disable-next-line @next/next/no-img-element -- external SVG source; next/image would require dangerouslyAllowSVG */}
+                {/* external SVG source; rendered as a plain img */}
                 <img
                   src={`https://github-readme-stats-fast.vercel.app/api?username=${account.screen_name}&show_icons=true&hide_border=true&bg_color=00000000&text_color=666&title_color=3b5998&icon_color=3b5998`}
                   alt={t("githubDetail.statsImgAlt")}
                   className="max-w-full h-auto"
                   loading="lazy"
                 />
-                {/* eslint-disable-next-line @next/next/no-img-element -- external SVG source; next/image would require dangerouslyAllowSVG */}
+                {/* external SVG source; rendered as a plain img */}
                 <img
                   src={`https://github-readme-stats-fast.vercel.app/api/top-langs?username=${account.screen_name}&layout=compact&hide_border=true&bg_color=00000000&text_color=666&title_color=3b82f6`}
                   alt={t("githubDetail.languagesImgAlt")}

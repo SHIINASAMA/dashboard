@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { Navigate } from "react-router";
 
 export default function Home() {
-  redirect("/overview");
+  return <Navigate to="/overview" replace />;
 }

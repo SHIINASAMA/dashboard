@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import Link from "next/link";
+import { Link } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { api, type Account } from "@/lib/api";
@@ -116,7 +116,7 @@ export default function AccountListPage({
               return (
                 <Link
                   key={account.id}
-                  href={`/${urlPrefix}/${account.id}`}
+                  to={`/${urlPrefix}/${account.id}`}
                   className="block"
                 >
                 <Card

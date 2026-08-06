@@ -1,11 +1,11 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useLocation } from "react-router";
 import { useTranslation } from "react-i18next";
 
 export function NavigatingOverlay() {
   const { t } = useTranslation();
-  const pathname = usePathname();
+  const { pathname } = useLocation();
   const search = typeof window !== "undefined" ? window.location.search : "";
 
   return (

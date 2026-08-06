@@ -1,12 +1,13 @@
 "use client";
 
+import { Outlet } from "react-router";
 import Layout from "@/components/Layout";
 import { MockModeBanner } from "@/components/MockModeBanner";
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout() {
   return (
     <Layout>
-      {children}
+      <Outlet />
       <MockModeBanner />
     </Layout>
   );

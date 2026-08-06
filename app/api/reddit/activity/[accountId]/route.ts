@@ -1,10 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
+import { json, getSearchParams } from "@/lib/api-server";
+import type { LoaderFunctionArgs } from "react-router";
 import { getRedditDailyActivity, getRedditDailyCommentActivity } from "@/lib/repositories/reddit";
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ accountId: string }> }) {
-  const { accountId } = await params;
-  const days = Number(req.nextUrl.searchParams.get("days") ?? "30");
+async function GET(req: Request, params: Record<string, string>) {
+  const { accountId } = params;
+  const days = Number(getSearchParams(req).get("days") ?? "30");
   const posts = await getRedditDailyActivity(Number(accountId), days);
   const comments = await getRedditDailyCommentActivity(Number(accountId), days);
-  return NextResponse.json({ posts, comments });
+  return json({ posts, comments });
+}
+
+export async function loader({ request, params }: LoaderFunctionArgs) {
+  if (request.method !== "GET") return json({ error: "Method not allowed" }, { status: 405 });
+  return GET(request, params as Record<string, string>);
 }

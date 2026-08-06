@@ -1,19 +1,20 @@
-import { NextRequest, NextResponse } from "next/server";
+import { json } from "@/lib/api-server";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { getAccountById, updateAccount, deleteAccount } from "@/lib/services/accounts";
 import { validateConfirmToken } from "@/lib/confirm-helpers";
 import { getLatestUserStats } from "@/lib/repositories/twitter";
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+async function GET(req: Request, params: Record<string, string>) {
+  const { id } = params;
   const account = await getAccountById(Number(id));
-  if (!account) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!account) return json({ error: "Not found" }, { status: 404 });
   const stats = await getLatestUserStats(account.id);
   const { auth_token: _, ...rest } = account;
-  return NextResponse.json({ ...rest, stats: stats || null });
+  return json({ ...rest, stats: stats || null });
 }
 
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+async function PUT(req: Request, params: Record<string, string>) {
+  const { id } = params;
   const body = await req.json();
   const { screenName, authToken, fetchInterval, isActive, instanceUrl, authType } = body;
 
@@ -27,18 +28,30 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
   await updateAccount(Number(id), updates);
   const updated = await getAccountById(Number(id));
-  if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!updated) return json({ error: "Not found" }, { status: 404 });
   const { auth_token: _, ...pub } = updated;
-  return NextResponse.json(pub);
+  return json(pub);
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+async function DELETE(req: Request, params: Record<string, string>) {
+  const { id } = params;
   const body = await req.json().catch(() => ({}));
   const { confirmToken } = body as { confirmToken?: string };
   if (!confirmToken || !validateConfirmToken(confirmToken)) {
-    return NextResponse.json({ error: "Invalid or expired confirmation token" }, { status: 400 });
+    return json({ error: "Invalid or expired confirmation token" }, { status: 400 });
   }
   await deleteAccount(Number(id));
-  return NextResponse.json({ success: true });
+  return json({ success: true });
+}
+
+export async function loader({ request, params }: LoaderFunctionArgs) {
+  if (request.method !== "GET") return json({ error: "Method not allowed" }, { status: 405 });
+  return GET(request, params as Record<string, string>);
+}
+export async function action({ request, params }: ActionFunctionArgs) {
+  switch (request.method) {
+    case "PUT": return PUT(request, params as Record<string, string>);
+    case "DELETE": return DELETE(request, params as Record<string, string>);
+    default: return json({ error: "Method not allowed" }, { status: 405 });
+  }
 }

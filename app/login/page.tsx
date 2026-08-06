@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { LayoutDashboard, LogIn, Eye, EyeOff } from "lucide-react";
@@ -10,7 +10,7 @@ import { useBingWallpaper } from "@/lib/client/useBingWallpaper";
 
 export default function Login() {
   const { t } = useTranslation();
-  const router = useRouter();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { url } = useBingWallpaper();
   const [username, setUsername] = useState("");
@@ -27,7 +27,7 @@ export default function Login() {
       const res = await api.login(username || "admin", password);
       if (res.ok) {
         queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
-        router.replace("/");
+        navigate("/", { replace: true });
       } else {
         setError(t("login.invalidPassword"));
       }
@@ -42,7 +42,7 @@ export default function Login() {
     <div className="relative min-h-dvh flex items-center justify-center bg-[var(--background)] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]">
       {/* Bing wallpaper background */}
       <div className="absolute inset-0">
-        {/* eslint-disable-next-line @next/next/no-img-element -- /api/bing-wallpaper 302-redirects to bing.com; next/image can't follow cross-origin redirects */}
+        {/* /api/bing-wallpaper 302-redirects to bing.com; cross-origin img */}
         <img
           src={url}
           alt=""

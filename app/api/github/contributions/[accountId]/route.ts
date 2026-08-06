@@ -1,9 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
+import { json, getSearchParams } from "@/lib/api-server";
+import type { LoaderFunctionArgs } from "react-router";
 import { getGithubContributions } from "@/lib/repositories/github";
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ accountId: string }> }) {
-  const { accountId } = await params;
-  const year = req.nextUrl.searchParams.get("year") ? Number(req.nextUrl.searchParams.get("year")) : undefined;
+async function GET(req: Request, params: Record<string, string>) {
+  const { accountId } = params;
+  const year = getSearchParams(req).get("year") ? Number(getSearchParams(req).get("year")) : undefined;
   const data = await getGithubContributions(Number(accountId), year);
-  return NextResponse.json(data);
+  return json(data);
+}
+
+export async function loader({ request, params }: LoaderFunctionArgs) {
+  if (request.method !== "GET") return json({ error: "Method not allowed" }, { status: 405 });
+  return GET(request, params as Record<string, string>);
 }

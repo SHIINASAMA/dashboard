@@ -1,9 +1,9 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useLocation } from "react-router";
 
 export function NavigationProgress() {
-  const pathname = usePathname();
+  const { pathname } = useLocation();
   const search = typeof window !== "undefined" ? window.location.search : "";
 
   return (

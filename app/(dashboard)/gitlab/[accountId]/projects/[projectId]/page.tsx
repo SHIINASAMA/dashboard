@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useNavigate, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { api, type Account } from "@/lib/api";
 import { formatDate } from "@/lib/client/datetime";
@@ -19,8 +19,8 @@ import { useIsMobile } from "@/lib/client/useIsMobile";
 
 export default function ProjectDetail() {
   const { t } = useTranslation();
-  const { accountId, projectId } = useParams<{ accountId: string; projectId: string }>();
-  const router = useRouter();
+  const { accountId, projectId } = useParams();
+  const navigate = useNavigate();
   const aid = Number(accountId);
   const pid = Number(projectId);
   const [days, setDays] = useState(30);
@@ -60,7 +60,7 @@ export default function ProjectDetail() {
     return (
       <div className="text-center py-12">
         <p className="text-[var(--muted-foreground)]">{t("projectDetail.notFound")}</p>
-        <button onClick={() => router.push(`/gitlab/${aid}`)} className="mt-4 text-sm text-[var(--primary)] hover:underline">{t("projectDetail.backToAccount")}</button>
+        <button onClick={() => navigate(`/gitlab/${aid}`)} className="mt-4 text-sm text-[var(--primary)] hover:underline">{t("projectDetail.backToAccount")}</button>
       </div>
     );
   }
@@ -69,7 +69,7 @@ export default function ProjectDetail() {
     <div className="space-y-4 sm:space-y-6">
       <div className="detail-header">
         <div className="detail-header-body">
-        <button onClick={() => router.push(`/gitlab/${aid}`)} className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("projectDetail.backToAccount")} aria-label={t("projectDetail.backToAccount")}>
+        <button onClick={() => navigate(`/gitlab/${aid}`)} className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("projectDetail.backToAccount")} aria-label={t("projectDetail.backToAccount")}>
           <ArrowLeft size={20} />
         </button>
         <div className="min-w-0 flex-1">

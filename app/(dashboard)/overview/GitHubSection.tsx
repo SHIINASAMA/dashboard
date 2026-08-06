@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { type Account } from "@/lib/api";
 import { StatCard } from "@/components/StatCard";
@@ -31,7 +31,7 @@ interface Props {
 
 export function GitHubSection({ ghAllRepos, ghPinned, ghTotalStars, ghTotalForks, ghFollowers, ghAccounts }: Props) {
   const { t } = useTranslation();
-  const router = useRouter();
+  const navigate = useNavigate();
 
   if (ghAccounts.length === 0) return null;
 
@@ -54,7 +54,7 @@ export function GitHubSection({ ghAllRepos, ghPinned, ghTotalStars, ghTotalForks
               const acc = ghAccounts.find((a) => a.id === repo.account_id);
               return (
                 <RepoChip key={repo.id} name={repo.name} language={repo.language} stars={repo.stars} forks={repo.forks}
-                  onClick={() => router.push(`/github/${acc?.id ?? repo.account_id}/repos/${repo.repo_id}`)} />
+                  onClick={() => navigate(`/github/${acc?.id ?? repo.account_id}/repos/${repo.repo_id}`)} />
               );
             })}
           </div>

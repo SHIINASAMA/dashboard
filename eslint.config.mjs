@@ -1,23 +1,22 @@
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
-import nextVitals from "eslint-config-next/core-web-vitals";
-import nextTypeScript from "eslint-config-next/typescript";
+import reactHooks from "eslint-plugin-react-hooks";
 
 export default tseslint.config(
   {
     ignores: [
+      ".react-router/**",
+      "build/**",
       ".next/**",
       "node_modules/**",
       "public/**",
       "data/**",
       "coverage/**",
-      "next-env.d.ts",
     ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
-  ...nextVitals,
-  ...nextTypeScript,
+  reactHooks.configs["recommended-latest"],
   {
     rules: {
       // `{ field: _, ...rest }` is the codebase-wide pattern for stripping
@@ -28,6 +27,18 @@ export default tseslint.config(
         "ts-nocheck": "allow-with-description",
         "ts-ignore": "allow-with-description",
       }],
+    },
+  },
+  {
+    // Plain Node ESM entry (server/index.mjs) — no TS parser, so give it the
+    // handful of runtime globals it references.
+    files: ["server/**/*.mjs"],
+    languageOptions: {
+      globals: {
+        process: "readonly",
+        console: "readonly",
+        URL: "readonly",
+      },
     },
   },
   {

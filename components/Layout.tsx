@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import Link from "next/link";
+import { useLocation, useNavigate } from "react-router";
+import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { LayoutDashboard, PanelLeftClose, Settings, LogOut, Shield, Users, Menu } from "lucide-react";
@@ -37,7 +37,7 @@ function NavItem({ to, label, icon: Icon, isActive, onClick, onMouseEnter }: {
 }) {
   return (
     <Link
-      href={to}
+      to={to}
       onClick={onClick}
       onMouseEnter={onMouseEnter}
       onFocus={onMouseEnter}
@@ -57,8 +57,8 @@ function NavItem({ to, label, icon: Icon, isActive, onClick, onMouseEnter }: {
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
-  const router = useRouter();
-  const pathname = usePathname();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
   const queryClient = useQueryClient();
   const { url } = useBingWallpaper();
   const [isOpen, setIsOpen] = useState(() => {
@@ -93,10 +93,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     try {
       await api.logout();
       queryClient.setQueryData(["auth", "me"], { authenticated: false });
-      router.push("/login");
+      navigate("/login");
     } catch {
       queryClient.setQueryData(["auth", "me"], { authenticated: false });
-      router.push("/login");
+      navigate("/login");
     } finally {
       setLoggingOut(false);
     }
@@ -281,7 +281,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Main content */}
       <main className="flex-1 min-w-0 h-full overflow-hidden flex flex-col relative">
-        {/* eslint-disable-next-line @next/next/no-img-element -- /api/bing-wallpaper 302-redirects to bing.com; next/image can't follow cross-origin redirects */}
+        {/* /api/bing-wallpaper 302-redirects to bing.com; cross-origin img */}
         <img
           src={url}
           alt=""

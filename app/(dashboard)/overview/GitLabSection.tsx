@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { type Account } from "@/lib/api";
 import { StatCard } from "@/components/StatCard";
@@ -30,7 +30,7 @@ interface Props {
 
 export function GitLabSection({ glAllProjects, glPinned, glTotalStars, glTotalForks, glFollowers, glAccounts }: Props) {
   const { t } = useTranslation();
-  const router = useRouter();
+  const navigate = useNavigate();
 
   if (glAccounts.length === 0) return null;
 
@@ -53,7 +53,7 @@ export function GitLabSection({ glAllProjects, glPinned, glTotalStars, glTotalFo
               const acc = glAccounts.find((a) => a.id === p.account_id);
               return (
                 <RepoChip key={p.id} name={p.name} language={p.language} stars={p.stars} forks={p.forks}
-                  onClick={() => router.push(`/gitlab/${acc?.id ?? p.account_id}/projects/${p.project_id}`)} />
+                  onClick={() => navigate(`/gitlab/${acc?.id ?? p.account_id}/projects/${p.project_id}`)} />
               );
             })}
           </div>

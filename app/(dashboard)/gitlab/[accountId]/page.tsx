@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
+import { useNavigate, useParams } from "react-router";
+import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { api, type GitlabOverview, type GitlabContribution, type GitlabProject } from "@/lib/api";
 import { formatDateTime } from "@/lib/client/datetime";
@@ -75,8 +75,8 @@ const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--cha
 
 export default function GitLabDetail() {
   const { t } = useTranslation();
-  const { accountId: id } = useParams<{ accountId: string }>();
-  const router = useRouter();
+  const { accountId: id } = useParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const accountId = Number(id);
   const [showPinDialog, setShowPinDialog] = useState(false);
@@ -127,7 +127,7 @@ export default function GitLabDetail() {
 
   const deleteMutation = useMutation({
     mutationFn: () => api.deleteAccount(accountId),
-    onSuccess: () => router.push("/gitlab"),
+    onSuccess: () => navigate("/gitlab"),
   });
 
   const triggerMutation = useMutation({
@@ -159,7 +159,7 @@ export default function GitLabDetail() {
     return (
       <div className="text-center py-12">
         <p className="text-[var(--muted-foreground)]">{t("gitlabDetail.notFound")}</p>
-        <button onClick={() => router.push("/gitlab")} className="mt-4 text-sm text-[var(--primary)] hover:underline">{t("gitlabDetail.backToGitLab")}</button>
+        <button onClick={() => navigate("/gitlab")} className="mt-4 text-sm text-[var(--primary)] hover:underline">{t("gitlabDetail.backToGitLab")}</button>
       </div>
     );
   }
@@ -168,7 +168,7 @@ export default function GitLabDetail() {
     <div className="space-y-4 sm:space-y-6">
       <div className="detail-header">
         <div className="detail-header-body">
-        <button onClick={() => router.push("/gitlab")} className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("gitlabDetail.backToGitLab")} aria-label={t("gitlabDetail.backToGitLab")}>
+        <button onClick={() => navigate("/gitlab")} className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("gitlabDetail.backToGitLab")} aria-label={t("gitlabDetail.backToGitLab")}>
           <ArrowLeft size={20} />
         </button>
         <div className="flex items-start gap-2 min-w-0 flex-1">
@@ -240,7 +240,7 @@ export default function GitLabDetail() {
                 <div className="space-y-2">
                   {overview.projects.map((p: GitlabProject) => (
                     <Link key={p.id}
-                      href={`/gitlab/${accountId}/projects/${p.project_id}`}
+                      to={`/gitlab/${accountId}/projects/${p.project_id}`}
                       className="flex items-center gap-3 p-3 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] cursor-pointer transition-colors"
                     >
                       <BookOpen size={16} className="text-[var(--muted-foreground)] shrink-0" />

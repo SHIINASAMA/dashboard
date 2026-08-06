@@ -1,0 +1,40 @@
+diff --git a/dist/cli/index.js b/dist/cli/index.js
+index fde70f9c4b930f8787a2a6b2eaac5aa31a607b85..ce436cd29a5add832652ea94181044cbf06799a9 100644
+--- a/dist/cli/index.js
++++ b/dist/cli/index.js
+@@ -2148,7 +2148,7 @@ async function viteBuild(root, {
+       configFile,
+       build: {
+         assetsInlineLimit,
+-        emptyOutDir,
++        emptyOutDir: ssr && process.env.RR_SKIP_CLIENT === "1" ? false : emptyOutDir,
+         minify,
+         ssr,
+         sourcemap: ssr ? sourcemapServer : sourcemapClient
+@@ -2172,14 +2172,22 @@ async function viteBuild(root, {
+     environmentOptionsResolvers,
+     { viteUserConfig }
+   );
+-  await cleanBuildDirectory(viteConfig, ctx);
+-  await buildEnvironment("client");
++  let skipClient = process.env.RR_SKIP_CLIENT === "1";
++  let skipSsr = process.env.RR_SKIP_SSR === "1";
++  if (!skipClient) {
++    await cleanBuildDirectory(viteConfig, ctx);
++    await buildEnvironment("client");
++  }
+   let serverEnvironmentNames = getServerEnvironmentKeys(
+     ctx,
+     environmentOptionsResolvers
+   );
+-  await Promise.all(serverEnvironmentNames.map(buildEnvironment));
+-  await cleanViteManifests(environmentsOptions, ctx);
++  if (!skipSsr) {
++    await Promise.all(serverEnvironmentNames.map(buildEnvironment));
++  }
++  if (!(skipSsr && !skipClient)) {
++    await cleanViteManifests(environmentsOptions, ctx);
++  }
+   await reactRouterConfig.buildEnd?.({
+     buildManifest,
+     reactRouterConfig,

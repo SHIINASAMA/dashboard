@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
-import { isMockMode } from "./lib/config";
+import { json } from "@/lib/api-server";
+import { isMockMode } from "@/lib/config";
 
 const SESSION_COOKIE = "dash_session";
 
@@ -28,72 +28,85 @@ const PUBLIC_API_PATHS = [
 
 const PUBLIC_PAGE_PATHS = ["/login"];
 
-export async function proxy(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+function getCookie(request: Request, name: string): string | undefined {
+  const header = request.headers.get("cookie");
+  if (!header) return undefined;
+  for (const part of header.split(";")) {
+    const eq = part.indexOf("=");
+    if (eq === -1) continue;
+    if (part.slice(0, eq).trim() === name) {
+      try {
+        return decodeURIComponent(part.slice(eq + 1).trim());
+      } catch {
+        return part.slice(eq + 1).trim();
+      }
+    }
+  }
+  return undefined;
+}
+
+async function authMiddleware({ request }: { request: Request }): Promise<Response | void> {
+  const { pathname } = new URL(request.url);
 
   // Static assets — pass through
-  if (pathname.startsWith("/_next") || pathname.startsWith("/assets")) {
-    return NextResponse.next();
+  if (pathname.startsWith("/assets")) {
+    return;
   }
 
   // Public API endpoints — pass through
   if (PUBLIC_API_PATHS.includes(pathname)) {
-    return NextResponse.next();
+    return;
   }
 
   // Public page paths — pass through
   if (PUBLIC_PAGE_PATHS.includes(pathname)) {
-    return NextResponse.next();
+    return;
   }
 
   // Mock/debug mode: accept any session token. Keep /login reachable and
   // require a token for /api + protected pages so the login UX still works.
   if (isMockMode()) {
-    const token = req.cookies.get(SESSION_COOKIE)?.value;
+    const token = getCookie(request, SESSION_COOKIE);
     if (!token) {
       if (pathname.startsWith("/api/")) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return json({ error: "Unauthorized" }, { status: 401 });
       }
-      const loginUrl = new URL("/login", req.url);
+      const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("from", pathname);
-      return NextResponse.redirect(loginUrl);
+      return new Response(null, { status: 302, headers: { location: loginUrl.toString() } });
     }
-    return NextResponse.next();
+    return;
   }
 
-  const token = req.cookies.get(SESSION_COOKIE)?.value;
+  const token = getCookie(request, SESSION_COOKIE);
 
   // API routes — return 401 if no token
   if (pathname.startsWith("/api/")) {
     if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return json({ error: "Unauthorized" }, { status: 401 });
     }
     try {
       await jwtVerify(token, JWT_SECRET_KEY, { algorithms: ["HS256"] });
     } catch {
-      return NextResponse.json({ error: "Session expired or invalid" }, { status: 401 });
+      return json({ error: "Session expired or invalid" }, { status: 401 });
     }
-    return NextResponse.next();
+    return;
   }
 
   // Page routes — redirect to /login if no token
   if (!token) {
-    const loginUrl = new URL("/login", req.url);
+    const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("from", pathname);
-    return NextResponse.redirect(loginUrl);
+    return new Response(null, { status: 302, headers: { location: loginUrl.toString() } });
   }
 
   // Validate JWT for page routes
   try {
     await jwtVerify(token, JWT_SECRET_KEY, { algorithms: ["HS256"] });
   } catch {
-    const loginUrl = new URL("/login", req.url);
-    return NextResponse.redirect(loginUrl);
+    const loginUrl = new URL("/login", request.url);
+    return new Response(null, { status: 302, headers: { location: loginUrl.toString() } });
   }
-
-  return NextResponse.next();
 }
 
-export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
-};
+export const middleware = [authMiddleware];

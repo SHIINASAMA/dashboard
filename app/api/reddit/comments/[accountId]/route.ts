@@ -1,11 +1,17 @@
-import { NextRequest, NextResponse } from "next/server";
+import { json, getSearchParams } from "@/lib/api-server";
+import type { LoaderFunctionArgs } from "react-router";
 import { getRedditComments } from "@/lib/repositories/reddit";
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ accountId: string }> }) {
-  const { accountId } = await params;
-  const sp = req.nextUrl.searchParams;
+async function GET(req: Request, params: Record<string, string>) {
+  const { accountId } = params;
+  const sp = getSearchParams(req);
   const page = Number(sp.get("page")) || 1;
   const limit = Number(sp.get("limit")) || 20;
   const data = await getRedditComments(Number(accountId), page, limit);
-  return NextResponse.json(data);
+  return json(data);
+}
+
+export async function loader({ request, params }: LoaderFunctionArgs) {
+  if (request.method !== "GET") return json({ error: "Method not allowed" }, { status: 405 });
+  return GET(request, params as Record<string, string>);
 }

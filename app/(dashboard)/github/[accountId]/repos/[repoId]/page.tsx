@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useState, useRef, useEffect, type CSSProperties } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useNavigate, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { api, type GithubRepo, type GithubRelease } from "@/lib/api";
 import { formatDate } from "@/lib/client/datetime";
@@ -265,8 +265,8 @@ function ReleaseDownloadsChart({ releases, isMobile }: { releases: GithubRelease
 
 export default function RepoDetail() {
   const { t } = useTranslation();
-  const { accountId, repoId } = useParams<{ accountId: string; repoId: string }>();
-  const router = useRouter();
+  const { accountId, repoId } = useParams();
+  const navigate = useNavigate();
   const aid = Number(accountId);
   const rid = Number(repoId);
   const [days, setDays] = useState(30);
@@ -336,7 +336,7 @@ export default function RepoDetail() {
     return (
       <div className="text-center py-12">
         <p className="text-[var(--muted-foreground)]">{t("repoDetail.notFound")}</p>
-        <button onClick={() => router.push(`/github/${aid}`)} className="mt-4 text-sm text-[var(--primary)] hover:underline">{t("repoDetail.backToAccount")}</button>
+        <button onClick={() => navigate(`/github/${aid}`)} className="mt-4 text-sm text-[var(--primary)] hover:underline">{t("repoDetail.backToAccount")}</button>
       </div>
     );
   }
@@ -381,7 +381,7 @@ export default function RepoDetail() {
     <div className="space-y-4 sm:space-y-6">
       <div className="detail-header">
         <div className="detail-header-body">
-        <button onClick={() => router.push(`/github/${aid}`)} className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("repoDetail.backToAccount")} aria-label={t("repoDetail.backToAccount")}>
+        <button onClick={() => navigate(`/github/${aid}`)} className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("repoDetail.backToAccount")} aria-label={t("repoDetail.backToAccount")}>
           <ArrowLeft size={20} />
         </button>
         <div className="min-w-0 flex-1">

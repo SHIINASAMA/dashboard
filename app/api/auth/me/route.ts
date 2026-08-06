@@ -1,14 +1,20 @@
-import { NextRequest, NextResponse } from "next/server";
+import { json, getRequestCookie } from "@/lib/api-server";
+import type { LoaderFunctionArgs } from "react-router";
 import { validateSession } from "@/lib/auth-helpers";
 import { isMockMode } from "@/lib/config";
 
-export async function GET(req: NextRequest) {
+async function GET(req: Request) {
   if (isMockMode()) {
-    return NextResponse.json({ authenticated: true, username: "admin", role: "admin" });
+    return json({ authenticated: true, username: "admin", role: "admin" });
   }
-  const token = req.cookies.get("dash_session")?.value;
-  if (!token) return NextResponse.json({ authenticated: false });
+  const token = getRequestCookie(req, "dash_session");
+  if (!token) return json({ authenticated: false });
   const session = await validateSession(token);
-  if (!session) return NextResponse.json({ authenticated: false });
-  return NextResponse.json({ authenticated: true, username: session.username, role: session.role });
+  if (!session) return json({ authenticated: false });
+  return json({ authenticated: true, username: session.username, role: session.role });
+}
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  if (request.method !== "GET") return json({ error: "Method not allowed" }, { status: 405 });
+  return GET(request);
 }

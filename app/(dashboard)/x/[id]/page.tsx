@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useParams, useRouter } from "next/navigation";
+import { useNavigate, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { api, type TimelineData, type PaginatedTweets, type Tweet } from "@/lib/api";
@@ -72,8 +72,8 @@ function TweetListItem({ tweet, screenName }: { tweet: Tweet; screenName: string
 
 export default function XDetail() {
   const { t } = useTranslation();
-  const { id } = useParams<{ id: string }>();
-  const router = useRouter();
+  const { id } = useParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const accountId = Number(id);
   const [tab, setTab] = useState<"tweets" | "replies">("tweets");
@@ -106,7 +106,7 @@ export default function XDetail() {
 
   const deleteMutation = useMutation({
     mutationFn: () => api.deleteAccount(accountId),
-    onSuccess: () => router.push("/x"),
+    onSuccess: () => navigate("/x"),
   });
 
   const triggerMutation = useMutation({
@@ -141,7 +141,7 @@ export default function XDetail() {
     return (
       <div className="text-center py-12">
         <p className="text-[var(--muted-foreground)]">{t("xDetail.notFound")}</p>
-        <button onClick={() => router.push("/x")} className="mt-4 text-sm text-[var(--primary)] hover:underline">{t("xDetail.backToX")}</button>
+        <button onClick={() => navigate("/x")} className="mt-4 text-sm text-[var(--primary)] hover:underline">{t("xDetail.backToX")}</button>
       </div>
     );
   }
@@ -150,7 +150,7 @@ export default function XDetail() {
     <div className="space-y-4 sm:space-y-6">
       <div className="detail-header">
         <div className="detail-header-body">
-        <button onClick={() => router.push("/x")} className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("xDetail.backToX")} aria-label={t("xDetail.backToX")}>
+        <button onClick={() => navigate("/x")} className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("xDetail.backToX")} aria-label={t("xDetail.backToX")}>
           <ArrowLeft size={20} />
         </button>
         <div className="min-w-0 flex-1">

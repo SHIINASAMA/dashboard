@@ -1,24 +1,26 @@
 # Frontend Architecture
 
-Next.js (App Router) + React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui-style components.
+React Router 7 (Framework Mode) + React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui-style components.
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Framework | Next.js (App Router) + React 19 |
+| Framework | React Router 7 (Framework Mode) + React 19 |
 | Styling | Tailwind CSS v4 + shadcn/ui-style primitives |
 | Charts | Recharts |
 | Icons | lucide-react |
 | Data Fetching | @tanstack/react-query |
 | i18n | react-i18next (JSON locale files, browser language detection) |
-| Backend | Hono REST API mounted under `app/api/` (same Next.js process) |
+| Backend | React Router route handlers under `app/api/` (same process) |
 
 ## Source Layout
 
 ```
 app/
-├── layout.tsx          # Root layout: globals.css + Providers
+├── root.tsx             # Root layout: html shell, globals.css, Providers
+├── routes.ts            # Declarative route table (pages + API)
+├── auth-middleware.server.ts  # Session/auth middleware for pages + API
 ├── providers.tsx       # QueryClientProvider + ThemeProvider + i18n init
 ├── globals.css         # Tailwind import + theme CSS variables + animations
 ├── (dashboard)/
@@ -56,7 +58,7 @@ locales/
 
 ## Routing
 
-Next.js file-based routing under the `app/` directory. All routes except `/login` live in the `(dashboard)` route group and share `app/(dashboard)/layout.tsx`; client-side navigation uses `next/link`.
+Routes are declared in `app/routes.ts` (React Router Framework Mode). All pages except `/login` live under the `(dashboard)` layout and share `app/(dashboard)/layout.tsx`; client-side navigation uses `<Link to>` / `useNavigate` from `react-router`.
 
 | Path | Description |
 |------|-------------|
@@ -79,7 +81,7 @@ Next.js file-based routing under the `app/` directory. All routes except `/login
 
 ## Auth Flow
 
-1. Login form calls `api.login(username, password)`; the Hono API sets an httpOnly JWT cookie.
+1. Login form calls `api.login(username, password)`; the API sets an httpOnly JWT cookie.
 2. On success the login page redirects to `/`.
 3. `Layout` calls `api.checkAuth()` to resolve the current user and admin role; API requests automatically include the httpOnly cookie.
 4. Logout calls `api.logout()` and redirects to `/login`.
@@ -88,7 +90,7 @@ Next.js file-based routing under the `app/` directory. All routes except `/login
 
 - Uses @tanstack/react-query for caching and refetching.
 - `QueryClient` is created in `app/providers.tsx` with `retry: 1` and `staleTime: 3 minutes`.
-- API client in `lib/api.ts` wraps fetch calls against the Hono routes under `app/api/`.
+- API client in `lib/api.ts` wraps fetch calls against the route handlers under `app/api/`.
 - `MOCK_DATA=1` (or `NEXT_PUBLIC_MOCK_DATA=1`) makes the API serve fixture data and shows the `MockModeBanner`.
 
 ## i18n

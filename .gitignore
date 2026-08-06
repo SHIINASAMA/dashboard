@@ -14,9 +14,10 @@
 node_modules/
 .pnpm-store/
 
-# Next.js
+# React Router / build
+.react-router/
+build/
 .next/
-out/
 *.tsbuildinfo
 
 # Dashboard

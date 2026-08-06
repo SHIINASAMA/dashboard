@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useParams, useRouter } from "next/navigation";
+import { useNavigate, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { api, type RedditOverview, type RedditPost, type RedditComment } from "@/lib/api";
@@ -23,8 +23,8 @@ import {
 
 export default function RedditDetail() {
   const { t } = useTranslation();
-  const { id } = useParams<{ id: string }>();
-  const router = useRouter();
+  const { id } = useParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const accountId = Number(id);
   const [days, setDays] = useState(30);
@@ -74,7 +74,7 @@ export default function RedditDetail() {
 
   const deleteMutation = useMutation({
     mutationFn: () => api.deleteAccount(accountId),
-    onSuccess: () => router.push("/reddit"),
+    onSuccess: () => navigate("/reddit"),
   });
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -114,7 +114,7 @@ export default function RedditDetail() {
     return (
       <div className="text-center py-12">
         <p className="text-[var(--muted-foreground)]">{t("redditDetail.notFound")}</p>
-        <button onClick={() => router.push("/reddit")} className="mt-4 text-sm text-[var(--primary)] hover:underline">{t("redditDetail.backToReddit")}</button>
+        <button onClick={() => navigate("/reddit")} className="mt-4 text-sm text-[var(--primary)] hover:underline">{t("redditDetail.backToReddit")}</button>
       </div>
     );
   }
@@ -123,7 +123,7 @@ export default function RedditDetail() {
     <div className="space-y-4 sm:space-y-6">
       <div className="detail-header">
         <div className="detail-header-body">
-        <button onClick={() => router.push("/reddit")} className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("redditDetail.backToReddit")} aria-label={t("redditDetail.backToReddit")}>
+        <button onClick={() => navigate("/reddit")} className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-[var(--muted)] transition-colors shrink-0 mt-0.5" title={t("redditDetail.backToReddit")} aria-label={t("redditDetail.backToReddit")}>
           <ArrowLeft size={20} />
         </button>
         <div className="flex items-start gap-2 min-w-0 flex-1">

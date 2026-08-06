@@ -38,8 +38,8 @@ docker compose up -d
 ```
 
 The Dockerfile uses a multi-stage build:
-1. **Stage 1** (`node:22-slim`): installs dependencies and builds the Next.js standalone server
-2. **Stage 2** (`node:22-slim`): runs the standalone output on port 3000 as a non-root user
+1. **Stage 1** (`node:22-slim`): installs dependencies, typechecks, and builds React Router output (client + SSR in separate memory-bounded passes)
+2. **Stage 2** (`node:22-slim`): installs production dependencies only, then runs `server/index.mjs` on port 3000 as a non-root user
 
 ## Standalone
 
@@ -64,7 +64,7 @@ pnpm run build
 pnpm run start
 ```
 
-The production app runs as a single Next.js process on port 3000.
+The production app runs as a single React Router process on port 3000 (`node server/index.mjs`).
 
 ## Database
 

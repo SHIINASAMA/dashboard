@@ -12,18 +12,17 @@ stages:
         - db/**/*
         - scripts/**/*
         - locales/**/*
+        - server/**/*
+        - patches/**/*
         - Dockerfile
         - .dockerignore
         - package.json
         - pnpm-lock.yaml
         - pnpm-workspace.yaml
-        - next.config.ts
-        - next-env.d.ts
-        - tsconfig.build.json
-        - drizzle.config.ts
+        - react-router.config.ts
+        - vite.config.ts
         - tsconfig.json
         - postcss.config.mjs
-        - instrumentation.ts
         - proxy.ts
         - .gitlab-ci.yml
 

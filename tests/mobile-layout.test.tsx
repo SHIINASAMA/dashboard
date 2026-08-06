@@ -36,9 +36,11 @@ describe("mobile layout contracts", () => {
   it("hydrates the layout from a server-stable sidebar state", () => {
     const source = readProjectFile("components/Layout.tsx");
 
-    expect(source).toContain("useState(true)");
-    expect(source).not.toContain("useState(loadVisible)");
-    expect(source).toContain("setIsOpen(loadVisible())");
+    // SSR must render the open sidebar deterministically; the client then
+    // reconciles via matchMedia / localStorage without a hydration flash.
+    expect(source).toContain("useState(() => {");
+    expect(source).toContain('typeof window === "undefined"');
+    expect(source).toContain("loadVisible()");
   });
 
   it("waits for the client before rendering detected translations", () => {

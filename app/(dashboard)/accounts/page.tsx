@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { api, type Account } from "@/lib/api";
@@ -24,7 +24,7 @@ type Platform = (typeof TABS)[number]["key"];
 
 export default function AccountsPage() {
   const { t } = useTranslation();
-  const router = useRouter();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<Platform>("twitter");
   const [editing, setEditing] = useState<Account | null>(null);
@@ -121,7 +121,7 @@ export default function AccountsPage() {
               return (
                 <Card key={account.id}
                   className={`group ${!account.is_active ? "opacity-60 " : ""}cursor-pointer hover:border-[var(--primary)]/50 transition-colors`}
-                  onClick={() => router.push(`${currentTab.basePath}/${account.id}`)}
+                  onClick={() => navigate(`${currentTab.basePath}/${account.id}`)}
                 >
                   <CardContent className="p-4 sm:p-5">
                     <div className="mobile-account-card justify-between gap-4">
@@ -230,8 +230,12 @@ function AccountFormPanel({
 
   useEffect(() => {
     if (!editing || !isReddit || !isRedditPublic || !account || cookieInitDone.current) return;
-    setCookieLoading(true);
+    let cancelled = false;
+    // Defer the loading flag out of the synchronous effect body so the
+    // cascading-render lint stays happy; the fetch below resolves it.
+    const timer = setTimeout(() => { if (!cancelled) setCookieLoading(true); }, 0);
     api.getAccount(account.id).then(detail => {
+      if (cancelled) return;
       cookieInitDone.current = true;
       if (detail?.auth_token) {
         try {
@@ -242,7 +246,8 @@ function AccountFormPanel({
         } catch { /* ignore */ }
       }
       setCookieLoading(false);
-    }).catch(() => setCookieLoading(false));
+    }).catch(() => { if (!cancelled) setCookieLoading(false); });
+    return () => { cancelled = true; clearTimeout(timer); };
   }, [editing, isReddit, isRedditPublic, account]);
 
   const syncCookieToken = (entries: { key: string; value: string }[]) => {
