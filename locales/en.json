@@ -25,7 +25,8 @@
     "login": "Log in",
     "loggingIn": "Logging in…",
     "invalidPassword": "Invalid password",
-    "tagline": "Track your X, GitHub, GitLab, and Reddit activity in one place."
+    "tagline": "Track your X, GitHub, GitLab, and Reddit activity in one place.",
+    "mockHint": "Mock mode: any username / password works, password may be empty"
   },
   "confirm": {
     "enterCode": "Enter the code above"

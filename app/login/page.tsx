@@ -13,6 +13,11 @@ export default function Login() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { url } = useBingWallpaper();
+  // Mock/debug mode (build-time mirror of MOCK_DATA): the server accepts any
+  // credentials, so don't require a password client-side either.
+  const isMock =
+    process.env.NEXT_PUBLIC_MOCK_DATA === "1" ||
+    process.env.NEXT_PUBLIC_MOCK_DATA === "true";
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -109,13 +114,19 @@ export default function Login() {
               </div>
             </div>
 
+            {isMock && (
+              <p className="text-xs bg-amber-500/15 text-amber-600 dark:text-amber-400 px-3 py-2 rounded-lg">
+                {t("login.mockHint")}
+              </p>
+            )}
+
             {error && (
               <p className="text-xs bg-[var(--danger)]/20 text-[var(--danger)] px-3 py-2 rounded-lg">{error}</p>
             )}
 
             <button
               type="submit"
-              disabled={loading || !password}
+              disabled={loading || (!password && !isMock)}
               className="min-h-11 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg
                 bg-white/90 text-gray-900 font-medium text-sm
                 hover:bg-white active:scale-[0.98]
