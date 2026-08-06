@@ -6,7 +6,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-const TICK_FONT = "10px system-ui";
+const TICK_FONT = "11px system-ui";
 const PADDING = 12;
 
 export function calcYAxisWidth(data: Record<string, unknown>[], ...keys: string[]) {

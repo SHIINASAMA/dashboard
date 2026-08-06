@@ -156,6 +156,7 @@
     "following": "正在关注",
     "tweets": "推文",
     "tweetActivity": "推文活跃度",
+    "noTweetData": "所选时间段内暂无推文活动。",
       "tweetsCount": "推文数",
     "engagement": "互动",
     "likes": "点赞",

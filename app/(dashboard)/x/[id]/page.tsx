@@ -23,6 +23,53 @@ import { StatCardSkeleton, ChartCardSkeleton, Skeleton } from "@/components/Skel
 import { TimeRangeSelector } from "@/components/TimeRangeSelector";
 import { XFollowerGrowthChart } from "@/components/XFollowerGrowthChart";
 
+function MetricCard({ label, value }: { label: string; value: string }) {
+  return (
+    <Card>
+      <CardContent className="p-4 sm:p-4 text-center">
+        <p className="text-2xl font-bold leading-tight font-mono tabular-nums">{value}</p>
+        <p className="mt-1 text-xs text-[var(--muted-foreground)]">{label}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ChartEmptyCard({ title, message, height }: { title: string; message: string; height: number }) {
+  return (
+    <Card>
+      <CardHeader><CardTitle>{title}</CardTitle></CardHeader>
+      <CardContent>
+        <div className="flex items-center justify-center text-sm text-[var(--muted-foreground)]" style={{ height }}>
+          {message}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function TweetListItem({ tweet, screenName }: { tweet: Tweet; screenName: string }) {
+  return (
+    <a
+      href={`https://x.com/${screenName}/status/${tweet.id}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block p-3 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors space-y-2 group"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm whitespace-pre-wrap break-words">{tweet.full_text}</p>
+        <ExternalLink size={12} className="shrink-0 mt-1 text-[var(--muted-foreground)] hover-reveal-icon" />
+      </div>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-[var(--muted-foreground)]">
+        <span className="flex items-center gap-1"><Heart size={12} /> {tweet.favorite_count}</span>
+        <span className="flex items-center gap-1"><Repeat2 size={12} /> {tweet.retweet_count}</span>
+        <span className="flex items-center gap-1"><MessageSquare size={12} /> {tweet.reply_count}</span>
+        {tweet.view_count > 0 && <span className="flex items-center gap-1"><Eye size={12} /> {tweet.view_count}</span>}
+        <span>{formatDate(tweet.created_at)}</span>
+      </div>
+    </a>
+  );
+}
+
 export default function XDetail() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
@@ -80,7 +127,7 @@ export default function XDetail() {
             <div className="flex-1"><Skeleton className="h-6 w-32 mb-2" /><Skeleton className="h-3 w-48" /></div>
           </div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
           {Array.from({ length: 3 }).map((_, i) => <StatCardSkeleton key={i} />)}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -155,10 +202,10 @@ export default function XDetail() {
       )}
 
       {account.stats && (
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
-          <Card><CardContent className="p-4 sm:p-4 text-center"><p className="text-2xl font-bold">{account.stats.followers_count?.toLocaleString() || "0"}</p><p className="text-xs text-[var(--muted-foreground)]">{t("xDetail.followers")}</p></CardContent></Card>
-          <Card><CardContent className="p-4 sm:p-4 text-center"><p className="text-2xl font-bold">{account.stats.following_count?.toLocaleString() || "0"}</p><p className="text-xs text-[var(--muted-foreground)]">{t("xDetail.following")}</p></CardContent></Card>
-          <Card><CardContent className="p-4 sm:p-4 text-center"><p className="text-2xl font-bold">{account.stats.tweet_count?.toLocaleString() || "0"}</p><p className="text-xs text-[var(--muted-foreground)]">{t("xDetail.tweets")}</p></CardContent></Card>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+          <MetricCard label={t("xDetail.followers")} value={account.stats.followers_count?.toLocaleString() || "0"} />
+          <MetricCard label={t("xDetail.following")} value={account.stats.following_count?.toLocaleString() || "0"} />
+          <MetricCard label={t("xDetail.tweets")} value={account.stats.tweet_count?.toLocaleString() || "0"} />
         </div>
       )}
 
@@ -169,27 +216,30 @@ export default function XDetail() {
       {timeline && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <XFollowerGrowthChart data={timeline.followerGrowth} />
+          {timeline.dailyTweets.length > 0 ? (
+            <Card>
+              <CardHeader><CardTitle>{t("xDetail.tweetActivity")}</CardTitle></CardHeader>
+              <CardContent>
+                <div role="img" aria-label={t("xDetail.tweetActivity")}>
+                <ResponsiveContainer width="100%" height={CHART_H}>
+                  <BarChart data={timeline.dailyTweets} margin={MARGIN}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
+                    <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(timeline.dailyTweets, "tweets_count")} />
+                    <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
+                    <Bar dataKey="tweets_count" fill="var(--primary)" radius={[4, 4, 0, 0]} name={t("xDetail.tweetsCount")} />
+                  </BarChart>
+                </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <ChartEmptyCard title={t("xDetail.tweetActivity")} message={t("xDetail.noTweetData")} height={CHART_H} />
+          )}
         </div>
       )}
-
       {timeline && timeline.dailyTweets.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader><CardTitle>{t("xDetail.tweetActivity")}</CardTitle></CardHeader>
-            <CardContent>
-              <div role="img" aria-label={t("xDetail.tweetActivity")}>
-              <ResponsiveContainer width="100%" height={CHART_H}>
-                <BarChart data={timeline.dailyTweets} margin={MARGIN}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(timeline.dailyTweets, "tweets_count")} />
-                  <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
-                  <Bar dataKey="tweets_count" fill="var(--primary)" radius={[4, 4, 0, 0]} name={t("xDetail.tweetsCount")} />
-                </BarChart>
-              </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
           <Card>
             <CardHeader><CardTitle>{t("xDetail.views")}</CardTitle></CardHeader>
             <CardContent>
@@ -197,8 +247,8 @@ export default function XDetail() {
               <ResponsiveContainer width="100%" height={CHART_H}>
                 <AreaChart data={timeline.dailyTweets} margin={MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(timeline.dailyTweets, "total_views")} />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
+                  <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(timeline.dailyTweets, "total_views")} />
                   <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
                   <Area type="monotone" dataKey="total_views" stroke="var(--chart-2)" fill="color-mix(in oklch, var(--chart-2) 12%, transparent)" name={t("xDetail.views")} />
                 </AreaChart>
@@ -206,10 +256,6 @@ export default function XDetail() {
               </div>
             </CardContent>
           </Card>
-        </div>
-      )}
-      {timeline && timeline.dailyTweets.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader><CardTitle>{t("xDetail.engagement")}</CardTitle></CardHeader>
             <CardContent>
@@ -217,8 +263,8 @@ export default function XDetail() {
               <ResponsiveContainer width="100%" height={CHART_H}>
                 <AreaChart data={timeline.dailyTweets} margin={MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
-                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(timeline.dailyTweets, "total_likes", "total_retweets")} />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => v.slice(5)} />
+                  <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(timeline.dailyTweets, "total_likes", "total_retweets")} />
                   <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "12px" }} />
                   <Area type="monotone" dataKey="total_likes" stroke="var(--chart-5)" fill="color-mix(in oklch, var(--chart-5) 12%, transparent)" name={t("xDetail.likes")} />
                   <Area type="monotone" dataKey="total_retweets" stroke="var(--chart-1)" fill="color-mix(in oklch, var(--chart-1) 12%, transparent)" name={t("xDetail.retweets")} />
@@ -250,46 +296,10 @@ export default function XDetail() {
           </CardHeader>
           <CardContent className="space-y-3">
             {tab === "tweets" && tweets && tweets.data.length > 0 && tweets.data.slice(0, 20).map((tweet: Tweet) => (
-              <a
-                key={tweet.id}
-                href={`https://x.com/${account.screen_name}/status/${tweet.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block p-3 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors space-y-2 group"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm whitespace-pre-wrap break-words">{tweet.full_text}</p>
-                  <ExternalLink size={12} className="shrink-0 mt-1 text-[var(--muted-foreground)] hover-reveal-icon" />
-                </div>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-[var(--muted-foreground)]">
-                  <span className="flex items-center gap-1"><Heart size={12} /> {tweet.favorite_count}</span>
-                  <span className="flex items-center gap-1"><Repeat2 size={12} /> {tweet.retweet_count}</span>
-                  <span className="flex items-center gap-1"><MessageSquare size={12} /> {tweet.reply_count}</span>
-                  {tweet.view_count > 0 && <span className="flex items-center gap-1"><Eye size={12} /> {tweet.view_count}</span>}
-                  <span>{formatDate(tweet.created_at)}</span>
-                </div>
-              </a>
+              <TweetListItem key={tweet.id} tweet={tweet} screenName={account.screen_name} />
             ))}
             {tab === "replies" && replies && replies.data.length > 0 && replies.data.slice(0, 20).map((tweet: Tweet) => (
-              <a
-                key={tweet.id}
-                href={`https://x.com/${account.screen_name}/status/${tweet.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block p-3 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors space-y-2 group"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm whitespace-pre-wrap break-words">{tweet.full_text}</p>
-                  <ExternalLink size={12} className="shrink-0 mt-1 text-[var(--muted-foreground)] hover-reveal-icon" />
-                </div>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-[var(--muted-foreground)]">
-                  <span className="flex items-center gap-1"><Heart size={12} /> {tweet.favorite_count}</span>
-                  <span className="flex items-center gap-1"><Repeat2 size={12} /> {tweet.retweet_count}</span>
-                  <span className="flex items-center gap-1"><MessageSquare size={12} /> {tweet.reply_count}</span>
-                  {tweet.view_count > 0 && <span className="flex items-center gap-1"><Eye size={12} /> {tweet.view_count}</span>}
-                  <span>{formatDate(tweet.created_at)}</span>
-                </div>
-              </a>
+              <TweetListItem key={tweet.id} tweet={tweet} screenName={account.screen_name} />
             ))}
           </CardContent>
         </Card>

@@ -156,6 +156,7 @@
     "following": "Following",
     "tweets": "Tweets",
     "tweetActivity": "Tweet Activity",
+    "noTweetData": "No tweet activity in the selected period.",
       "tweetsCount": "Tweets",
     "engagement": "Engagement",
     "likes": "Likes",
