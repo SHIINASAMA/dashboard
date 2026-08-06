@@ -2,8 +2,8 @@
 
 - **日期**：2026-08-06
 - **范围**：在现有 Next.js 16 App Router 仪表盘基础上，评估迁移到 React Router Framework Mode（v7/v8）与 SvelteKit（Svelte 5）的可行性、成本、内存收益与风险。
-- **依据**：两份一手研究文档（`docs/research/react-router-framework-mode.md`、`docs/research/sveltekit.md`，全部结论已用官方文档 URL 验证）+ 本地代码盘点（本文件仅评估，未做任何代码改动，未 commit）。
-- **历史背景**：本仓库 2026-07-08 刚从 **Hono + Vite SPA** 迁到 Next.js App Router（见 `docs/superpowers/plans/2026-07-08-nextjs-migration.md`）。因此"迁移到 RR/SvelteKit"在 RR 场景下实质是**迁回 Vite 系**，需要重新审视当初离开 Vite 的理由。
+- **依据**：两份一手研究文档（`.agents/research/react-router-framework-mode.md`、`.agents/research/sveltekit.md`，全部结论已用官方文档 URL 验证）+ 本地代码盘点（本文件仅评估，未做任何代码改动，未 commit）。
+- **历史背景**：本仓库 2026-07-08 刚从 **Hono + Vite SPA** 迁到 Next.js App Router（见 `.agents/plans/2026-07-08-nextjs-migration.md`）。因此"迁移到 RR/SvelteKit"在 RR 场景下实质是**迁回 Vite 系**，需要重新审视当初离开 Vite 的理由。
 
 ---
 
@@ -203,9 +203,9 @@
 
 ## 7. 参考
 
-- `docs/research/react-router-framework-mode.md`（RR v7/v8 版本、API 映射、Docker、内存、gotchas；全部 URL 已验证）
-- `docs/research/sveltekit.md`（SvelteKit 版本、load/+server/hooks/streaming/adapter-node/i18n/Tailwind v4/内存/重写映射；全部 URL 已验证）
-- `docs/superpowers/plans/2026-07-08-nextjs-migration.md`（本项目当初 Hono+Vite → Next 的动机与约束）
+- `.agents/research/react-router-framework-mode.md`（RR v7/v8 版本、API 映射、Docker、内存、gotchas；全部 URL 已验证）
+- `.agents/research/sveltekit.md`（SvelteKit 版本、load/+server/hooks/streaming/adapter-node/i18n/Tailwind v4/内存/重写映射；全部 URL 已验证）
+- `.agents/plans/2026-07-08-nextjs-migration.md`（本项目当初 Hono+Vite → Next 的动机与约束）
 - 本地代码盘点：`package.json`、`next.config.ts`、`proxy.ts`、`instrumentation.ts`、`Dockerfile`、`.gitlab-ci.yml`、`app/`（16 pages + 46 route handlers）
 
 ---

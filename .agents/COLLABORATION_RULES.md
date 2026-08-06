@@ -16,10 +16,13 @@ This file defines behavior rules for AI coding assistants.
 
 ## Must Follow
 
-- `CLAUDE.md` is the primary knowledge base — check it first
+- `AGENTS.md` is the router — check it first, then read the referenced docs only when the task needs them
 - Plan mode for non-trivial tasks (3+ steps)
 - Verify changes by checking lint/types when relevant tooling is available
-- All `.md` files go in `docs/` except `AGENTS.md`, `CLAUDE.md`, `README.md`
+- Documentation layout:
+  - Human-facing docs live in `docs/` (English only)
+  - Agent-only docs live in `.agents/`: `plans/`, `specs/`, `research/`, and this file
+  - Do not put agent-only working docs in `docs/`
 
 ## Behavioral Style
 

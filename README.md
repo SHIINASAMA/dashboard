@@ -178,7 +178,8 @@ dashboard/
 ├── server/                 # Production entry (server/index.mjs)
 ├── shared/                 # Shared TypeScript types
 ├── tests/                  # Vitest test suite
-├── docs/                   # Project documentation
+├── docs/                   # Human-facing documentation
+├── .agents/                # Agent-only docs (plans, specs, research, rules)
 └── data/                   # Runtime data (logs, legacy SQLite db)
 ```
 

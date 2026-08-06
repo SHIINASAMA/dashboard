@@ -6,12 +6,6 @@ Multi-platform data dashboard with web UI. Track activity and stats across X (Tw
 
 Node.js + pnpm + React Router 7 Framework Mode + React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui + Drizzle ORM + PostgreSQL
 
-## Quick Start
-
-```bash
-pnpm install && pnpm run dev
-```
-
 ## Commands
 
 | Command | Description |
@@ -24,39 +18,27 @@ pnpm install && pnpm run dev
 | `pnpm run typecheck` | Run TypeScript type check |
 | `pnpm test` | Run the Vitest test suite |
 
-## Documentation Index
+## Context Routing
 
-### Architecture & Design
+Read the relevant resource only when the task needs it. Do not load everything up front.
+
+- **Project overview & setup** — read [README.md](README.md)
+- **Human-facing documentation** — `docs/` (Architecture, Database, Frontend, API, Fetchers, Configuration, Deployment, Testing, Scripts, TODO, Issues)
+- **Behavior rules for agents** — read `.agents/COLLABORATION_RULES.md` before making commits, destructive changes, or new docs
+- **Implementation plans** — `.agents/plans/` (read when executing or updating a planned migration)
+- **Design specs** — `.agents/specs/` (read when implementing a designed feature)
+- **Framework/research evaluations** — `.agents/research/` (read before any framework migration decision)
+
+## Documentation Index
 
 - [Architecture](docs/ARCHITECTURE.md) — Tech stack, source layout, data flow, key patterns
 - [Database](docs/DATABASE.md) — Schema files, table definitions, migration process, conventions
 - [Frontend](docs/FRONTEND.md) — React architecture, routing, i18n, theming
-
-### API & Integration
-
 - [API Reference](docs/API.md) — REST endpoints (auth, users, accounts, per-platform data)
 - [Fetchers](docs/FETCHERS.md) — Platform fetcher internals, fetch flow, rate limiting, hardening
-
-### Configuration & Deployment
-
 - [Configuration](docs/CONFIGURATION.md) — Environment variables, database, proxy, logging
 - [Deployment](docs/DEPLOYMENT.md) — Docker, standalone, Kubernetes, reverse proxy
-
-### Development
-
 - [Testing](docs/TESTING.md) — Test setup, coverage, how to add tests
 - [Scripts](docs/SCRIPTS.md) — Utility scripts (X data dump, fetch algorithm test)
-
-### Project Management
-
 - [TODO](docs/TODO.md) — Feature backlog and completed items
 - [Issues](docs/ISSUES.md) — Known bugs, regressions, open issues
-
-### Plans & Specs
-
-- [Multi-user Drizzle migration plan](docs/superpowers/plans/2026-06-09-multi-user-drizzle.md)
-- [Multi-user Drizzle design spec](docs/superpowers/specs/2026-06-09-multi-user-drizzle-design.md)
-
-### Rules
-
-- [Collaboration Rules](docs/COLLABORATION_RULES.md) — AI assistant behavior rules, language, prohibited actions
