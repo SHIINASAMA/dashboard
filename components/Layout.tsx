@@ -11,6 +11,7 @@ import { NavigationProgress } from "./NavigationProgress";
 import { NavigatingOverlay } from "./NavigatingOverlay";
 import { api } from "@/lib/api";
 import { useBingWallpaper } from "@/lib/client/useBingWallpaper";
+import { useIsMobile } from "@/lib/client/useIsMobile";
 
 const SIDEBAR_KEY = "sidebar-state";
 const SIDEBAR_WIDTH = 240;
@@ -65,28 +66,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return window.matchMedia("(max-width: 767px)").matches ? false : loadVisible();
   });
   const [loggingOut, setLoggingOut] = useState(false);
-  const [isMobile, setIsMobile] = useState(
-    () => typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches
-  );
   const toggleRef = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<HTMLElement | null>(null);
 
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)");
-    const handler = (e: MediaQueryListEvent | MediaQueryList) => {
-      const mobile = e.matches;
-      setIsMobile(mobile);
-      if (mobile) {
-        setIsOpen(false);
-        saveVisible(false);
-      } else {
-        setIsOpen(loadVisible());
-      }
-    };
-    handler(mq);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
+  // Keep the sidebar state in sync when crossing the mobile breakpoint
+  const handleBreakpointChange = useCallback((mobile: boolean) => {
+    if (mobile) {
+      setIsOpen(false);
+      saveVisible(false);
+    } else {
+      setIsOpen(loadVisible());
+    }
   }, []);
+  const isMobile = useIsMobile(handleBreakpointChange);
 
   const { data: authData } = useQuery({
     queryKey: ["auth", "me"],
@@ -124,13 +116,33 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     }
   }, [isMobile]);
 
-  // Close the mobile drawer with Escape
+  // Close the mobile drawer with Escape and trap Tab focus inside it
   useEffect(() => {
     if (!isMobile || !isOpen) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         closeMobile();
         toggleRef.current?.focus();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const drawer = drawerRef.current;
+      if (!drawer) return;
+      const focusables = Array.from(
+        drawer.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && (active === first || !drawer.contains(active))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (active === last || !drawer.contains(active))) {
+        e.preventDefault();
+        first.focus();
       }
     };
     document.addEventListener("keydown", onKeyDown);
@@ -269,6 +281,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Main content */}
       <main className="flex-1 min-w-0 h-full overflow-hidden flex flex-col relative">
+        {/* eslint-disable-next-line @next/next/no-img-element -- /api/bing-wallpaper 302-redirects to bing.com; next/image can't follow cross-origin redirects */}
         <img
           src={url}
           alt=""

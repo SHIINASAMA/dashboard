@@ -42,6 +42,7 @@ export default function Login() {
     <div className="relative min-h-dvh flex items-center justify-center bg-[var(--background)] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]">
       {/* Bing wallpaper background */}
       <div className="absolute inset-0">
+        {/* eslint-disable-next-line @next/next/no-img-element -- /api/bing-wallpaper 302-redirects to bing.com; next/image can't follow cross-origin redirects */}
         <img
           src={url}
           alt=""

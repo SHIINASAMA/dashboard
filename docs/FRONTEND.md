@@ -1,121 +1,136 @@
 # Frontend Architecture
 
-React 19 SPA with Vite, TypeScript, Tailwind CSS v4, and shadcn/ui.
+Next.js (App Router) + React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui-style components.
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Framework | React 19 + React Router |
-| Build | Vite |
-| Styling | Tailwind CSS v4 + shadcn/ui |
+| Framework | Next.js (App Router) + React 19 |
+| Styling | Tailwind CSS v4 + shadcn/ui-style primitives |
 | Charts | Recharts |
 | Icons | lucide-react |
 | Data Fetching | @tanstack/react-query |
-| i18n | Custom (JSON locale files) |
+| i18n | react-i18next (JSON locale files, browser language detection) |
+| Backend | Hono REST API mounted under `app/api/` (same Next.js process) |
 
 ## Source Layout
 
 ```
-client/src/
-├── App.tsx              # Route definitions, auth guards, QueryClient
-├── api.ts               # API client functions + TypeScript interfaces
-├── main.tsx             # Entry point
-├── index.css            # Tailwind imports + CSS variables (themes), animations
-├── components/
-│   ├── Layout.tsx       # Main layout (sidebar + title bar + content area)
-│   ├── AccountListPage.tsx  # Reusable account list component
-│   ├── BrandIcons.tsx   # Platform brand icons
-│   ├── StatCard.tsx     # Reusable stat display card
-│   ├── Skeleton.tsx     # Skeleton loading primitives (StatCardSkeleton, ChartCardSkeleton)
-│   ├── NavigationProgress.tsx  # Top progress bar on route changes
-│   ├── NavigatingOverlay.tsx   # Full-screen spinner overlay during navigation
-│   ├── ThemeProvider.tsx # Theme context provider
-│   ├── useTheme.ts      # Theme hook
-│   └── ui/              # shadcn/ui primitives (dialog, dropdown, etc.)
+app/
+├── layout.tsx          # Root layout: globals.css + Providers
+├── providers.tsx       # QueryClientProvider + ThemeProvider + i18n init
+├── globals.css         # Tailwind import + theme CSS variables + animations
+├── (dashboard)/
+│   ├── layout.tsx      # Dashboard shell: Layout + MockModeBanner
+│   ├── page.tsx        # Redirects / → /overview
+│   ├── overview/       # Overview dashboard (+ per-platform sections)
+│   ├── accounts/       # Account management
+│   ├── admin/          # User management (admin only)
+│   ├── settings/       # App settings
+│   ├── x/              # X account list + detail
+│   ├── github/         # GitHub account list + detail + repo detail
+│   ├── gitlab/         # GitLab account list + detail + project detail
+│   └── reddit/         # Reddit account list + detail
+├── login/page.tsx      # Login page
+└── api/                # Hono route handlers (auth, accounts, fetchers, stats, …)
+components/
+├── Layout.tsx          # Sidebar + title bar + content shell (responsive)
+├── AccountListPage.tsx # Reusable account list component
+├── BrandIcons.tsx      # Platform brand icons
+├── StatCard.tsx        # Reusable stat display card
+├── Skeleton.tsx        # Skeleton loading primitives
+├── NavigationProgress.tsx # Top progress bar on route changes
+├── NavigatingOverlay.tsx  # Full-screen spinner overlay during navigation
+├── ThemeProvider.tsx   # Theme context provider
+├── MockModeBanner.tsx  # MOCK MODE indicator when running on fixtures
+└── ui/                 # Card, Badge, ConfirmDialog, Portal, etc.
+lib/
+├── api.ts              # API client functions + TypeScript interfaces
+├── client/             # i18n, themes, useIsMobile, datetime, utils
+└── …                   # Server-side: db, auth, fetchers, services, scripts
+locales/
+├── en.json             # English translations
+└── zh.json             # Simplified Chinese translations
 ```
 
 ## Routing
 
-Defined in `App.tsx`. All routes except `/login` require authentication.
+Next.js file-based routing under the `app/` directory. All routes except `/login` live in the `(dashboard)` route group and share `app/(dashboard)/layout.tsx`; client-side navigation uses `next/link`.
 
-| Path | Component | Description |
-|------|-----------|-------------|
-| `/login` | Login | Login page (redirects to `/` if authenticated) |
-| `/` | Overview | Dashboard overview |
-| `/accounts` | AccountsPage | Account management |
-| `/x` | X | X/Twitter accounts |
-| `/x/:id` | XDetail | X/Twitter account detail |
-| `/github` | GitHub | GitHub accounts |
-| `/github/:id` | GitHubDetail | GitHub account detail |
-| `/github/:accountId/repos/:repoId` | RepoDetail | GitHub repo detail |
-| `/gitlab` | GitLab | GitLab accounts |
-| `/gitlab/:id` | GitLabDetail | GitLab account detail |
-| `/gitlab/:accountId/projects/:projectId` | ProjectDetail | GitLab project detail |
-| `/reddit` | Reddit | Reddit accounts |
-| `/reddit/:id` | RedditDetail | Reddit account detail |
-| `/admin` | Admin | User management (admin only) |
-| `/settings` | Settings | App settings |
+| Path | Description |
+|------|-------------|
+| `/login` | Login page (redirects to `/` after successful login) |
+| `/` | Redirects to `/overview` |
+| `/overview` | Overview dashboard |
+| `/accounts` | Account management |
+| `/x` | X account list |
+| `/x/:id` | X account detail |
+| `/github` | GitHub account list |
+| `/github/:accountId` | GitHub account detail |
+| `/github/:accountId/repos/:repoId` | GitHub repo detail |
+| `/gitlab` | GitLab account list |
+| `/gitlab/:accountId` | GitLab account detail |
+| `/gitlab/:accountId/projects/:projectId` | GitLab project detail |
+| `/reddit` | Reddit account list |
+| `/reddit/:id` | Reddit account detail |
+| `/admin` | User management (admin only) |
+| `/settings` | App settings |
 
 ## Auth Flow
 
-1. `App.tsx` wraps everything in `AuthContext` which calls `api.checkAuth()`
-2. `RequireAuth` redirects to `/login` if not authenticated
-3. `RedirectIfAuth` redirects to `/` if already authenticated
-4. Login form calls `api.login(username, password)` → server sets JWT cookie
-5. All API calls include the cookie automatically (httpOnly)
+1. Login form calls `api.login(username, password)`; the Hono API sets an httpOnly JWT cookie.
+2. On success the login page redirects to `/`.
+3. `Layout` calls `api.checkAuth()` to resolve the current user and admin role; API requests automatically include the httpOnly cookie.
+4. Logout calls `api.logout()` and redirects to `/login`.
 
 ## Data Fetching
 
-- Uses @tanstack/react-query for caching and refetching
-- `QueryClient` configured with `retry: 1` and `staleTime: 3 minutes`
-- API client in `api.ts` wraps fetch calls with base URL and error handling
+- Uses @tanstack/react-query for caching and refetching.
+- `QueryClient` is created in `app/providers.tsx` with `retry: 1` and `staleTime: 3 minutes`.
+- API client in `lib/api.ts` wraps fetch calls against the Hono routes under `app/api/`.
+- `MOCK_DATA=1` (or `NEXT_PUBLIC_MOCK_DATA=1`) makes the API serve fixture data and shows the `MockModeBanner`.
 
 ## i18n
 
-Custom implementation in `lib/i18n.ts`:
-- Locale files in `locales/en.json` and `locales/zh.json`
-- Hook-based: `const { t } = useI18n()`
-- Key format: `"section.subkey"` (e.g., `"nav.overview"`)
+- Initialized in `lib/client/i18n.ts` with `react-i18next` + `i18next-browser-languagedetector`.
+- Locale files in `locales/en.json` and `locales/zh.json`; fallback language is English.
+- Components use `const { t } = useTranslation()` with keys like `"nav.overview"`. Keep English and Chinese files in sync when adding keys.
 
 ## Layout & Sidebar
 
-The main layout (`Layout.tsx`) provides:
+The main layout (`components/Layout.tsx`) provides:
 
-- **Title bar** — fixed 48px header with sidebar toggle button and dashboard title
+- **Title bar** — 48px header with sidebar toggle button and dashboard title; safe-area-inset aware.
 - **Sidebar** — CSS-based with smooth width/transform transitions (0.3s ease)
-  - Desktop: push layout, sidebar slides in/out from left
-  - Mobile (<768px): overlay drawer with backdrop, hamburger menu in title bar
-- **State persistence** — sidebar open/closed state saved to localStorage
-- **Responsive detection** — `useIsMobile` hook for breakpoint-aware behavior
+  - Desktop: push layout, sidebar slides in/out from left (state persisted to localStorage)
+  - Mobile (<768px): overlay drawer with backdrop, hamburger menu in title bar; opens as a modal dialog (`role="dialog"`, `aria-modal`), closes on Esc/backdrop/nav click, and traps focus while open
+- **Responsive detection** — `lib/client/useIsMobile.ts` for breakpoint-aware behavior
 
 ## Theming
 
-- Theme definitions in `lib/themes.ts`
-- CSS variables in `index.css` (`:root` and `[data-theme="..."]`)
+- Theme definitions in `lib/client/themes.ts`
+- CSS variables in `app/globals.css` (`:root` and `[data-theme="…"]`, light + dark variants)
 - `ThemeProvider` context + `useTheme` hook
 - Multiple light and dark themes available (default, sepia, cyber, forest, sky, rose)
 
 ## Responsive Design
 
-- Charts use responsive heights (140-200px mobile, 160-300px desktop)
+- Charts use responsive heights (140–200px mobile, 160–300px desktop)
 - Grid layouts adapt from single column (mobile) to multi-column (desktop)
-- Detail page headers wrap gracefully on small screens (`detail-header` CSS class)
-- Chart legends rendered as plain HTML outside Recharts for better space control
+- Chart legends are rendered as plain HTML outside Recharts for better space control
 - Touch targets meet WCAG 44px minimum (`min-h-11 min-w-11`)
 - Safe-area-inset padding for notched devices
-- PWA support via `manifest.json` with standalone display
+- `prefers-reduced-motion` disables non-essential animations
+- Global `:focus-visible` outline for keyboard navigation
 
 ## Loading & Transitions
 
 Multi-layered loading strategy for smooth UX on slow networks:
 
-1. **HTML spinner** (`index.html`) — pure CSS spinner shown before JS loads
-2. **Auth check** — non-blocking; app renders immediately, `RequireAuth` redirects if needed
-3. **Route preloading** — sidebar `onMouseEnter`/`onFocus` triggers lazy chunk download
-4. **Navigating overlay** — semi-transparent backdrop + spinner during route transitions
-5. **Progress bar** — animated gradient bar at top of page on navigation
-6. **Skeleton loading** — `StatCardSkeleton` / `ChartCardSkeleton` replace "Loading..." text
-7. **Fade-in animation** — `page-enter` class on route content for smooth appearance
-
-Route transitions use `key={location.pathname}` on the Outlet wrapper to trigger re-mount and animation replay.
+1. **Providers hydration guard** — a minimal background shell renders before the client shell mounts, preventing SSR/client mismatch
+2. **Auth check** — non-blocking; the layout renders immediately
+3. **Navigating overlay** — semi-transparent backdrop + spinner during route transitions
+4. **Progress bar** — animated gradient bar at top of page on navigation
+5. **Skeleton loading** — `StatCardSkeleton` / `ChartCardSkeleton` replace "Loading…" text
+6. **Fade-in animation** — `page-enter` class on route content for smooth appearance; disabled under `prefers-reduced-motion`

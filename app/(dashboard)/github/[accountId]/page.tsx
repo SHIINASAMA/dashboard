@@ -322,12 +322,14 @@ export default function GitHubDetail() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap justify-center gap-6">
+                {/* eslint-disable-next-line @next/next/no-img-element -- external SVG source; next/image would require dangerouslyAllowSVG */}
                 <img
                   src={`https://github-readme-stats-fast.vercel.app/api?username=${account.screen_name}&show_icons=true&hide_border=true&bg_color=00000000&text_color=666&title_color=3b5998&icon_color=3b5998`}
                   alt={t("githubDetail.statsImgAlt")}
                   className="max-w-full h-auto"
                   loading="lazy"
                 />
+                {/* eslint-disable-next-line @next/next/no-img-element -- external SVG source; next/image would require dangerouslyAllowSVG */}
                 <img
                   src={`https://github-readme-stats-fast.vercel.app/api/top-langs?username=${account.screen_name}&layout=compact&hide_border=true&bg_color=00000000&text_color=666&title_color=3b82f6`}
                   alt={t("githubDetail.languagesImgAlt")}
