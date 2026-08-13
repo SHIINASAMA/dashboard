@@ -2,6 +2,7 @@
   "timeRange": {
     "label": "Time range",
     "7d": "7 days",
+"14d": "14 days",
     "30d": "30 days",
     "90d": "3 months",
     "180d": "6 months",
@@ -285,7 +286,10 @@
     "searchVersions": "Search versions...",
     "noResults": "No results",
     "assetName": "File",
-    "size": "Size"
+    "size": "Size",
+    "downloadGrowthRate": "Download Growth Rate",
+    "noGrowthData": "No growth data yet. Data accumulates with each fetch. At least two fetches are needed per file.",
+    "downloadsPerDay": "downloads/day"
   },
   "gitlab": {
     "heading": "GitLab",

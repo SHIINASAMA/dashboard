@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState, useRef, useEffect, type CSSProperties } from "react";
+import { useState, useRef, useEffect, useMemo, type CSSProperties } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { api, type GithubRepo, type GithubRelease } from "@/lib/api";
@@ -37,7 +37,7 @@ const CHART_TOOLTIP_WRAPPER_STYLE = {
   maxWidth: "calc(100% - 1rem)",
 } satisfies CSSProperties;
 
-type HistoryPoint = Record<string, string | number>;
+type HistoryPoint = Record<string, string | number | null>;
 
 function MultiSelectDropdown({ items, selected, onToggle, onSelectAll, onShowLatest, onDeselectAll, label, latestLabel, isMobile }: {
   items: Array<{ id: string; label: string }>;
@@ -133,30 +133,86 @@ function MultiSelectDropdown({ items, selected, onToggle, onSelectAll, onShowLat
   );
 }
 
-function ReleaseDownloadsChart({ releases, isMobile }: { releases: GithubRelease[]; isMobile: boolean }) {
+const DEFAULT_VISIBLE = 10;
+
+const GROWTH_TIME_OPTIONS = [
+  { value: 7, labelKey: "timeRange.7d" },
+  { value: 14, labelKey: "timeRange.14d" },
+  { value: 30, labelKey: "timeRange.30d" },
+];
+
+function formatRate(v: number): string {
+  if (!Number.isFinite(v)) return "";
+  return v >= 100 ? Math.round(v).toLocaleString() : v.toFixed(1);
+}
+
+function ReleaseChartControls({ releases, topAssets, hiddenAssets, hiddenReleases, onToggleAsset, onToggleRelease, onSelectAllAssets, onHideAllAssets, onSelectAllReleases, onShowLatestReleases, onDeselectAllReleases, isMobile }: {
+  releases: GithubRelease[];
+  topAssets: string[];
+  hiddenAssets: Set<string>;
+  hiddenReleases: Set<number>;
+  onToggleAsset: (name: string) => void;
+  onToggleRelease: (id: number) => void;
+  onSelectAllAssets: () => void;
+  onHideAllAssets: () => void;
+  onSelectAllReleases: () => void;
+  onShowLatestReleases: () => void;
+  onDeselectAllReleases: () => void;
+  isMobile: boolean;
+}) {
   const { t } = useTranslation();
+  const versionItems = releases.map((r) => ({ id: String(r.id), label: r.tag_name || `#${r.release_id}` }));
+  const selectedVersions = new Set(releases.filter((r) => !hiddenReleases.has(r.id)).map((r) => String(r.id)));
 
-  const assetNames = new Map<string, number>();
-  for (const rel of releases) {
-    for (const a of rel.assets) {
-      assetNames.set(a.name, (assetNames.get(a.name) || 0) + a.download_count);
-    }
-  }
+  return (
+    <>
+      {releases.length > 1 && (
+        <div className="mb-3">
+          <MultiSelectDropdown
+            items={versionItems}
+            selected={selectedVersions}
+            onToggle={(id) => onToggleRelease(Number(id))}
+            onSelectAll={onSelectAllReleases}
+            onShowLatest={onShowLatestReleases}
+            onDeselectAll={onDeselectAllReleases}
+            label={t("repoDetail.versions")}
+            latestLabel={t("repoDetail.latestN", { n: DEFAULT_VISIBLE })}
+            isMobile={isMobile}
+          />
+        </div>
+      )}
 
-  const topAssets = [...assetNames.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10)
-    .map(([name]) => name);
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3">
+        <span className="text-xs text-[var(--muted-foreground)] font-medium">{t("repoDetail.assets")}</span>
+        <button onClick={onSelectAllAssets} className="min-h-11 min-w-11 rounded-md px-2.5 text-xs text-[var(--primary)] hover:bg-[var(--muted)]">{t("repoDetail.selectAll")}</button>
+        <button onClick={onHideAllAssets} className="min-h-11 min-w-11 rounded-md px-2.5 text-xs text-[var(--primary)] hover:bg-[var(--muted)]">{t("repoDetail.hideAll")}</button>
+        {topAssets.map((name, i) => (
+          <label key={name} className="flex min-h-11 cursor-pointer select-none items-center gap-1.5 text-xs">
+            <input
+              type="checkbox"
+              checked={!hiddenAssets.has(name)}
+              onChange={() => onToggleAsset(name)}
+              className="accent-[var(--chart-1)] w-4 h-4"
+            />
+            <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: COLORS[i % COLORS.length] }} />
+            <span className="text-[var(--muted-foreground)] truncate max-w-[120px]" title={name}>
+              {name.length > (isMobile ? 10 : 20) ? name.slice(0, isMobile ? 10 : 20) + "..." : name}
+            </span>
+          </label>
+        ))}
+      </div>
+    </>
+  );
+}
 
-  const DEFAULT_VISIBLE = 10;
-  const [hiddenAssets, setHiddenAssets] = useState<Set<string>>(new Set());
-  const [hiddenReleases, setHiddenReleases] = useState<Set<number>>(() => {
-    if (releases.length <= DEFAULT_VISIBLE) return new Set();
-    return new Set(releases.slice(DEFAULT_VISIBLE).map((r) => r.id));
-  });
-
-  const visibleAssets = topAssets.filter((name) => !hiddenAssets.has(name));
-  const visibleReleases = releases.filter((r) => !hiddenReleases.has(r.id));
+function ReleaseDownloadsChart({ releases, topAssets, visibleAssets, visibleReleases, isMobile }: {
+  releases: GithubRelease[];
+  topAssets: string[];
+  visibleAssets: string[];
+  visibleReleases: GithubRelease[];
+  isMobile: boolean;
+}) {
+  const { t } = useTranslation();
 
   const chartData = visibleReleases.map((rel) => {
     const row: Record<string, string | number> = { tag_name: rel.tag_name || "" };
@@ -169,94 +225,90 @@ function ReleaseDownloadsChart({ releases, isMobile }: { releases: GithubRelease
 
   const chartHeight = Math.max(isMobile ? 140 : 200, visibleReleases.length * (isMobile ? 36 : 50));
 
-  const toggleAsset = (name: string) => {
-    setHiddenAssets((prev) => {
-      const next = new Set(prev);
-      if (next.has(name)) next.delete(name);
-      else next.add(name);
-      return next;
-    });
-  };
-
-  const toggleRelease = (id: number) => {
-    setHiddenReleases((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const versionItems = releases.map((r) => ({ id: String(r.id), label: r.tag_name || `#${r.release_id}` }));
-  const selectedVersions = new Set(releases.filter((r) => !hiddenReleases.has(r.id)).map((r) => String(r.id)));
-
   return (
     <div role="img" aria-label={t("repoDetail.releasesDownloads")}>
-      {releases.length > 1 && (
-        <div className="mb-3">
-          <MultiSelectDropdown
-            items={versionItems}
-            selected={selectedVersions}
-            onToggle={(id) => toggleRelease(Number(id))}
-            onSelectAll={() => setHiddenReleases(new Set())}
-            onShowLatest={() => setHiddenReleases(new Set(releases.slice(DEFAULT_VISIBLE).map((r) => r.id)))}
-            onDeselectAll={() => setHiddenReleases(new Set(releases.map((r) => r.id)))}
-            label={t("repoDetail.versions")}
-            latestLabel={t("repoDetail.latestN", { n: DEFAULT_VISIBLE })}
-            isMobile={isMobile}
+      <ResponsiveContainer width="100%" height={chartHeight}>
+        <BarChart data={chartData} layout="vertical" margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+          <XAxis type="number" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+          <YAxis type="category" dataKey="tag_name" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} width={isMobile ? 50 : 120} tickFormatter={(v: string) => v.length > (isMobile ? 6 : 15) ? v.slice(0, isMobile ? 6 : 15) + "..." : v} />
+          <Tooltip
+            contentStyle={CHART_TOOLTIP_CONTENT_STYLE}
+            itemStyle={CHART_TOOLTIP_ITEM_STYLE}
+            wrapperStyle={CHART_TOOLTIP_WRAPPER_STYLE}
+            formatter={(value, name) => [String(value), String(name)]}
+            labelFormatter={(label) => {
+              const rel = releases.find((r) => r.tag_name === label);
+              return rel ? `${rel.name || rel.tag_name} — ${rel.published_at ? formatDate(rel.published_at) : ""}` : label;
+            }}
           />
-        </div>
-      )}
-
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3">
-        <span className="text-xs text-[var(--muted-foreground)] font-medium">{t("repoDetail.assets")}</span>
-        <button onClick={() => setHiddenAssets(new Set())} className="min-h-11 min-w-11 rounded-md px-2.5 text-xs text-[var(--primary)] hover:bg-[var(--muted)]">{t("repoDetail.selectAll")}</button>
-        <button onClick={() => setHiddenAssets(new Set(topAssets))} className="min-h-11 min-w-11 rounded-md px-2.5 text-xs text-[var(--primary)] hover:bg-[var(--muted)]">{t("repoDetail.hideAll")}</button>
-        {topAssets.map((name, i) => (
-          <label key={name} className="flex min-h-11 cursor-pointer select-none items-center gap-1.5 text-xs">
-            <input
-              type="checkbox"
-              checked={!hiddenAssets.has(name)}
-              onChange={() => toggleAsset(name)}
-              className="accent-[var(--chart-1)] w-4 h-4"
+          {visibleAssets.map((name) => (
+            <Bar
+              key={name}
+              dataKey={name}
+              stackId="assets"
+              fill={COLORS[topAssets.indexOf(name) % COLORS.length]}
             />
-            <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: COLORS[i % COLORS.length] }} />
-            <span className="text-[var(--muted-foreground)] truncate max-w-[120px]" title={name}>
-              {name.length > (isMobile ? 10 : 20) ? name.slice(0, isMobile ? 10 : 20) + "..." : name}
-            </span>
-          </label>
-        ))}
-      </div>
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
 
-      {visibleAssets.length === 0 || visibleReleases.length === 0 ? (
-        <p className="text-xs text-[var(--muted-foreground)] text-center py-4">{t("repoDetail.noAssetsSelected")}</p>
-      ) : (
-        <ResponsiveContainer width="100%" height={chartHeight}>
-          <BarChart data={chartData} layout="vertical" margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-            <XAxis type="number" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
-            <YAxis type="category" dataKey="tag_name" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} width={isMobile ? 50 : 120} tickFormatter={(v: string) => v.length > (isMobile ? 6 : 15) ? v.slice(0, isMobile ? 6 : 15) + "..." : v} />
-            <Tooltip
-              contentStyle={CHART_TOOLTIP_CONTENT_STYLE}
-              itemStyle={CHART_TOOLTIP_ITEM_STYLE}
-              wrapperStyle={CHART_TOOLTIP_WRAPPER_STYLE}
-              formatter={(value, name) => [String(value), String(name)]}
-              labelFormatter={(label) => {
-                const rel = releases.find((r) => r.tag_name === label);
-                return rel ? `${rel.name || rel.tag_name} — ${rel.published_at ? formatDate(rel.published_at) : ""}` : label;
-              }}
+function ReleaseGrowthChart({ releases, topAssets, visibleAssets, growthData, isPending, isMobile }: {
+  releases: GithubRelease[];
+  topAssets: string[];
+  visibleAssets: string[];
+  growthData: HistoryPoint[];
+  isPending: boolean;
+  isMobile: boolean;
+}) {
+  const { t } = useTranslation();
+
+  if (isPending) {
+    return <p className="text-xs text-[var(--muted-foreground)] text-center py-4">{t("common.loading")}</p>;
+  }
+
+  const hasGrowth = growthData.some((row) => visibleAssets.some((name) => row[name] != null));
+  if (!hasGrowth) {
+    return <p className="text-xs text-[var(--muted-foreground)] text-center py-4">{t("repoDetail.noGrowthData")}</p>;
+  }
+
+  const chartHeight = Math.max(isMobile ? 140 : 200, growthData.length * (isMobile ? 36 : 50));
+
+  return (
+    <div role="img" aria-label={t("repoDetail.downloadGrowthRate")}>
+      <ResponsiveContainer width="100%" height={chartHeight}>
+        <LineChart data={growthData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+          <XAxis dataKey="tag_name" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v: string) => v.length > (isMobile ? 6 : 15) ? v.slice(0, isMobile ? 6 : 15) + "..." : v} />
+          <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(growthData, ...visibleAssets)} tickFormatter={(v: number) => formatRate(v)} />
+          <Tooltip
+            contentStyle={CHART_TOOLTIP_CONTENT_STYLE}
+            itemStyle={CHART_TOOLTIP_ITEM_STYLE}
+            wrapperStyle={CHART_TOOLTIP_WRAPPER_STYLE}
+            formatter={(value, name) => {
+              const shown = value == null || value === "" ? "—" : `${formatRate(Number(value))} ${t("repoDetail.downloadsPerDay")}`;
+              return [shown, String(name)];
+            }}
+            labelFormatter={(label) => {
+              const rel = releases.find((r) => r.tag_name === label);
+              return rel ? `${rel.name || rel.tag_name} — ${rel.published_at ? formatDate(rel.published_at) : ""}` : label;
+            }}
+          />
+          {visibleAssets.map((name) => (
+            <Line
+              key={name}
+              type="monotone"
+              dataKey={name}
+              stroke={COLORS[topAssets.indexOf(name) % COLORS.length]}
+              strokeWidth={2}
+              dot={false}
             />
-            {visibleAssets.map((name) => (
-              <Bar
-                key={name}
-                dataKey={name}
-                stackId="assets"
-                fill={COLORS[topAssets.indexOf(name) % COLORS.length]}
-              />
-            ))}
-          </BarChart>
-        </ResponsiveContainer>
-      )}
+          ))}
+        </LineChart>
+      </ResponsiveContainer>
     </div>
   );
 }
@@ -268,6 +320,9 @@ export default function RepoDetail() {
   const aid = Number(accountId);
   const rid = Number(repoId);
   const [days, setDays] = useState(30);
+  const [growthDays, setGrowthDays] = useState(14);
+  const [hiddenAssets, setHiddenAssets] = useState<Set<string>>(new Set());
+  const [hiddenReleases, setHiddenReleases] = useState<Set<number> | null>(null);
 
   const { data: overview } = useQuery({
     queryKey: ["github", "overview", aid],
@@ -324,6 +379,67 @@ export default function RepoDetail() {
     queryFn: () => api.getGithubReleases(aid, rid),
     enabled: !!aid && !!rid,
   });
+
+  const { data: growth, isPending: growthPending } = useQuery({
+    queryKey: ["github", "release-growth", aid, rid, growthDays],
+    queryFn: () => api.getGithubReleaseDownloadGrowth(aid, rid, growthDays),
+    enabled: !!aid && !!rid,
+  });
+
+  const topAssets = useMemo(() => {
+    if (!releases) return [];
+    const sums = new Map<string, number>();
+    for (const rel of releases) {
+      for (const a of rel.assets) {
+        sums.set(a.name, (sums.get(a.name) || 0) + a.download_count);
+      }
+    }
+    return [...sums.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([name]) => name);
+  }, [releases]);
+
+  const effectiveHiddenReleases = hiddenReleases ?? new Set((releases ?? []).slice(DEFAULT_VISIBLE).map((r) => r.id));
+  const visibleAssets = topAssets.filter((name) => !hiddenAssets.has(name));
+  const visibleReleases = (releases ?? []).filter((r) => !effectiveHiddenReleases.has(r.id));
+
+  const growthByReleaseId = useMemo(() => {
+    const map = new Map<number, Map<string, number>>();
+    for (const g of growth ?? []) {
+      const rates = new Map<string, number>();
+      for (const a of g.assets) rates.set(a.asset_name, a.rate);
+      map.set(g.release_id, rates);
+    }
+    return map;
+  }, [growth]);
+
+  const growthData = useMemo(() => {
+    return visibleReleases.map((rel) => {
+      const row: Record<string, string | number | null> = { tag_name: rel.tag_name || "" };
+      const rates = growthByReleaseId.get(rel.id);
+      for (const name of visibleAssets) {
+        row[name] = rates?.get(name) ?? null;
+      }
+      return row;
+    });
+  }, [visibleReleases, visibleAssets, growthByReleaseId]);
+
+  const toggleAsset = (name: string) => {
+    setHiddenAssets((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  };
+
+  const toggleRelease = (id: number) => {
+    setHiddenReleases((prev) => {
+      const base = prev ?? new Set((releases ?? []).slice(DEFAULT_VISIBLE).map((r) => r.id));
+      const next = new Set(base);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const isMobile = useIsMobile();
   const CHART_H = isMobile ? 180 : 250;
@@ -606,7 +722,49 @@ export default function RepoDetail() {
         </CardHeader>
         <CardContent>
           {releases && releases.length > 0 ? (
-            <ReleaseDownloadsChart releases={releases} isMobile={isMobile} />
+            <>
+              <ReleaseChartControls
+                releases={releases}
+                topAssets={topAssets}
+                hiddenAssets={hiddenAssets}
+                hiddenReleases={effectiveHiddenReleases}
+                onToggleAsset={toggleAsset}
+                onToggleRelease={toggleRelease}
+                onSelectAllAssets={() => setHiddenAssets(new Set())}
+                onHideAllAssets={() => setHiddenAssets(new Set(topAssets))}
+                onSelectAllReleases={() => setHiddenReleases(new Set())}
+                onShowLatestReleases={() => setHiddenReleases(new Set((releases ?? []).slice(DEFAULT_VISIBLE).map((r) => r.id)))}
+                onDeselectAllReleases={() => setHiddenReleases(new Set((releases ?? []).map((r) => r.id)))}
+                isMobile={isMobile}
+              />
+              {visibleAssets.length === 0 || visibleReleases.length === 0 ? (
+                <p className="text-xs text-[var(--muted-foreground)] text-center py-4">{t("repoDetail.noAssetsSelected")}</p>
+              ) : (
+                <>
+                  <ReleaseDownloadsChart
+                    releases={releases}
+                    topAssets={topAssets}
+                    visibleAssets={visibleAssets}
+                    visibleReleases={visibleReleases}
+                    isMobile={isMobile}
+                  />
+                  <div className="mt-6 border-t border-[var(--border)] pt-4">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-sm font-medium">{t("repoDetail.downloadGrowthRate")}</p>
+                      <TimeRangeSelector value={growthDays} onChange={setGrowthDays} options={GROWTH_TIME_OPTIONS} />
+                    </div>
+                    <ReleaseGrowthChart
+                      releases={releases}
+                      topAssets={topAssets}
+                      visibleAssets={visibleAssets}
+                      growthData={growthData}
+                      isPending={growthPending}
+                      isMobile={isMobile}
+                    />
+                  </div>
+                </>
+              )}
+            </>
           ) : (
             <p className="text-sm text-[var(--muted-foreground)] text-center py-8">
               {t("repoDetail.noReleases")}

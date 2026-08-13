@@ -170,6 +170,23 @@ export interface GithubReleaseAsset {
   browser_download_url: string | null;
 }
 
+export interface GithubReleaseAssetGrowth {
+  release_id: number;
+  asset_name: string;
+  latest_count: number;
+  previous_count: number;
+  days: number;
+  rate: number; // downloads/day (absolute), clamped at 0
+}
+
+export interface GithubReleaseDownloadGrowth {
+  release_id: number;
+  tag_name: string | null;
+  name: string | null;
+  published_at: string | null;
+  assets: GithubReleaseAssetGrowth[];
+}
+
 // ─── GitLab types ────────────────────────────────────────────────
 
 export interface GitlabContribution {

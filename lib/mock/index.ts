@@ -155,6 +155,26 @@ export const githubReleases = range(3).map((i) => {
 });
 export const githubReleaseAssets = githubReleases[0].assets;
 
+export const githubReleaseDownloadGrowth = (days: number) => githubReleases.map((rel) => ({
+  release_id: rel.id,
+  tag_name: rel.tag_name,
+  name: rel.name,
+  published_at: rel.published_at,
+  assets: rel.assets.map((a, j) => {
+    const latest = a.download_count;
+    const previous = Math.max(0, latest - 120 - j * 30);
+    const delta = latest - previous;
+    return {
+      release_id: rel.id,
+      asset_name: a.name,
+      latest_count: latest,
+      previous_count: previous,
+      days,
+      rate: delta === 0 ? 0 : Math.round((delta / days) * 10) / 10,
+    };
+  }),
+}));
+
 // ── GitLab ────────────────────────────────────────────────────────
 
 export const gitlabProjects = range(8).map((i) => {

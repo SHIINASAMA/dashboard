@@ -28,7 +28,7 @@ export async function closeTestPool() {
 }
 
 const ALL_TABLES = [
-  "github_release_assets", "github_releases", "github_paths", "github_referrers",
+  "github_release_asset_snapshots", "github_release_assets", "github_releases", "github_paths", "github_referrers",
   "github_traffic_views", "github_traffic_clones", "github_repo_snapshots",
   "github_contributions", "github_repos", "github_stats",
   "gitlab_release_assets", "gitlab_releases", "gitlab_project_snapshots",

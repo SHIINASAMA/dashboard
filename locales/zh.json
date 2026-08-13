@@ -2,6 +2,7 @@
   "timeRange": {
     "label": "时间范围",
     "7d": "7 天",
+"14d": "14 天",
     "30d": "30 天",
     "90d": "3 个月",
     "180d": "6 个月",
@@ -285,7 +286,10 @@
     "searchVersions": "搜索版本...",
     "noResults": "无结果",
     "assetName": "文件",
-    "size": "大小"
+    "size": "大小",
+    "downloadGrowthRate": "下载增长速率",
+    "noGrowthData": "暂无增长数据。每次抓取会累积数据，每个文件至少需要两次抓取。",
+    "downloadsPerDay": "次/天"
   },
   "gitlab": {
     "heading": "GitLab",

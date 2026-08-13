@@ -11,9 +11,10 @@ const OPTIONS: { value: number; labelKey: string }[] = [
 interface Props {
   value: number;
   onChange: (days: number) => void;
+  options?: { value: number; labelKey: string }[];
 }
 
-export function TimeRangeSelector({ value, onChange }: Props) {
+export function TimeRangeSelector({ value, onChange, options = OPTIONS }: Props) {
   const { t } = useTranslation();
   return (
     <div
@@ -21,7 +22,7 @@ export function TimeRangeSelector({ value, onChange }: Props) {
       aria-label={t("timeRange.label")}
       className="flex w-full items-center gap-0.5 rounded-lg bg-[var(--muted)] p-1 sm:w-auto"
     >
-      {OPTIONS.map((o) => {
+      {options.map((o) => {
         const active = o.value === value;
         return (
           <button

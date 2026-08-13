@@ -25,6 +25,7 @@ import type {
   Account, AccountWithStats, AccountsResponse, OverviewStats,
   Tweet, PaginatedTweets, TimelineData, CalendarDay,
   GithubContribution, GithubOverview, GithubRepo, GithubRelease, GithubReleaseAsset,
+  GithubReleaseDownloadGrowth,
   GitlabContribution, GitlabOverview, GitlabProject, GitlabRelease,
   RedditOverview, RedditPost, RedditComment, PaginatedRedditPosts, PaginatedRedditComments,
   LoginResponse, AuthCheckResponse, UserPublic,
@@ -34,6 +35,7 @@ export type {
   Account, AccountWithStats, AccountsResponse, OverviewStats,
   Tweet, PaginatedTweets, TimelineData, CalendarDay,
   GithubContribution, GithubOverview, GithubRepo, GithubRelease, GithubReleaseAsset,
+  GithubReleaseDownloadGrowth,
   GitlabContribution, GitlabOverview, GitlabProject, GitlabRelease,
   RedditOverview, RedditPost, RedditComment, PaginatedRedditPosts, PaginatedRedditComments,
   LoginResponse, AuthCheckResponse, UserPublic,
@@ -96,6 +98,8 @@ export const api = {
     fetchJSON<GithubRelease[]>(`/github/${accountId}/repos/${repoId}/releases`),
   getGithubReleaseAssets: (accountId: number, repoId: number, releaseId: number) =>
     fetchJSON<GithubReleaseAsset[]>(`/github/${accountId}/repos/${repoId}/releases/${releaseId}/assets`),
+  getGithubReleaseDownloadGrowth: (accountId: number, repoId: number, days = 30) =>
+    fetchJSON<GithubReleaseDownloadGrowth[]>(`/github/${accountId}/repos/${repoId}/releases/growth?days=${days}`),
   setPinnedRepos: (accountId: number, repoIds: number[]) =>
     fetchJSON<{ ok: boolean }>(`/github/repos/pin`, { method: "PUT", body: JSON.stringify({ accountId, repoIds }) }),
 

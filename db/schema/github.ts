@@ -115,3 +115,14 @@ export const github_release_assets = pgTable("github_release_assets", {
   content_type: text("content_type"),
   browser_download_url: text("browser_download_url"),
 });
+
+export const github_release_asset_snapshots = pgTable("github_release_asset_snapshots", {
+  id: serial("id").primaryKey(),
+  account_id: integer("account_id").notNull().references(() => accounts.id),
+  repo_id: integer("repo_id").notNull(),
+  release_id: integer("release_id").notNull().references(() => github_releases.id),
+  asset_name: text("asset_name").notNull(),
+  download_count: integer("download_count").default(0),
+  snapshot_date: text("snapshot_date").notNull(),
+  recorded_at: text("recorded_at").notNull().default(sql`NOW()`),
+});

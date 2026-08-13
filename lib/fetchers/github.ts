@@ -6,6 +6,7 @@ import {
   upsertGithubTrafficClones, upsertGithubTrafficViews,
   upsertGithubReferrer, upsertGithubPath,
   upsertGithubRelease, insertGithubReleaseAsset,
+  upsertGithubReleaseAssetSnapshot,
 } from "../db";
 import { getDb } from "../db/connection";
 import { eq, and } from "drizzle-orm";
@@ -295,14 +296,26 @@ async function fetchRepoReleases(accountId: number, repoId: number, fullName: st
         await getDb().delete(github_release_assets)
           .where(eq(github_release_assets.release_id, releaseRow.id));
 
+        const snapshotDate = new Date().toISOString().slice(0, 10);
         for (const asset of (release.assets as Array<Record<string, unknown>>) || []) {
+          const downloadCount = (asset.download_count as number) || 0;
           await insertGithubReleaseAsset({
             release_db_id: releaseRow.id,
             name: asset.name as string,
-            download_count: (asset.download_count as number) || 0,
+            download_count: downloadCount,
             size: (asset.size as number) || 0,
             content_type: (asset.content_type as string) || null,
             browser_download_url: (asset.browser_download_url as string) || null,
+          });
+          // Record a cumulative-count snapshot so download growth rate can be
+          // derived from deltas between fetches (GitHub has no time-series API).
+          await upsertGithubReleaseAssetSnapshot({
+            account_id: accountId,
+            repo_id: repoId,
+            release_id: releaseRow.id,
+            asset_name: asset.name as string,
+            download_count: downloadCount,
+            snapshot_date: snapshotDate,
           });
         }
       }

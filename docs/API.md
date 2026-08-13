@@ -84,6 +84,7 @@ Public API paths: `POST /auth/login`, `GET /auth/me`, `GET /reddit/callback`, `G
 | GET | `/github/:accountId/repos/:repoId/paths/history` | Path history over time |
 | GET | `/github/:accountId/repos/:repoId/releases` | Releases with download stats |
 | GET | `/github/:accountId/repos/:repoId/releases/:releaseId/assets` | Release asset download counts |
+| GET | `/github/:accountId/repos/:repoId/releases/growth?days=7\|14\|30` | Per-asset download growth rate (downloads/day) over a time window |
 | PUT | `/github/repos/pin` | Set pinned repos `{ accountId, repoIds }` |
 
 ## GitLab

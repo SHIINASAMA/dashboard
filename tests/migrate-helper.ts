@@ -127,6 +127,17 @@ const SCHEMA = [
     CREATE UNIQUE INDEX IF NOT EXISTS idx_github_releases_uniq ON github_releases(account_id, repo_id, release_id)`,
   },
   {
+    table: "github_release_asset_snapshots",
+    sql: `CREATE TABLE IF NOT EXISTS github_release_asset_snapshots (
+      id SERIAL PRIMARY KEY, account_id INTEGER NOT NULL REFERENCES accounts(id),
+      repo_id INTEGER NOT NULL, release_id INTEGER NOT NULL REFERENCES github_releases(id),
+      asset_name TEXT NOT NULL, download_count INTEGER DEFAULT 0,
+      snapshot_date TEXT NOT NULL, recorded_at TEXT NOT NULL DEFAULT NOW()
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_github_release_asset_snapshots_uniq
+      ON github_release_asset_snapshots(release_id, asset_name, snapshot_date)`,
+  },
+  {
     table: "github_release_assets",
     sql: `CREATE TABLE IF NOT EXISTS github_release_assets (
       id SERIAL PRIMARY KEY, release_id INTEGER NOT NULL REFERENCES github_releases(id),

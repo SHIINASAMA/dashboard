@@ -5,6 +5,7 @@ export {
   github_stats, github_repos, github_contributions,
   github_repo_snapshots, github_traffic_clones, github_traffic_views,
   github_referrers, github_paths, github_releases, github_release_assets,
+  github_release_asset_snapshots,
 } from "./github";
 export {
   gitlab_stats, gitlab_projects, gitlab_project_snapshots,

@@ -2,12 +2,14 @@
 import { eq, and, desc, sql, inArray, gte, type SQL } from "drizzle-orm";
 import { getDb } from "../db/connection";
 import { latestSnapshotRows } from "../utils/latest-snapshot";
+import { computeDownloadGrowth, addDaysIso, type DownloadSnapshot } from "../utils/download-growth";
 import { isMockMode } from "../config";
 import * as mock from "../mock";
 import {
   github_stats, github_repos, github_contributions,
   github_repo_snapshots, github_traffic_clones, github_traffic_views,
   github_referrers, github_paths, github_releases, github_release_assets,
+  github_release_asset_snapshots,
 } from "@/db/schema";
 
 
@@ -199,17 +201,22 @@ export async function upsertGithubRelease(r: { account_id: number; repo_id: numb
   });
 }
 
-export async function getGithubReleases(accountId: number, repoId: number) {
-  if (isMockMode()) return mock.githubReleases;
+async function latestGithubReleases(accountId: number, repoId: number) {
   const all = await getDb().select().from(github_releases)
     .where(and(eq(github_releases.account_id, accountId), eq(github_releases.repo_id, repoId)));
   const latest = new Map<string, typeof all[0]>();
   for (const r of all) {
-    if (!latest.has(r.tag_name!) || r.release_id > latest.get(r.tag_name!)!.release_id) {
-      latest.set(r.tag_name!, r);
+    const key = r.tag_name || String(r.release_id);
+    if (!latest.has(key) || r.release_id > latest.get(key)!.release_id) {
+      latest.set(key, r);
     }
   }
-  const releases = [...latest.values()].sort((a, b) => (b.published_at ?? "").localeCompare(a.published_at ?? ""));
+  return [...latest.values()].sort((a, b) => (b.published_at ?? "").localeCompare(a.published_at ?? ""));
+}
+
+export async function getGithubReleases(accountId: number, repoId: number) {
+  if (isMockMode()) return mock.githubReleases;
+  const releases = await latestGithubReleases(accountId, repoId);
 
   const releaseIds = releases.map((r) => r.id);
   const allAssets = releaseIds.length > 0
@@ -240,4 +247,43 @@ export async function getGithubReleaseAssets(releaseDbId: number) {
   if (isMockMode()) return mock.githubReleaseAssets;
   return getDb().select().from(github_release_assets)
     .where(eq(github_release_assets.release_id, releaseDbId));
+}
+
+export async function upsertGithubReleaseAssetSnapshot(t: { account_id: number; repo_id: number; release_id: number; asset_name: string; download_count: number; snapshot_date: string }) {
+  await getDb().insert(github_release_asset_snapshots).values({ ...t, recorded_at: sql`NOW()` }).onConflictDoUpdate({
+    target: [github_release_asset_snapshots.release_id, github_release_asset_snapshots.asset_name, github_release_asset_snapshots.snapshot_date],
+    set: { download_count: t.download_count, recorded_at: sql`NOW()` },
+  });
+}
+
+export async function getGithubReleaseDownloadGrowth(accountId: number, repoId: number, days = 30) {
+  if (isMockMode()) return mock.githubReleaseDownloadGrowth(days);
+  const releases = await latestGithubReleases(accountId, repoId);
+  if (releases.length === 0) return [];
+
+  const releaseIds = releases.map((r) => r.id);
+  // Only snapshots at/after (today - window - buffer) can contribute to a
+  // baseline, so bound the query and keep it from growing without limit.
+  const since = addDaysIso(new Date().toISOString().slice(0, 10), -(days + 7));
+  const snapshots = await getDb().select().from(github_release_asset_snapshots)
+    .where(and(
+      inArray(github_release_asset_snapshots.release_id, releaseIds),
+      gte(github_release_asset_snapshots.snapshot_date, since),
+    ));
+
+  const growth = computeDownloadGrowth(snapshots as DownloadSnapshot[], days);
+  const growthByRelease = new Map<number, typeof growth>();
+  for (const g of growth) {
+    const list = growthByRelease.get(g.release_id);
+    if (list) list.push(g);
+    else growthByRelease.set(g.release_id, [g]);
+  }
+
+  return releases.map((r) => ({
+    release_id: r.id,
+    tag_name: r.tag_name,
+    name: r.name,
+    published_at: r.published_at,
+    assets: growthByRelease.get(r.id) || [],
+  }));
 }
