@@ -1,10 +1,9 @@
 /**
- * Pure helpers for computing per-asset download rates from cumulative
- * GitHub release-asset snapshots.
+ * Build cumulative download timelines for GitHub releases.
  *
- * When release timestamps are available, rates cover the selected launch
- * window and use zero downloads at publication as the baseline. Legacy
- * callers without release timestamps fall back to deltas between snapshots.
+ * A fetch records one cumulative count per release asset. Points sharing the
+ * same timestamp are summed into a release total, then aligned by the numbered
+ * day since publication so different releases can be compared on one chart.
  */
 
 export interface DownloadSnapshot {
@@ -14,13 +13,21 @@ export interface DownloadSnapshot {
   snapshot_date: string; // ISO timestamp; legacy rows may be YYYY-MM-DD
 }
 
-export interface AssetGrowth {
-  release_id: number;
-  asset_name: string;
-  latest_count: number;
-  previous_count: number;
-  days: number;
-  rate: number; // downloads per day (absolute), clamped at 0
+export interface ReleaseDownloadPoint {
+  day: number;
+  download_count: number;
+  asset_downloads: Record<string, number>;
+  snapshot_date: string;
+}
+
+export function sumSelectedAssetDownloads(
+  point: Pick<ReleaseDownloadPoint, "asset_downloads">,
+  selectedAssets: string[],
+): number {
+  return selectedAssets.reduce(
+    (total, assetName) => total + (point.asset_downloads[assetName] ?? 0),
+    0,
+  );
 }
 
 function parseDate(date: string): number {
@@ -31,82 +38,40 @@ export function toDownloadSnapshotTimestamp(date = new Date()): string {
   return date.toISOString();
 }
 
-export function addDaysIso(date: string, days: number): string {
-  const d = new Date(parseDate(date));
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
-function diffDays(a: string, b: string): number {
-  const ms = Math.abs(parseDate(a) - parseDate(b));
-  return ms === 0 ? 1 : ms / 86_400_000;
-}
-
-export function computeDownloadGrowth(
+export function computeReleaseDownloadTimeline(
   snapshots: DownloadSnapshot[],
+  publishedAt: string,
   windowDays: number,
-  releasePublishedAt?: ReadonlyMap<number, string>,
-): AssetGrowth[] {
-  const byKey = new Map<string, DownloadSnapshot[]>();
-  for (const s of snapshots) {
-    const key = `${s.release_id}\u0000${s.asset_name}`;
-    const list = byKey.get(key);
-    if (list) list.push(s);
-    else byKey.set(key, [s]);
+): ReleaseDownloadPoint[] {
+  const publishedAtMs = parseDate(publishedAt);
+  if (!Number.isFinite(publishedAtMs)) return [];
+
+  const assetsByTimestamp = new Map<string, Record<string, number>>();
+  for (const snapshot of snapshots) {
+    const timestamp = parseDate(snapshot.snapshot_date);
+    if (!Number.isFinite(timestamp) || timestamp < publishedAtMs) continue;
+
+    const day = Math.floor((timestamp - publishedAtMs) / 86_400_000) + 1;
+    if (day > windowDays) continue;
+    const assetDownloads = assetsByTimestamp.get(snapshot.snapshot_date) ?? {};
+    assetDownloads[snapshot.asset_name] = snapshot.download_count;
+    assetsByTimestamp.set(snapshot.snapshot_date, assetDownloads);
   }
 
-  const result: AssetGrowth[] = [];
-  for (const list of byKey.values()) {
-    list.sort((a, b) => parseDate(a.snapshot_date) - parseDate(b.snapshot_date));
-
-    const publishedAt = releasePublishedAt?.get(list[0].release_id);
-    const publishedAtMs = publishedAt ? parseDate(publishedAt) : Number.NaN;
-    if (Number.isFinite(publishedAtMs)) {
-      const windowEnd = publishedAtMs + windowDays * 86_400_000;
-      const launchSnapshots = list.filter((snapshot) => {
-        const timestamp = parseDate(snapshot.snapshot_date);
-        return timestamp >= publishedAtMs && timestamp <= windowEnd;
+  const latestByDay = new Map<number, ReleaseDownloadPoint>();
+  for (const [snapshotDate, assetDownloads] of assetsByTimestamp) {
+    const timestamp = parseDate(snapshotDate);
+    const day = Math.floor((timestamp - publishedAtMs) / 86_400_000) + 1;
+    const existing = latestByDay.get(day);
+    if (!existing || parseDate(existing.snapshot_date) < timestamp) {
+      latestByDay.set(day, {
+        day,
+        download_count: Object.values(assetDownloads).reduce((total, count) => total + count, 0),
+        asset_downloads: assetDownloads,
+        snapshot_date: snapshotDate,
       });
-      if (launchSnapshots.length === 0) continue;
-
-      const latest = launchSnapshots[launchSnapshots.length - 1];
-      const elapsedDays = (parseDate(latest.snapshot_date) - publishedAtMs) / 86_400_000;
-      const days = elapsedDays === 0 ? 1 : elapsedDays;
-      result.push({
-        release_id: latest.release_id,
-        asset_name: latest.asset_name,
-        latest_count: latest.download_count,
-        previous_count: 0,
-        days,
-        rate: latest.download_count <= 0 ? 0 : latest.download_count / days,
-      });
-      continue;
     }
-
-    if (list.length < 2) continue;
-
-    const latest = list[list.length - 1];
-    const cutoff = parseDate(latest.snapshot_date) - windowDays * 86_400_000;
-
-    // Baseline: the snapshot closest to the cutoff from below (latest date
-    // <= cutoff). If all snapshots are younger than the window, fall back to
-    // the earliest snapshot so the rate still covers the available history.
-    let baseline = list[0];
-    for (const s of list) {
-      if (parseDate(s.snapshot_date) <= cutoff) baseline = s;
-      else break;
-    }
-
-    const days = diffDays(latest.snapshot_date, baseline.snapshot_date);
-    const delta = latest.download_count - baseline.download_count;
-    result.push({
-      release_id: latest.release_id,
-      asset_name: latest.asset_name,
-      latest_count: latest.download_count,
-      previous_count: baseline.download_count,
-      days,
-      rate: delta <= 0 ? 0 : delta / days,
-    });
   }
-  return result;
+
+  return [...latestByDay.values()].sort((a, b) => a.day - b.day);
 }

@@ -287,10 +287,10 @@
     "noResults": "No results",
     "assetName": "File",
     "size": "Size",
-    "downloadGrowthRate": "Post-release Download Rate",
+    "downloadGrowthRate": "Cumulative Downloads After Release",
+    "downloadTimelineDesc": "Each line represents one release and sums cumulative downloads across the currently selected assets.",
     "noGrowthData": "No launch-period data. The release may not have been fetched yet, or its first fetch was after the selected launch window.",
-    "downloadsPerDay": "downloads/day",
-    "coverageDays": "{{days}} days covered"
+    "launchDay": "Day {{day}}"
   },
   "gitlab": {
     "heading": "GitLab",

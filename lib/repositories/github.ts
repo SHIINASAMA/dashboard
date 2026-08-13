@@ -2,7 +2,7 @@
 import { eq, and, desc, sql, inArray, gte, type SQL } from "drizzle-orm";
 import { getDb } from "../db/connection";
 import { latestSnapshotRows } from "../utils/latest-snapshot";
-import { computeDownloadGrowth, type DownloadSnapshot } from "../utils/download-growth";
+import { computeReleaseDownloadTimeline, type DownloadSnapshot } from "../utils/download-growth";
 import { isMockMode } from "../config";
 import * as mock from "../mock";
 import {
@@ -256,8 +256,8 @@ export async function upsertGithubReleaseAssetSnapshot(t: { account_id: number; 
   });
 }
 
-export async function getGithubReleaseDownloadGrowth(accountId: number, repoId: number, days = 30) {
-  if (isMockMode()) return mock.githubReleaseDownloadGrowth(days);
+export async function getGithubReleaseDownloadTimeline(accountId: number, repoId: number, days = 30) {
+  if (isMockMode()) return mock.githubReleaseDownloadTimeline(days);
   const releases = await latestGithubReleases(accountId, repoId);
   if (releases.length === 0) return [];
 
@@ -265,21 +265,11 @@ export async function getGithubReleaseDownloadGrowth(accountId: number, repoId: 
   const snapshots = await getDb().select().from(github_release_asset_snapshots)
     .where(inArray(github_release_asset_snapshots.release_id, releaseIds));
 
-  const publishedAtByRelease = new Map(
-    releases
-      .filter((release) => release.published_at)
-      .map((release) => [release.id, release.published_at!]),
-  );
-  const growth = computeDownloadGrowth(
-    snapshots as DownloadSnapshot[],
-    days,
-    publishedAtByRelease,
-  );
-  const growthByRelease = new Map<number, typeof growth>();
-  for (const g of growth) {
-    const list = growthByRelease.get(g.release_id);
-    if (list) list.push(g);
-    else growthByRelease.set(g.release_id, [g]);
+  const snapshotsByRelease = new Map<number, DownloadSnapshot[]>();
+  for (const snapshot of snapshots as DownloadSnapshot[]) {
+    const list = snapshotsByRelease.get(snapshot.release_id);
+    if (list) list.push(snapshot);
+    else snapshotsByRelease.set(snapshot.release_id, [snapshot]);
   }
 
   return releases.map((r) => ({
@@ -287,6 +277,8 @@ export async function getGithubReleaseDownloadGrowth(accountId: number, repoId: 
     tag_name: r.tag_name,
     name: r.name,
     published_at: r.published_at,
-    assets: growthByRelease.get(r.id) || [],
+    points: r.published_at
+      ? computeReleaseDownloadTimeline(snapshotsByRelease.get(r.id) ?? [], r.published_at, days)
+      : [],
   }));
 }

@@ -1,6 +1,6 @@
 import { json } from "@/lib/api-server";
 import type { LoaderFunctionArgs } from "react-router";
-import { getGithubReleaseDownloadGrowth } from "@/lib/repositories/github";
+import { getGithubReleaseDownloadTimeline } from "@/lib/repositories/github";
 
 const ALLOWED_DAYS = new Set([7, 14, 30]);
 
@@ -14,7 +14,7 @@ async function GET(req: Request, params: Record<string, string>) {
   const { accountId, repoId } = params;
   const url = new URL(req.url);
   const days = parseDays(url.searchParams.get("days"));
-  const data = await getGithubReleaseDownloadGrowth(Number(accountId), Number(repoId), days);
+  const data = await getGithubReleaseDownloadTimeline(Number(accountId), Number(repoId), days);
   return json(data);
 }
 

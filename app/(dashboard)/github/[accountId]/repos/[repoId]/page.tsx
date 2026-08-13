@@ -15,6 +15,7 @@ import {
 import { ArrowLeft, Star, GitFork, Download, ExternalLink, Globe, TrendingUp, Eye, Activity, FileText } from "lucide-react";
 import { useIsMobile } from "@/lib/client/useIsMobile";
 import { calcYAxisWidth } from "@/lib/client/utils";
+import { sumSelectedAssetDownloads } from "@/lib/utils/download-growth";
 
 const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899", "#10b981", "#6366f1"];
 
@@ -141,11 +142,6 @@ const GROWTH_TIME_OPTIONS = [
   { value: 30, labelKey: "timeRange.30d" },
 ];
 
-function formatRate(v: number): string {
-  if (!Number.isFinite(v)) return "";
-  return v >= 100 ? Math.round(v).toLocaleString() : v.toFixed(1);
-}
-
 function ReleaseChartControls({ releases, topAssets, hiddenAssets, hiddenReleases, onToggleAsset, onToggleRelease, onSelectAllAssets, onHideAllAssets, onSelectAllReleases, onShowLatestReleases, onDeselectAllReleases, isMobile }: {
   releases: GithubRelease[];
   topAssets: string[];
@@ -256,10 +252,8 @@ function ReleaseDownloadsChart({ releases, topAssets, visibleAssets, visibleRele
   );
 }
 
-function ReleaseGrowthChart({ releases, topAssets, visibleAssets, growthData, isPending, isMobile }: {
-  releases: GithubRelease[];
-  topAssets: string[];
-  visibleAssets: string[];
+function ReleaseGrowthChart({ visibleReleases, growthData, isPending, isMobile }: {
+  visibleReleases: GithubRelease[];
   growthData: HistoryPoint[];
   isPending: boolean;
   isMobile: boolean;
@@ -270,45 +264,61 @@ function ReleaseGrowthChart({ releases, topAssets, visibleAssets, growthData, is
     return <p className="text-xs text-[var(--muted-foreground)] text-center py-4">{t("common.loading")}</p>;
   }
 
-  const hasGrowth = growthData.some((row) => visibleAssets.some((name) => row[name] != null));
+  const releaseKey = (releaseId: number) => `release:${releaseId}`;
+  const hasGrowth = growthData.some((row) =>
+    visibleReleases.some((release) => row[releaseKey(release.id)] != null),
+  );
   if (!hasGrowth) {
     return <p className="text-xs text-[var(--muted-foreground)] text-center py-4">{t("repoDetail.noGrowthData")}</p>;
   }
 
-  const chartHeight = Math.max(isMobile ? 140 : 200, growthData.length * (isMobile ? 36 : 50));
-
   return (
     <div role="img" aria-label={t("repoDetail.downloadGrowthRate")}>
-      <ResponsiveContainer width="100%" height={chartHeight}>
+      <div className="mb-3 flex flex-wrap gap-x-4 gap-y-2">
+        {visibleReleases.map((release) => (
+          <div key={release.id} className="flex items-center gap-1.5 text-xs">
+            <span
+              className="h-2.5 w-2.5 rounded-full"
+              style={{ background: COLORS[release.id % COLORS.length] }}
+            />
+            <span>{release.tag_name || `#${release.release_id}`}</span>
+          </div>
+        ))}
+      </div>
+      <ResponsiveContainer width="100%" height={isMobile ? 200 : 280}>
         <LineChart data={growthData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-          <XAxis dataKey="tag_name" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v: string) => v.length > (isMobile ? 6 : 15) ? v.slice(0, isMobile ? 6 : 15) + "..." : v} />
-          <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} width={calcYAxisWidth(growthData, ...visibleAssets)} tickFormatter={(v: number) => formatRate(v)} />
+          <XAxis
+            dataKey="day"
+            tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+            interval={isMobile ? "preserveStartEnd" : 0}
+            tickFormatter={(day: number) => t("repoDetail.launchDay", { day })}
+          />
+          <YAxis
+            tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+            width={calcYAxisWidth(growthData, ...visibleReleases.map((release) => releaseKey(release.id)))}
+            tickFormatter={(value: number) => value.toLocaleString()}
+          />
           <Tooltip
             contentStyle={CHART_TOOLTIP_CONTENT_STYLE}
             itemStyle={CHART_TOOLTIP_ITEM_STYLE}
             wrapperStyle={CHART_TOOLTIP_WRAPPER_STYLE}
-            formatter={(value, name, item) => {
-              const shown = value == null || value === "" ? "—" : `${formatRate(Number(value))} ${t("repoDetail.downloadsPerDay")}`;
-              const days = Number((item.payload as HistoryPoint | undefined)?.[`__days:${String(name)}`]);
-              const coverage = Number.isFinite(days)
-                ? ` · ${t("repoDetail.coverageDays", { days: formatRate(days) })}`
-                : "";
-              return [`${shown}${coverage}`, String(name)];
-            }}
-            labelFormatter={(label) => {
-              const rel = releases.find((r) => r.tag_name === label);
-              return rel ? `${rel.name || rel.tag_name} — ${rel.published_at ? formatDate(rel.published_at) : ""}` : label;
-            }}
+            formatter={(value, name) => [
+              Number(value).toLocaleString(),
+              String(name),
+            ]}
+            labelFormatter={(day) => t("repoDetail.launchDay", { day })}
           />
-          {visibleAssets.map((name) => (
+          {visibleReleases.map((release) => (
             <Line
-              key={name}
+              key={release.id}
               type="monotone"
-              dataKey={name}
-              stroke={COLORS[topAssets.indexOf(name) % COLORS.length]}
+              dataKey={releaseKey(release.id)}
+              name={release.tag_name || `#${release.release_id}`}
+              stroke={COLORS[release.id % COLORS.length]}
               strokeWidth={2}
               dot={{ r: 3 }}
+              connectNulls
             />
           ))}
         </LineChart>
@@ -384,9 +394,9 @@ export default function RepoDetail() {
     enabled: !!aid && !!rid,
   });
 
-  const { data: growth, isPending: growthPending } = useQuery({
+  const { data: downloadTimeline, isPending: growthPending } = useQuery({
     queryKey: ["github", "release-growth", aid, rid, growthDays],
-    queryFn: () => api.getGithubReleaseDownloadGrowth(aid, rid, growthDays),
+    queryFn: () => api.getGithubReleaseDownloadTimeline(aid, rid, growthDays),
     enabled: !!aid && !!rid,
   });
 
@@ -405,28 +415,22 @@ export default function RepoDetail() {
   const visibleAssets = topAssets.filter((name) => !hiddenAssets.has(name));
   const visibleReleases = (releases ?? []).filter((r) => !effectiveHiddenReleases.has(r.id));
 
-  const growthByReleaseId = useMemo(() => {
-    const map = new Map<number, Map<string, { rate: number; days: number }>>();
-    for (const g of growth ?? []) {
-      const rates = new Map<string, { rate: number; days: number }>();
-      for (const a of g.assets) rates.set(a.asset_name, { rate: a.rate, days: a.days });
-      map.set(g.release_id, rates);
-    }
-    return map;
-  }, [growth]);
-
   const growthData = useMemo(() => {
-    return visibleReleases.map((rel) => {
-      const row: Record<string, string | number | null> = { tag_name: rel.tag_name || "" };
-      const rates = growthByReleaseId.get(rel.id);
-      for (const name of visibleAssets) {
-        const growth = rates?.get(name);
-        row[name] = growth?.rate ?? null;
-        row[`__days:${name}`] = growth?.days ?? null;
+    const timelineByRelease = new Map(
+      (downloadTimeline ?? []).map((release) => [release.release_id, release.points]),
+    );
+    return Array.from({ length: growthDays }, (_, index) => {
+      const day = index + 1;
+      const row: HistoryPoint = { day };
+      for (const release of visibleReleases) {
+        const point = timelineByRelease.get(release.id)?.find((item) => item.day === day);
+        row[`release:${release.id}`] = point
+          ? sumSelectedAssetDownloads(point, visibleAssets)
+          : null;
       }
       return row;
     });
-  }, [visibleReleases, visibleAssets, growthByReleaseId]);
+  }, [downloadTimeline, growthDays, visibleAssets, visibleReleases]);
 
   const toggleAsset = (name: string) => {
     setHiddenAssets((prev) => {
@@ -756,13 +760,14 @@ export default function RepoDetail() {
                   />
                   <div className="mt-6 border-t border-[var(--border)] pt-4">
                     <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-sm font-medium">{t("repoDetail.downloadGrowthRate")}</p>
+                      <div>
+                        <p className="text-sm font-medium">{t("repoDetail.downloadGrowthRate")}</p>
+                        <p className="text-xs text-[var(--muted-foreground)]">{t("repoDetail.downloadTimelineDesc")}</p>
+                      </div>
                       <TimeRangeSelector value={growthDays} onChange={setGrowthDays} options={GROWTH_TIME_OPTIONS} />
                     </div>
                     <ReleaseGrowthChart
-                      releases={releases}
-                      topAssets={topAssets}
-                      visibleAssets={visibleAssets}
+                      visibleReleases={visibleReleases}
                       growthData={growthData}
                       isPending={growthPending}
                       isMobile={isMobile}

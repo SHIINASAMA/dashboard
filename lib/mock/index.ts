@@ -155,24 +155,28 @@ export const githubReleases = range(3).map((i) => {
 });
 export const githubReleaseAssets = githubReleases[0].assets;
 
-export const githubReleaseDownloadGrowth = (days: number) => githubReleases.map((rel) => ({
+export const githubReleaseDownloadTimeline = (days: number) => githubReleases.map((rel) => ({
   release_id: rel.id,
   tag_name: rel.tag_name,
   name: rel.name,
   published_at: rel.published_at,
-  assets: rel.assets.map((a) => {
-    const ageDays = Math.max(1, (Date.now() - Date.parse(rel.published_at)) / 86_400_000);
-    const coverageDays = Math.min(days, ageDays);
-    const launchDownloads = Math.round((a.download_count / ageDays) * coverageDays);
-    return {
-      release_id: rel.id,
-      asset_name: a.name,
-      latest_count: launchDownloads,
-      previous_count: 0,
-      days: coverageDays,
-      rate: launchDownloads === 0 ? 0 : Math.round((launchDownloads / coverageDays) * 10) / 10,
-    };
-  }),
+  points: range(Math.min(days, Math.max(1, Math.floor((Date.now() - Date.parse(rel.published_at)) / 86_400_000))))
+    .map((index) => {
+      const day = index + 1;
+      const ageDays = Math.max(1, (Date.now() - Date.parse(rel.published_at)) / 86_400_000);
+      const assetDownloads = Object.fromEntries(
+        rel.assets.map((asset) => [
+          asset.name,
+          Math.round((asset.download_count / ageDays) * day),
+        ]),
+      );
+      return {
+        day,
+        download_count: Object.values(assetDownloads).reduce((total, count) => total + count, 0),
+        asset_downloads: assetDownloads,
+        snapshot_date: new Date(Date.parse(rel.published_at) + index * 86_400_000).toISOString(),
+      };
+    }),
 }));
 
 // ── GitLab ────────────────────────────────────────────────────────
