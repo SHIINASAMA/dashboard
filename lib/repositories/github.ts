@@ -2,7 +2,7 @@
 import { eq, and, desc, sql, inArray, gte, type SQL } from "drizzle-orm";
 import { getDb } from "../db/connection";
 import { latestSnapshotRows } from "../utils/latest-snapshot";
-import { computeDownloadGrowth, addDaysIso, type DownloadSnapshot } from "../utils/download-growth";
+import { computeDownloadGrowth, type DownloadSnapshot } from "../utils/download-growth";
 import { isMockMode } from "../config";
 import * as mock from "../mock";
 import {
@@ -262,14 +262,8 @@ export async function getGithubReleaseDownloadGrowth(accountId: number, repoId: 
   if (releases.length === 0) return [];
 
   const releaseIds = releases.map((r) => r.id);
-  // Only snapshots at/after (today - window - buffer) can contribute to a
-  // baseline, so bound the query and keep it from growing without limit.
-  const since = addDaysIso(new Date().toISOString().slice(0, 10), -(days + 7));
   const snapshots = await getDb().select().from(github_release_asset_snapshots)
-    .where(and(
-      inArray(github_release_asset_snapshots.release_id, releaseIds),
-      gte(github_release_asset_snapshots.snapshot_date, since),
-    ));
+    .where(inArray(github_release_asset_snapshots.release_id, releaseIds));
 
   const growth = computeDownloadGrowth(snapshots as DownloadSnapshot[], days);
   const growthByRelease = new Map<number, typeof growth>();

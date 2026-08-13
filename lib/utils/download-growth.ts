@@ -11,7 +11,7 @@ export interface DownloadSnapshot {
   release_id: number;
   asset_name: string;
   download_count: number;
-  snapshot_date: string; // YYYY-MM-DD
+  snapshot_date: string; // ISO timestamp; legacy rows may be YYYY-MM-DD
 }
 
 export interface AssetGrowth {
@@ -24,7 +24,11 @@ export interface AssetGrowth {
 }
 
 function parseDate(date: string): number {
-  return Date.parse(`${date}T00:00:00Z`);
+  return Date.parse(date.length === 10 ? `${date}T00:00:00Z` : date);
+}
+
+export function toDownloadSnapshotTimestamp(date = new Date()): string {
+  return date.toISOString();
 }
 
 export function addDaysIso(date: string, days: number): string {
@@ -35,7 +39,7 @@ export function addDaysIso(date: string, days: number): string {
 
 function diffDays(a: string, b: string): number {
   const ms = Math.abs(parseDate(a) - parseDate(b));
-  return Math.max(1, Math.round(ms / 86_400_000));
+  return ms === 0 ? 1 : ms / 86_400_000;
 }
 
 export function computeDownloadGrowth(
@@ -52,18 +56,18 @@ export function computeDownloadGrowth(
 
   const result: AssetGrowth[] = [];
   for (const list of byKey.values()) {
-    list.sort((a, b) => a.snapshot_date.localeCompare(b.snapshot_date));
+    list.sort((a, b) => parseDate(a.snapshot_date) - parseDate(b.snapshot_date));
     if (list.length < 2) continue;
 
     const latest = list[list.length - 1];
-    const cutoff = addDaysIso(latest.snapshot_date, -windowDays);
+    const cutoff = parseDate(latest.snapshot_date) - windowDays * 86_400_000;
 
     // Baseline: the snapshot closest to the cutoff from below (latest date
     // <= cutoff). If all snapshots are younger than the window, fall back to
     // the earliest snapshot so the rate still covers the available history.
     let baseline = list[0];
     for (const s of list) {
-      if (s.snapshot_date <= cutoff) baseline = s;
+      if (parseDate(s.snapshot_date) <= cutoff) baseline = s;
       else break;
     }
 

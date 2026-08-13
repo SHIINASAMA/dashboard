@@ -13,6 +13,7 @@ import { eq, and } from "drizzle-orm";
 import { github_releases, github_release_assets } from "@/db/schema";
 import { getLogger } from "../logger";
 import { fetchWithConfig, withNetworkRetry } from "../http";
+import { toDownloadSnapshotTimestamp } from "../utils/download-growth";
 
 
 const GITHUB_API = "https://api.github.com";
@@ -296,7 +297,7 @@ async function fetchRepoReleases(accountId: number, repoId: number, fullName: st
         await getDb().delete(github_release_assets)
           .where(eq(github_release_assets.release_id, releaseRow.id));
 
-        const snapshotDate = new Date().toISOString().slice(0, 10);
+        const snapshotDate = toDownloadSnapshotTimestamp();
         for (const asset of (release.assets as Array<Record<string, unknown>>) || []) {
           const downloadCount = (asset.download_count as number) || 0;
           await insertGithubReleaseAsset({

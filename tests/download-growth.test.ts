@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { computeDownloadGrowth, type DownloadSnapshot } from "../lib/utils/download-growth";
+import {
+  computeDownloadGrowth,
+  toDownloadSnapshotTimestamp,
+  type DownloadSnapshot,
+} from "../lib/utils/download-growth";
 
 const snap = (release_id: number, asset_name: string, snapshot_date: string, download_count: number): DownloadSnapshot => ({
   release_id,
@@ -41,6 +45,32 @@ describe("computeDownloadGrowth", () => {
     const [g] = computeDownloadGrowth(snaps, 30);
     expect(g.days).toBe(8);
     expect(g.rate).toBeCloseTo(15);
+  });
+
+  it("keeps enough timestamp precision to distinguish fetches on the same UTC day", () => {
+    expect(toDownloadSnapshotTimestamp(new Date("2026-08-13T01:00:00.000Z")))
+      .not.toBe(toDownloadSnapshotTimestamp(new Date("2026-08-13T02:00:00.000Z")));
+  });
+
+  it("computes growth from two snapshots on the same UTC day", () => {
+    const snaps = [
+      snap(1, "app-mac.zip", "2026-08-13T01:00:00.000Z", 200),
+      snap(1, "app-mac.zip", "2026-08-13T13:00:00.000Z", 260),
+    ];
+    const [g] = computeDownloadGrowth(snaps, 30);
+    expect(g.days).toBeCloseTo(0.5);
+    expect(g.rate).toBeCloseTo(120);
+  });
+
+  it("uses a sparse baseline older than the requested window", () => {
+    const snaps = [
+      snap(1, "app-linux.zip", "2026-07-01T00:00:00.000Z", 100),
+      snap(1, "app-linux.zip", "2026-08-13T00:00:00.000Z", 160),
+    ];
+    const [g] = computeDownloadGrowth(snaps, 30);
+    expect(g.previous_count).toBe(100);
+    expect(g.days).toBe(43);
+    expect(g.rate).toBeCloseTo(60 / 43);
   });
 
   it("clamps negative deltas (asset re-upload / count reset) to zero", () => {
