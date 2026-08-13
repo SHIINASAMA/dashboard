@@ -252,9 +252,10 @@ function ReleaseDownloadsChart({ releases, topAssets, visibleAssets, visibleRele
   );
 }
 
-function ReleaseGrowthChart({ visibleReleases, growthData, isPending, isMobile }: {
+function ReleaseGrowthChart({ visibleReleases, growthData, growthDays, isPending, isMobile }: {
   visibleReleases: GithubRelease[];
   growthData: HistoryPoint[];
+  growthDays: number;
   isPending: boolean;
   isMobile: boolean;
 }) {
@@ -290,9 +291,11 @@ function ReleaseGrowthChart({ visibleReleases, growthData, isPending, isMobile }
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <XAxis
             dataKey="day"
+            type="number"
+            domain={[1, growthDays]}
+            ticks={Array.from({ length: growthDays }, (_, index) => index + 1)}
             tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
             interval={isMobile ? "preserveStartEnd" : 0}
-            tickFormatter={(day: number) => t("repoDetail.launchDay", { day })}
           />
           <YAxis
             tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
@@ -307,7 +310,7 @@ function ReleaseGrowthChart({ visibleReleases, growthData, isPending, isMobile }
               Number(value).toLocaleString(),
               String(name),
             ]}
-            labelFormatter={(day) => t("repoDetail.launchDay", { day })}
+            labelFormatter={(day) => String(day)}
           />
           {visibleReleases.map((release) => (
             <Line
@@ -769,6 +772,7 @@ export default function RepoDetail() {
                     <ReleaseGrowthChart
                       visibleReleases={visibleReleases}
                       growthData={growthData}
+                      growthDays={growthDays}
                       isPending={growthPending}
                       isMobile={isMobile}
                     />

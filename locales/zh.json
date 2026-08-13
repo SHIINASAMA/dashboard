@@ -289,8 +289,7 @@
     "size": "大小",
     "downloadGrowthRate": "发布后累计下载趋势",
     "downloadTimelineDesc": "每条线代表一个版本，并汇总当前所选文件的累计下载量。",
-    "noGrowthData": "暂无首发期数据。该版本可能尚未抓取，或首次抓取时已超过所选首发窗口。",
-    "launchDay": "第 {{day}} 天"
+    "noGrowthData": "暂无首发期数据。该版本可能尚未抓取，或首次抓取时已超过所选首发窗口。"
   },
   "gitlab": {
     "heading": "GitLab",

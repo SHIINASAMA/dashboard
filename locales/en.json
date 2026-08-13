@@ -289,8 +289,7 @@
     "size": "Size",
     "downloadGrowthRate": "Cumulative Downloads After Release",
     "downloadTimelineDesc": "Each line represents one release and sums cumulative downloads across the currently selected assets.",
-    "noGrowthData": "No launch-period data. The release may not have been fetched yet, or its first fetch was after the selected launch window.",
-    "launchDay": "Day {{day}}"
+    "noGrowthData": "No launch-period data. The release may not have been fetched yet, or its first fetch was after the selected launch window."
   },
   "gitlab": {
     "heading": "GitLab",
