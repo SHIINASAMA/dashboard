@@ -265,7 +265,16 @@ export async function getGithubReleaseDownloadGrowth(accountId: number, repoId: 
   const snapshots = await getDb().select().from(github_release_asset_snapshots)
     .where(inArray(github_release_asset_snapshots.release_id, releaseIds));
 
-  const growth = computeDownloadGrowth(snapshots as DownloadSnapshot[], days);
+  const publishedAtByRelease = new Map(
+    releases
+      .filter((release) => release.published_at)
+      .map((release) => [release.id, release.published_at!]),
+  );
+  const growth = computeDownloadGrowth(
+    snapshots as DownloadSnapshot[],
+    days,
+    publishedAtByRelease,
+  );
   const growthByRelease = new Map<number, typeof growth>();
   for (const g of growth) {
     const list = growthByRelease.get(g.release_id);

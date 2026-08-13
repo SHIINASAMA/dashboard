@@ -73,6 +73,59 @@ describe("computeDownloadGrowth", () => {
     expect(g.rate).toBeCloseTo(60 / 43);
   });
 
+  it("shows partial launch-window data from a single snapshot", () => {
+    const snaps = [
+      snap(1, "app-linux.zip", "2026-08-14T00:00:00.000Z", 120),
+    ];
+    const releases = new Map([[1, "2026-08-13T00:00:00.000Z"]]);
+    const [g] = computeDownloadGrowth(snaps, 7, releases);
+    expect(g.previous_count).toBe(0);
+    expect(g.latest_count).toBe(120);
+    expect(g.days).toBe(1);
+    expect(g.rate).toBe(120);
+  });
+
+  it("uses the actual sub-day coverage after publication", () => {
+    const snaps = [
+      snap(1, "app-linux.zip", "2026-08-13T12:00:00.000Z", 120),
+    ];
+    const releases = new Map([[1, "2026-08-13T00:00:00.000Z"]]);
+    const [g] = computeDownloadGrowth(snaps, 7, releases);
+    expect(g.days).toBe(0.5);
+    expect(g.rate).toBe(240);
+  });
+
+  it("shows a zero-download snapshot as data", () => {
+    const snaps = [
+      snap(1, "app-linux.zip", "2026-08-14T00:00:00.000Z", 0),
+    ];
+    const releases = new Map([[1, "2026-08-13T00:00:00.000Z"]]);
+    expect(computeDownloadGrowth(snaps, 7, releases)).toEqual([
+      expect.objectContaining({ latest_count: 0, days: 1, rate: 0 }),
+    ]);
+  });
+
+  it("anchors the selected period to release publication instead of today", () => {
+    const snaps = [
+      snap(1, "app-linux.zip", "2026-08-14T00:00:00.000Z", 120),
+      snap(1, "app-linux.zip", "2026-08-19T00:00:00.000Z", 420),
+      snap(1, "app-linux.zip", "2026-08-23T00:00:00.000Z", 900),
+    ];
+    const releases = new Map([[1, "2026-08-13T00:00:00.000Z"]]);
+    const [g] = computeDownloadGrowth(snaps, 7, releases);
+    expect(g.latest_count).toBe(420);
+    expect(g.days).toBe(6);
+    expect(g.rate).toBe(70);
+  });
+
+  it("does not treat a post-window first snapshot as launch-window data", () => {
+    const snaps = [
+      snap(1, "app-linux.zip", "2026-08-23T00:00:00.000Z", 900),
+    ];
+    const releases = new Map([[1, "2026-08-13T00:00:00.000Z"]]);
+    expect(computeDownloadGrowth(snaps, 7, releases)).toEqual([]);
+  });
+
   it("clamps negative deltas (asset re-upload / count reset) to zero", () => {
     const snaps = [
       snap(1, "app-win.exe", "2026-08-01", 500),

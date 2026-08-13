@@ -288,9 +288,13 @@ function ReleaseGrowthChart({ releases, topAssets, visibleAssets, growthData, is
             contentStyle={CHART_TOOLTIP_CONTENT_STYLE}
             itemStyle={CHART_TOOLTIP_ITEM_STYLE}
             wrapperStyle={CHART_TOOLTIP_WRAPPER_STYLE}
-            formatter={(value, name) => {
+            formatter={(value, name, item) => {
               const shown = value == null || value === "" ? "—" : `${formatRate(Number(value))} ${t("repoDetail.downloadsPerDay")}`;
-              return [shown, String(name)];
+              const days = Number((item.payload as HistoryPoint | undefined)?.[`__days:${String(name)}`]);
+              const coverage = Number.isFinite(days)
+                ? ` · ${t("repoDetail.coverageDays", { days: formatRate(days) })}`
+                : "";
+              return [`${shown}${coverage}`, String(name)];
             }}
             labelFormatter={(label) => {
               const rel = releases.find((r) => r.tag_name === label);
@@ -304,7 +308,7 @@ function ReleaseGrowthChart({ releases, topAssets, visibleAssets, growthData, is
               dataKey={name}
               stroke={COLORS[topAssets.indexOf(name) % COLORS.length]}
               strokeWidth={2}
-              dot={false}
+              dot={{ r: 3 }}
             />
           ))}
         </LineChart>
@@ -402,10 +406,10 @@ export default function RepoDetail() {
   const visibleReleases = (releases ?? []).filter((r) => !effectiveHiddenReleases.has(r.id));
 
   const growthByReleaseId = useMemo(() => {
-    const map = new Map<number, Map<string, number>>();
+    const map = new Map<number, Map<string, { rate: number; days: number }>>();
     for (const g of growth ?? []) {
-      const rates = new Map<string, number>();
-      for (const a of g.assets) rates.set(a.asset_name, a.rate);
+      const rates = new Map<string, { rate: number; days: number }>();
+      for (const a of g.assets) rates.set(a.asset_name, { rate: a.rate, days: a.days });
       map.set(g.release_id, rates);
     }
     return map;
@@ -416,7 +420,9 @@ export default function RepoDetail() {
       const row: Record<string, string | number | null> = { tag_name: rel.tag_name || "" };
       const rates = growthByReleaseId.get(rel.id);
       for (const name of visibleAssets) {
-        row[name] = rates?.get(name) ?? null;
+        const growth = rates?.get(name);
+        row[name] = growth?.rate ?? null;
+        row[`__days:${name}`] = growth?.days ?? null;
       }
       return row;
     });

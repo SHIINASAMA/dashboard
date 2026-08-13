@@ -287,9 +287,10 @@
     "noResults": "无结果",
     "assetName": "文件",
     "size": "大小",
-    "downloadGrowthRate": "下载增长速率",
-    "noGrowthData": "暂无增长数据。每次抓取会累积数据，每个文件至少需要两次抓取。",
-    "downloadsPerDay": "次/天"
+    "downloadGrowthRate": "发布后下载速率",
+    "noGrowthData": "暂无首发期数据。该版本可能尚未抓取，或首次抓取时已超过所选首发窗口。",
+    "downloadsPerDay": "次/天",
+    "coverageDays": "覆盖 {{days}} 天"
   },
   "gitlab": {
     "heading": "GitLab",

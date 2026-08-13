@@ -1,10 +1,10 @@
 /**
- * Pure helpers for computing per-asset download growth rates from
- * cumulative download-count snapshots (GitHub release assets).
+ * Pure helpers for computing per-asset download rates from cumulative
+ * GitHub release-asset snapshots.
  *
- * GitHub's API only exposes cumulative per-asset download counts, so
- * "growth" is measured as the delta between two snapshots divided by the
- * calendar days between them (absolute downloads/day), clamped at 0.
+ * When release timestamps are available, rates cover the selected launch
+ * window and use zero downloads at publication as the baseline. Legacy
+ * callers without release timestamps fall back to deltas between snapshots.
  */
 
 export interface DownloadSnapshot {
@@ -45,6 +45,7 @@ function diffDays(a: string, b: string): number {
 export function computeDownloadGrowth(
   snapshots: DownloadSnapshot[],
   windowDays: number,
+  releasePublishedAt?: ReadonlyMap<number, string>,
 ): AssetGrowth[] {
   const byKey = new Map<string, DownloadSnapshot[]>();
   for (const s of snapshots) {
@@ -57,6 +58,31 @@ export function computeDownloadGrowth(
   const result: AssetGrowth[] = [];
   for (const list of byKey.values()) {
     list.sort((a, b) => parseDate(a.snapshot_date) - parseDate(b.snapshot_date));
+
+    const publishedAt = releasePublishedAt?.get(list[0].release_id);
+    const publishedAtMs = publishedAt ? parseDate(publishedAt) : Number.NaN;
+    if (Number.isFinite(publishedAtMs)) {
+      const windowEnd = publishedAtMs + windowDays * 86_400_000;
+      const launchSnapshots = list.filter((snapshot) => {
+        const timestamp = parseDate(snapshot.snapshot_date);
+        return timestamp >= publishedAtMs && timestamp <= windowEnd;
+      });
+      if (launchSnapshots.length === 0) continue;
+
+      const latest = launchSnapshots[launchSnapshots.length - 1];
+      const elapsedDays = (parseDate(latest.snapshot_date) - publishedAtMs) / 86_400_000;
+      const days = elapsedDays === 0 ? 1 : elapsedDays;
+      result.push({
+        release_id: latest.release_id,
+        asset_name: latest.asset_name,
+        latest_count: latest.download_count,
+        previous_count: 0,
+        days,
+        rate: latest.download_count <= 0 ? 0 : latest.download_count / days,
+      });
+      continue;
+    }
+
     if (list.length < 2) continue;
 
     const latest = list[list.length - 1];

@@ -160,17 +160,17 @@ export const githubReleaseDownloadGrowth = (days: number) => githubReleases.map(
   tag_name: rel.tag_name,
   name: rel.name,
   published_at: rel.published_at,
-  assets: rel.assets.map((a, j) => {
-    const latest = a.download_count;
-    const previous = Math.max(0, latest - 120 - j * 30);
-    const delta = latest - previous;
+  assets: rel.assets.map((a) => {
+    const ageDays = Math.max(1, (Date.now() - Date.parse(rel.published_at)) / 86_400_000);
+    const coverageDays = Math.min(days, ageDays);
+    const launchDownloads = Math.round((a.download_count / ageDays) * coverageDays);
     return {
       release_id: rel.id,
       asset_name: a.name,
-      latest_count: latest,
-      previous_count: previous,
-      days,
-      rate: delta === 0 ? 0 : Math.round((delta / days) * 10) / 10,
+      latest_count: launchDownloads,
+      previous_count: 0,
+      days: coverageDays,
+      rate: launchDownloads === 0 ? 0 : Math.round((launchDownloads / coverageDays) * 10) / 10,
     };
   }),
 }));

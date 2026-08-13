@@ -287,9 +287,10 @@
     "noResults": "No results",
     "assetName": "File",
     "size": "Size",
-    "downloadGrowthRate": "Download Growth Rate",
-    "noGrowthData": "No growth data yet. Data accumulates with each fetch. At least two fetches are needed per file.",
-    "downloadsPerDay": "downloads/day"
+    "downloadGrowthRate": "Post-release Download Rate",
+    "noGrowthData": "No launch-period data. The release may not have been fetched yet, or its first fetch was after the selected launch window.",
+    "downloadsPerDay": "downloads/day",
+    "coverageDays": "{{days}} days covered"
   },
   "gitlab": {
     "heading": "GitLab",
