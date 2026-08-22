@@ -1,4 +1,5 @@
 stages:
+  - test
   - build
   - deploy
 
@@ -30,9 +31,22 @@ build:
   stage: build
   image: reg.mikumikumi.xyz/base/kaniko-builder:latest
   <<: *build_template
+  needs: [test]
   script:
+    - export BUILD_DOCKERFILE=Dockerfile.ci
     - export BUILD_DESTINATION="reg.mikumikumi.xyz/kaoru/dashboard:${CI_COMMIT_SHORT_SHA}"
     - build
+
+test:
+  stage: test
+  image: reg.mikumikumi.xyz/mirror/node:20
+  <<: *build_template
+  before_script:
+    - corepack enable
+    - pnpm install --frozen-lockfile
+  script:
+    - pnpm run lint
+    - pnpm run typecheck
 
 deploy:
   stage: deploy
