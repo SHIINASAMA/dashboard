@@ -8,7 +8,9 @@ overrides:
   electron-to-chromium: 1.5.394
 
 patchedDependencies:
-  '@react-router/dev@7.18.2': 7a5ec902472d42eee135f93cdd74ecc9a279dd3505f4235a7840f3371081ccd3
+  '@react-router/dev@7.18.2':
+    hash: 7a5ec902472d42eee135f93cdd74ecc9a279dd3505f4235a7840f3371081ccd3
+    path: patches/@react-router__dev@7.18.2.patch
 
 importers:
 

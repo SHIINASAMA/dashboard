@@ -42,7 +42,7 @@ test:
   image: reg.mikumikumi.xyz/mirror/node:20
   <<: *build_template
   before_script:
-    - corepack enable
+    - npm install -g pnpm@10
     - pnpm install --frozen-lockfile
   script:
     - pnpm run lint
