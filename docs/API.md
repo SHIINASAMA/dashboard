@@ -57,6 +57,14 @@ Public API paths: `POST /auth/login`, `GET /auth/me`, `GET /reddit/callback`, `G
 |--------|------|-------------|
 | POST | `/fetch/:id` | Trigger an immediate fetch for a specific account |
 
+## Business Pulse
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/pulse?days=7\|30\|90` | Cross-platform summary for the selected window (maximum 365 days) |
+
+The response contains the time range, aggregate activity and repository-traction deltas, per-platform follower/karma summaries, top tweets and Reddit content, and repositories/projects with the largest star movement. Audience deltas are calculated only when both current and previous window samples exist for an account; platform-native audience metrics are not added into a single cross-platform total.
+
 ## X (Twitter)
 
 | Method | Path | Description |

@@ -315,3 +315,12 @@ export interface UserPublic {
   role: string;
   created_at: string;
 }
+
+export type {
+  PulseContentItem,
+  PulseMetricDelta,
+  PulsePlatform,
+  PulsePlatformSummary,
+  PulseRepositoryItem,
+  PulseResponse,
+} from "../lib/pulse";

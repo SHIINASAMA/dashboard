@@ -28,6 +28,7 @@ import type {
   GithubReleaseDownloadTimeline,
   GitlabContribution, GitlabOverview, GitlabProject, GitlabRelease,
   RedditOverview, RedditPost, RedditComment, PaginatedRedditPosts, PaginatedRedditComments,
+  PulseResponse,
   LoginResponse, AuthCheckResponse, UserPublic,
 } from "@/shared/types";
 
@@ -38,6 +39,7 @@ export type {
   GithubReleaseDownloadTimeline,
   GitlabContribution, GitlabOverview, GitlabProject, GitlabRelease,
   RedditOverview, RedditPost, RedditComment, PaginatedRedditPosts, PaginatedRedditComments,
+  PulseResponse,
   LoginResponse, AuthCheckResponse, UserPublic,
 };
 
@@ -70,6 +72,7 @@ export const api = {
   },
   getTopTweets: (metric = "favorite_count", limit = 10) =>
     fetchJSON<Tweet[]>(`/stats/top?metric=${metric}&limit=${limit}`),
+  getPulse: (days = 7) => fetchJSON<PulseResponse>(`/pulse?days=${days}`),
   getCalendar: (year?: number) =>
     fetchJSON<CalendarDay[]>(`/stats/calendar?year=${year || new Date().getFullYear()}`),
 

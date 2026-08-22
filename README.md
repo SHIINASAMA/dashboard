@@ -6,6 +6,7 @@ Multi-platform data dashboard with web UI. Track activity and stats across X (Tw
 
 - **Multi-platform tracking** — X (Twitter), GitHub, GitLab, Reddit in a single dashboard
 - **Rich visualizations** — charts, stat cards, activity timelines, contribution heatmaps
+- **Business Pulse** — cross-platform activity, traction, audience, and content highlights over 7/30/90-day windows
 - **Auto-fetching** — configurable per-account fetch intervals via background scheduler
 - **Multi-user** — admin and regular users with full data isolation
 - **Password auth** — Argon2id hashing, JWT session cookies

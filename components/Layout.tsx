@@ -314,7 +314,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-auto relative z-10 pb-[env(safe-area-inset-bottom)]">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden relative z-10 pb-[env(safe-area-inset-bottom)]">
           <div
             className="max-w-6xl mx-auto transition-all duration-300"
             style={{

@@ -4,6 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { XIcon, GithubIcon, GitlabIcon, RedditIcon } from "@/components/BrandIcons";
 import { StatCardSkeleton, ChartCardSkeleton, Skeleton } from "@/components/Skeleton";
 import { useOverviewData } from "./useOverviewData";
+import { PulseSection } from "./PulseSection";
 import { XSection } from "./XSection";
 import { GitHubSection } from "./GitHubSection";
 import { GitLabSection } from "./GitLabSection";
@@ -74,6 +75,7 @@ export default function Overview() {
         )}
       </div>
 
+      <PulseSection />
       <XSection stats={stats} timeline={timeline} topLiked={topLiked} xAccounts={xAccounts} />
 
       {showSepX_GH && <Separator className="my-6" />}

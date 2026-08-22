@@ -11,6 +11,7 @@
 
 ## Completed
 
+- [x] Cross-platform Business Pulse with activity/traction deltas, per-platform audience changes, and content/project highlights
 - [x] Unified database access (eliminated mixed `bun:sqlite` + Drizzle ORM)
 - [x] Soft-delete for all destructive operations
 - [x] Eliminated SQL injection risks from string-concatenated queries

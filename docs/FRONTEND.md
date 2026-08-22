@@ -26,7 +26,7 @@ app/
 ├── (dashboard)/
 │   ├── layout.tsx      # Dashboard shell: Layout + MockModeBanner
 │   ├── page.tsx        # Redirects / → /overview
-│   ├── overview/       # Overview dashboard (+ per-platform sections)
+│   ├── overview/       # Overview dashboard (Business Pulse + per-platform sections)
 │   ├── accounts/       # Account management
 │   ├── admin/          # User management (admin only)
 │   ├── settings/       # App settings
