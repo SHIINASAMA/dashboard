@@ -239,7 +239,15 @@ const SCHEMA = [
       permalink TEXT NOT NULL, created_utc INTEGER NOT NULL, is_submitter INTEGER DEFAULT 0,
       fetched_at TEXT NOT NULL DEFAULT NOW()
     );
-    CREATE INDEX IF NOT EXISTS idx_reddit_comments_account_id ON reddit_comments(account_id)`,
+      CREATE INDEX IF NOT EXISTS idx_reddit_comments_account_id ON reddit_comments(account_id)`,
+  },
+  {
+    table: "ai_quota",
+    sql: `CREATE TABLE IF NOT EXISTS ai_quota (
+      user_id INTEGER PRIMARY KEY REFERENCES users(id),
+      tokens INTEGER NOT NULL DEFAULT 0,
+      period_date TEXT NOT NULL DEFAULT CURRENT_DATE
+    )`,
   },
 ];
 

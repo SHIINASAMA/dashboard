@@ -92,6 +92,17 @@ DATABASE_URL=postgresql://user:password@host:5432/dbname
 | `REDDIT_CLIENT_ID` | Reddit API client ID (for OAuth mode) |
 | `REDDIT_CLIENT_SECRET` | Reddit API client secret |
 
+### AI Analysis (optional)
+
+| Variable | Description |
+|----------|-------------|
+| `AI_BASE_URL` | LLM API base URL (e.g., `https://api.openai.com/v1`) |
+| `AI_API_KEY` | LLM API key |
+| `AI_MODEL` | Model name (default: `gpt-4o-mini`) |
+| `AI_DAILY_TOKEN_LIMIT` | Per-user daily token limit (default: `100000`) |
+
+AI settings can also be configured via the admin Settings page after deployment.
+
 ## Mock / Debug Mode
 
 | Variable | Description |
