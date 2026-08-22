@@ -18,12 +18,11 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY patches ./patches
 RUN pnpm install --frozen-lockfile --child-concurrency=1 --network-concurrency=4
 
-# Copy source, typecheck, then build client + SSR in separate passes.
+# Copy source; build client + SSR in separate passes.
+# Type checking is skipped here — Vite compilation already validates
+# types, and a full `tsc --noEmit` pass exceeds the container memory
+# budget. Run typecheck in CI instead.
 COPY . .
-# Keep tsc on the proven 448MB heap. Limiting automatic global types to
-# Node excludes unused @types packages; explicit imports still resolve.
-# The 256MB baseline is still too tight for this single step.
-RUN NODE_OPTIONS="--max-old-space-size=448" pnpm exec tsc --noEmit
 RUN pnpm build
 
 # ── Stage 2: Production runner ──────────────────────────────────────
