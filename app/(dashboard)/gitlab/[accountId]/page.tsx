@@ -15,6 +15,7 @@ import { ArrowLeft, ArrowUpRight, Play, RefreshCw, Trash2, AlertCircle, Star, Gi
 import { useIsMobile } from "@/lib/client/useIsMobile";
 import { GitlabIcon } from "@/components/BrandIcons";
 import { StatCardSkeleton, ChartCardSkeleton, Skeleton } from "@/components/Skeleton";
+import { FetchRunHistory } from "@/components/FetchRunHistory";
 
 function ContributionHeatmap({ data, tNamespace }: { data: GitlabContribution[]; tNamespace: string }) {
   const { t } = useTranslation();
@@ -204,6 +205,8 @@ export default function GitLabDetail() {
           <AlertCircle size={14} /> {account.error_message}
         </div>
       )}
+
+      <FetchRunHistory account={account} runs={account.recentFetchRuns} />
 
       {overviewLoading ? (
         <div className="text-center py-12 text-[var(--muted-foreground)]">{t("gitlabDetail.loadingGitLabData")}</div>

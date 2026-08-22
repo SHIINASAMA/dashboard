@@ -28,6 +28,7 @@ export async function closeTestPool() {
 }
 
 const ALL_TABLES = [
+  "fetch_runs",
   "github_release_asset_snapshots", "github_release_assets", "github_releases", "github_paths", "github_referrers",
   "github_traffic_views", "github_traffic_clones", "github_repo_snapshots",
   "github_contributions", "github_repos", "github_stats",

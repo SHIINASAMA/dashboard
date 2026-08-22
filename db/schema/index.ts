@@ -1,5 +1,6 @@
 export { users } from "./users";
 export { accounts } from "./accounts";
+export { fetch_runs } from "./fetch-runs";
 export { user_stats, tweets } from "./twitter";
 export {
   github_stats, github_repos, github_contributions,

@@ -1,17 +1,71 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { resetTestDb, getTestPool, closeTestPool } from "./setup";
+import { closeDb, initPgPool } from "../lib/db/connection";
 import * as usersQ from "../lib/repositories/users";
 import * as accountsQ from "../lib/repositories/accounts";
 import * as twitterQ from "../lib/repositories/twitter";
 import * as redditQ from "../lib/repositories/reddit";
 import * as githubQ from "../lib/repositories/github";
 import * as gitlabQ from "../lib/repositories/gitlab";
+import {
+  finishFetchRun,
+  getFailureStreaks,
+  getRecentRuns,
+  startFetchRun,
+} from "../lib/repositories/fetch-runs";
+import { createUser } from "../lib/services/users";
 
 beforeAll(async () => {
   await resetTestDb();
+  await initPgPool();
+});
+
+describe("fetch run queries", () => {
+  let accountId: number;
+
+  beforeAll(async () => {
+    const user = await usersQ.insertUser({
+      username: `fetch_runs_${Date.now()}`,
+      password_hash: "hash",
+      role: "user",
+    });
+    const pool = getTestPool();
+    const { rows } = await pool.query(
+      `INSERT INTO accounts (owner_id, screen_name, platform, auth_token, fetch_interval)
+       VALUES ($1, 'fetch_runs_user', 'github', 'token', 30) RETURNING id`,
+      [user.id],
+    );
+    accountId = rows[0].id;
+  });
+
+  it("records outcomes, capability gaps, ordering, and failure streaks", async () => {
+    const success = await startFetchRun(accountId, "scheduler");
+    await finishFetchRun({
+      id: success.id,
+      status: "success",
+      capabilityGaps: [{ capability: "github_traffic", message: "PAT needs repo scope" }],
+    });
+
+    const failure = await startFetchRun(accountId, "manual");
+    await finishFetchRun({ id: failure.id, status: "failed", errorMessage: "API failed" });
+
+    const partial = await startFetchRun(accountId, "manual");
+    await finishFetchRun({ id: partial.id, status: "partial", errorMessage: "Content partially refreshed" });
+
+    const runs = (await getRecentRuns([accountId])).get(accountId);
+    expect(runs?.map((run) => run.status)).toEqual(["partial", "failed", "success"]);
+    expect(runs?.[2].capability_gaps).toEqual([
+      { capability: "github_traffic", message: "PAT needs repo scope" },
+    ]);
+    expect(runs?.every((run) => typeof run.duration_ms === "number")).toBe(true);
+
+    const streaks = await getFailureStreaks([accountId]);
+    expect(streaks.has(accountId)).toBe(false);
+  });
 });
 
 afterAll(async () => {
+  await closeDb();
   await closeTestPool();
 });
 
@@ -46,7 +100,7 @@ describe("users queries", () => {
   });
 
   it("revives soft-deleted user on re-creation", async () => {
-    const revived = await usersQ.insertUser({ username: testUsername, password_hash: "revived", role: "user" });
+    const revived = await createUser(testUsername, "a-longer-test-password", "user");
     expect(revived).toBeDefined();
     expect(revived.username).toBe(testUsername);
   });

@@ -14,7 +14,8 @@ Runs `vitest run` against the test suite in `tests/`. Config lives in `vitest.co
 |------|----------|-------------|
 | `auth.test.ts` | JWT session tokens | Create, verify, reject expired/tampered/malformed tokens |
 | `crypto.test.ts` | Encryption & signing | AES-256-GCM encrypt/decrypt, HMAC sign/verify, JWT secret |
-| `db-queries.test.ts` | Database queries | Users, accounts, Twitter, Reddit, GitHub, GitLab CRUD |
+| `db-queries.test.ts` | Database queries | Users, accounts, Twitter, Reddit, GitHub, GitLab CRUD + fetch-run outcomes |
+| `fetch-health.test.ts` | Fetch health aggregation | Status classification, summaries, issue ordering, failure streaks, and next-due times |
 | `pulse.test.ts` | Business Pulse aggregation | Metric deltas, platform summaries, content/repository rankings, incomplete-sample handling |
 | `release-asset-filter.test.ts` | Release filtering | Filter release assets by platform, sum downloads |
 | `github-latest-snapshot.test.ts` | GitHub snapshots | Latest snapshot resolution logic |
@@ -60,6 +61,11 @@ Tests use `vitest` with `describe`, `it`, `expect`.
 - Round-robin platform dispatch
 - Per-platform cooldown enforcement
 - Single-cycle concurrency guard
+
+### Fetch health (`fetch-health.test.ts`)
+- Healthy, stale, failed, partial, capability-gap, and running classifications
+- Summary counts and severity-ordered issues
+- Consecutive-failure counts and interval-based next-due timestamps
 
 ### Business Pulse (`pulse.test.ts`)
 - Signed metric deltas

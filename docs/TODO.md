@@ -11,6 +11,7 @@
 
 ## Completed
 
+- [x] Fetch-run tracking with health summary, recent-run visibility, retry entry points, and capability-gap reporting
 - [x] Cross-platform Business Pulse with activity/traction deltas, per-platform audience changes, and content/project highlights
 - [x] Unified database access (eliminated mixed `bun:sqlite` + Drizzle ORM)
 - [x] Soft-delete for all destructive operations

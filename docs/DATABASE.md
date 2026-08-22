@@ -20,6 +20,7 @@ All Drizzle ORM schemas live in `db/schema/` and are re-exported from `db/schema
 |------|--------|
 | `users.ts` | `users` |
 | `accounts.ts` | `accounts` |
+| `fetch-runs.ts` | `fetch_runs` |
 | `twitter.ts` | `tweets`, `user_stats` |
 | `github.ts` | `github_stats`, `github_repos`, `github_repo_snapshots`, `github_traffic_clones`, `github_traffic_views`, `github_referrers`, `github_paths`, `github_releases`, `github_release_assets`, `github_contributions` |
 | `gitlab.ts` | `gitlab_stats`, `gitlab_projects`, `gitlab_project_snapshots`, `gitlab_releases`, `gitlab_release_assets`, `gitlab_contributions` |
@@ -82,6 +83,10 @@ UPDATE users SET deleted_at = NULL WHERE id = $1;
 ```
 
 `getUserByUsername` and `getUserById` both filter with `deleted_at IS NULL`. Reviving a soft-deleted user on re-creation is handled in `createUser()`.
+
+## Fetch Runs
+
+`fetch_runs` records one row per dispatch. `started_at` is the attempt time; `finished_at`, `status`, duration, and error details describe the outcome. `capability_gaps` stores a JSON array for optional capabilities that could not be collected (for example GitHub traffic without sufficient PAT scope). Health queries use these records instead of treating `accounts.last_fetched_at` as a success time.
 
 ## Tests
 

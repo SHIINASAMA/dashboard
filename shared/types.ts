@@ -1,5 +1,7 @@
 // ─── Account types ────────────────────────────────────────────────
 
+import type { FetchRun } from "../lib/fetch-health";
+
 export interface Account {
   id: number;
   screen_name: string;
@@ -23,6 +25,7 @@ export interface Account {
 
 export interface AccountWithStats extends Account {
   stats: NonNullable<Account["stats"]>;
+  recentFetchRuns?: FetchRun[];
 }
 
 export interface AccountsResponse {
@@ -324,3 +327,10 @@ export type {
   PulseRepositoryItem,
   PulseResponse,
 } from "../lib/pulse";
+export type {
+  CapabilityGap,
+  FetchAccountHealth,
+  FetchHealthResponse,
+  FetchHealthSummary,
+  FetchRun,
+} from "../lib/fetch-health";

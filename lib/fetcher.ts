@@ -85,6 +85,7 @@ export async function fetchAccount(account: AccountRow) {
   runningXAccounts.add(account.id);
   const logger = getLogger();
   logger.info("Fetcher", "Fetching @%s...", account.screen_name);
+  let recordedCoreData = false;
 
   try {
     const client = await _xClient(account.auth_token);
@@ -104,6 +105,7 @@ export async function fetchAccount(account: AccountRow) {
     if (!account.user_id) {
       await updateAccount(account.id, { user_id: userId });
     }
+    recordedCoreData = true;
 
     // Record stats
     if (legacy && Object.keys(legacy).length > 0) {
@@ -209,16 +211,21 @@ export async function fetchAccount(account: AccountRow) {
 
     await updateAccount(account.id, {
       last_fetched_at: new Date().toISOString(),
-      error_message: null,
+      error_message: errorCount > 0 ? `${errorCount} tweet detail(s) could not be refreshed` : null,
     });
 
     logger.info("Fetcher", "@%s: done", account.screen_name);
-    return savedCount;
+    return {
+      status: errorCount === 0 ? "success" : savedCount > 0 || allIds.length === 0 ? "partial" : "failed",
+      errorMessage: errorCount > 0 ? `${errorCount} tweet detail(s) could not be refreshed` : null,
+    };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     getLogger().error("Fetcher", "@%s error: %s", account.screen_name, msg);
     await updateAccount(account.id, { error_message: msg, last_fetched_at: new Date().toISOString() });
-    return 0;
+    const error = err instanceof Error ? err : new Error(msg) as Error & { fetchRunStatus?: "failed" | "partial" };
+    error.fetchRunStatus = recordedCoreData ? "partial" : "failed";
+    throw error;
   } finally {
     runningXAccounts.delete(account.id);
   }

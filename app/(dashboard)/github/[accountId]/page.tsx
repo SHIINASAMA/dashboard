@@ -17,6 +17,7 @@ import {
 import { useIsMobile } from "@/lib/client/useIsMobile";
 import { GithubIcon } from "@/components/BrandIcons";
 import { StatCardSkeleton, ChartCardSkeleton, Skeleton } from "@/components/Skeleton";
+import { FetchRunHistory } from "@/components/FetchRunHistory";
 
 function GithubHeatmap({ data }: { data: GithubContribution[] }) {
   const { t } = useTranslation();
@@ -206,6 +207,8 @@ export default function GitHubDetail() {
           <AlertCircle size={14} /> {account.error_message}
         </div>
       )}
+
+      <FetchRunHistory account={account} runs={account.recentFetchRuns} />
 
       {overviewLoading ? (
         <div className="text-center py-12 text-[var(--muted-foreground)]">{t("githubDetail.loadingGitHubData")}</div>

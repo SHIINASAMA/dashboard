@@ -79,6 +79,28 @@
       "noData": "暂无账户数据",
       "unavailable": "业务脉搏暂时不可用"
     },
+    "health": {
+      "heading": "抓取健康",
+      "healthy": "正常",
+      "stale": "过期",
+      "failed": "失败 / 部分",
+      "capabilityGap": "能力缺口",
+      "activeCount": "{{count}} 个活跃账户",
+      "beyondInterval": "超过计划间隔",
+      "failedHint": "含内容部分失败",
+      "capabilityHint": "凭据或权限受限",
+      "moreIssues": "还有 {{count}} 个问题",
+      "unsupportedAccounts": "已忽略 {{count}} 个不支持的平台账号（{{platforms}}）；它们不会参与健康统计或调度。",
+      "unavailable": "抓取健康暂时不可用",
+      "status": {
+        "healthy": "正常",
+        "running": "进行中",
+        "partial": "部分成功",
+        "failed": "失败",
+        "stale": "过期",
+        "capability_gap": "能力缺口"
+      }
+    },
     "bothPlatforms": "3 个平台",
     "platformX": "X",
     "platformGitHub": "GitHub",
@@ -403,6 +425,7 @@
     "noAccountsDesc": "还没有此类型的账户。添加一个以开始追踪。",
     "interval": "每 {{minutes}} 分钟",
     "lastFetched": "上次抓取：{{date}}",
+    "fetchNow": "立即重试",
     "nAccounts": "{{count}} 个账户",
     "heading": "设置",
     "description": "管理外观和偏好设置。",
@@ -434,6 +457,20 @@
     "theme": "主题",
     "timezone": "时区",
     "timezoneHint": "此页面的日期将使用所选的时区。"
+  },
+  "fetchHistory": {
+    "title": "最近抓取记录",
+    "nextDue": "下次到期：{{date}}",
+    "runningNow": "抓取进行中",
+    "unknown": "未知",
+    "manual": "手动",
+    "scheduler": "调度",
+    "status": {
+      "success": "成功",
+      "running": "进行中",
+      "partial": "部分成功",
+      "failed": "失败"
+    }
   },
   "addAccountForm": {
     "title": "添加账户",

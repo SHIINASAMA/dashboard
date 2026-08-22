@@ -9,8 +9,8 @@ const SCHEMA = [
       role TEXT NOT NULL DEFAULT 'user', created_at TEXT NOT NULL DEFAULT NOW(), deleted_at TEXT
     )`,
   },
-  {
-    table: "accounts",
+    {
+      table: "accounts",
     sql: `CREATE TABLE IF NOT EXISTS accounts (
       id SERIAL PRIMARY KEY, owner_id INTEGER NOT NULL REFERENCES users(id),
       screen_name TEXT NOT NULL, platform TEXT NOT NULL DEFAULT 'twitter', user_id TEXT,
@@ -31,7 +31,18 @@ const SCHEMA = [
       followers_count INTEGER NOT NULL, following_count INTEGER NOT NULL, tweet_count INTEGER NOT NULL,
       listed_count INTEGER DEFAULT 0, recorded_at TEXT NOT NULL DEFAULT NOW()
     )`,
-  },
+    },
+    {
+      table: "fetch_runs",
+      sql: `CREATE TABLE IF NOT EXISTS fetch_runs (
+        id SERIAL PRIMARY KEY, account_id INTEGER NOT NULL REFERENCES accounts(id),
+        trigger TEXT NOT NULL DEFAULT 'manual', status TEXT NOT NULL DEFAULT 'running',
+        started_at TEXT NOT NULL DEFAULT NOW(), finished_at TEXT, duration_ms INTEGER,
+        error_message TEXT, capability_gaps TEXT NOT NULL DEFAULT '[]'
+      );
+      CREATE INDEX IF NOT EXISTS idx_fetch_runs_account_started ON fetch_runs(account_id, started_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_fetch_runs_status ON fetch_runs(status)`,
+    },
   {
     table: "tweets",
     sql: `CREATE TABLE IF NOT EXISTS tweets (

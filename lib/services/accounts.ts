@@ -2,6 +2,7 @@ import { encrypt, decrypt } from "../crypto";
 import * as accountsRepo from "../repositories/accounts";
 import { getLogger } from "../logger";
 import type { AccountRow } from "../repositories/accounts";
+import { isSupportedPlatform } from "../platforms";
 
 function encToken(plain: string): string {
   try { return encrypt(plain); } catch (e) {
@@ -38,13 +39,18 @@ export async function createAccount(data: {
   platform?: string; instanceUrl?: string | null; authType?: string | null;
   ownerId?: number;
 }) {
+  const platform = data.platform ?? "twitter";
+  if (!isSupportedPlatform(platform)) {
+    throw new Error(`Unsupported platform: ${platform}`);
+  }
+
   const token = encToken(data.authToken);
   const account = await accountsRepo.createAccount({
     owner_id: data.ownerId ?? 1,
     screen_name: data.screenName,
     auth_token: token,
     fetch_interval: data.fetchInterval,
-    platform: data.platform ?? "twitter",
+    platform,
     instance_url: data.instanceUrl ?? null,
     auth_type: data.authType ?? null,
   });

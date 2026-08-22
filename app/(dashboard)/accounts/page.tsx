@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { GithubIcon, GitlabIcon, RedditIcon, XIcon } from "@/components/BrandIcons";
 import { formatDateTime } from "@/lib/client/datetime";
 import { useNow } from "@/lib/client/use-now";
-import { Pencil, Plus, PlayCircle, PauseCircle, Trash2, AlertCircle, ArrowUpRight } from "lucide-react";
+import { Pencil, Plus, PlayCircle, PauseCircle, Trash2, AlertCircle, ArrowUpRight, RotateCw } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 const TABS = [
@@ -54,6 +54,11 @@ export default function AccountsPage() {
 
   const toggleActiveMutation = useMutation({
     mutationFn: ({ id, isActive }: { id: number; isActive: boolean }) => api.updateAccount(id, { isActive }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["accounts"] }),
+  });
+
+  const retryFetchMutation = useMutation({
+    mutationFn: (id: number) => api.triggerFetch(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["accounts"] }),
   });
 
@@ -151,6 +156,12 @@ export default function AccountsPage() {
                           className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors"
                           title={t("settings.edit")}
                         ><Pencil size={16} /></button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); retryFetchMutation.mutate(account.id); }}
+                          disabled={retryFetchMutation.isPending}
+                          className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors"
+                          title={t("settings.fetchNow")}
+                        ><RotateCw size={16} /></button>
                         <button
                           onClick={(e) => { e.stopPropagation(); toggleActiveMutation.mutate({ id: account.id, isActive: !account.is_active }); }}
                           disabled={toggleActiveMutation.isPending}

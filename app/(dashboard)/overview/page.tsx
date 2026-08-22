@@ -4,11 +4,13 @@ import { Separator } from "@/components/ui/separator";
 import { XIcon, GithubIcon, GitlabIcon, RedditIcon } from "@/components/BrandIcons";
 import { StatCardSkeleton, ChartCardSkeleton, Skeleton } from "@/components/Skeleton";
 import { useOverviewData } from "./useOverviewData";
+import { FetchHealthSection } from "./FetchHealthSection";
 import { PulseSection } from "./PulseSection";
 import { XSection } from "./XSection";
 import { GitHubSection } from "./GitHubSection";
 import { GitLabSection } from "./GitLabSection";
 import { RedditSection } from "./RedditSection";
+import { isSupportedPlatform } from "@/lib/platforms";
 
 export default function Overview() {
   const { t } = useTranslation();
@@ -48,6 +50,7 @@ export default function Overview() {
   const redditCommentKarma = redditOverviews.reduce((s, o) => s + (o.data?.stats?.comment_karma ?? 0), 0);
   const redditTotalPosts = redditOverviews.reduce((s, o) => s + (o.data?.totalPosts ?? 0), 0);
   const redditTotalComments = redditOverviews.reduce((s, o) => s + (o.data?.totalComments ?? 0), 0);
+  const monitoredAccounts = allAccounts.filter((acc) => isSupportedPlatform(acc.platform));
 
   const showSepX_GH = xAccounts.length > 0 && ghAccounts.length > 0;
   const showSepGH_GL = (xAccounts.length > 0 || ghAccounts.length > 0) && glAccounts.length > 0;
@@ -58,13 +61,13 @@ export default function Overview() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold">{t("overview.heading")}</h2>
-          {allAccounts.length === 0 && (
+          {monitoredAccounts.length === 0 && (
             <p className="text-xs text-[var(--muted-foreground)]">{t("overview.description_addPrompt")}</p>
           )}
         </div>
-        {allAccounts.length > 0 && (
+        {monitoredAccounts.length > 0 && (
           <div className="flex flex-wrap gap-1.5 sm:justify-end">
-            {allAccounts.map((acc: { id: number; platform: string; screen_name: string; error_message?: string | null }) => (
+            {monitoredAccounts.map((acc: { id: number; platform: string; screen_name: string; error_message?: string | null }) => (
               <Badge key={acc.id} className="text-[11px] px-1.5 py-0.5 gap-0.5">
                 {acc.platform === "twitter" ? <XIcon /> : acc.platform === "github" ? <GithubIcon /> : acc.platform === "gitlab" ? <GitlabIcon /> : <RedditIcon />}
                 {acc.platform === "twitter" ? `@${acc.screen_name}` : acc.screen_name}
@@ -75,6 +78,7 @@ export default function Overview() {
         )}
       </div>
 
+      <FetchHealthSection />
       <PulseSection />
       <XSection stats={stats} timeline={timeline} topLiked={topLiked} xAccounts={xAccounts} />
 
@@ -114,7 +118,7 @@ export default function Overview() {
         />
       )}
 
-      {allAccounts.length === 0 && (
+      {monitoredAccounts.length === 0 && (
         <p className="text-xs text-[var(--muted-foreground)] italic">{t("overview.noAccounts")}</p>
       )}
     </div>

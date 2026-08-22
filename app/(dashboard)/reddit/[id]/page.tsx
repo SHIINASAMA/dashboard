@@ -14,6 +14,7 @@ import { ArrowLeft, ArrowUpRight, Play, RefreshCw, Trash2, AlertCircle, ThumbsUp
 import { useIsMobile } from "@/lib/client/useIsMobile";
 import { RedditIcon } from "@/components/BrandIcons";
 import { StatCardSkeleton, ChartCardSkeleton, Skeleton } from "@/components/Skeleton";
+import { FetchRunHistory } from "@/components/FetchRunHistory";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -159,6 +160,8 @@ export default function RedditDetail() {
           <AlertCircle size={14} /> {account.error_message}
         </div>
       )}
+
+      <FetchRunHistory account={account} runs={account.recentFetchRuns} />
 
       {overviewLoading ? (
         <div className="text-center py-12 text-[var(--muted-foreground)]">{t("redditDetail.loadingData")}</div>

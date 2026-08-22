@@ -50,12 +50,19 @@ Public API paths: `POST /auth/login`, `GET /auth/me`, `GET /reddit/callback`, `G
 | POST | `/accounts` | Create account `{ screenName, authToken, fetchInterval, platform?, instanceUrl?, authType? }` |
 | PUT | `/accounts/:id` | Update account fields |
 | DELETE | `/accounts/:id` | Delete account + all related data (requires `{ confirmToken }`) |
+| GET | `/accounts/:id` response includes `recentFetchRuns[]` | Latest attempt status, trigger, timing, errors, and capability gaps |
 
 ## Fetch API
 
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/fetch/:id` | Trigger an immediate fetch for a specific account |
+
+## Fetch Health
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/fetch-health` | Supported-account health, summary counts, recent runs, failure streaks, next-due times, capability gaps, and separately reported unsupported accounts |
 
 ## Business Pulse
 

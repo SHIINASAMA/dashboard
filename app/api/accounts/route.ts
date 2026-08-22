@@ -4,6 +4,7 @@ import { validateSession } from "@/lib/auth-helpers";
 import { getAccounts, createAccount } from "@/lib/services/accounts";
 import { getOverviewStats } from "@/lib/repositories/twitter";
 import { getUserByUsername } from "@/lib/services/users";
+import { isSupportedPlatform } from "@/lib/platforms";
 
 async function GET(req: Request) {
   const token = getRequestCookie(req, "dash_session");
@@ -30,6 +31,9 @@ async function POST(req: Request) {
   }
   if (!authToken && authType !== "reddit_public") {
     return json({ error: "authToken is required" }, { status: 400 });
+  }
+  if (!isSupportedPlatform(platform || "twitter")) {
+    return json({ error: `Unsupported platform: ${platform}` }, { status: 400 });
   }
 
   const user = await getUserByUsername(session.username);

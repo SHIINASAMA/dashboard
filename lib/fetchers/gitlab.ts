@@ -106,6 +106,7 @@ export async function fetchGitlabAccount(account: AccountRow) {
   const apiBase = getApiBase(account);
   const token = account.auth_token;
   const errorMessages: string[] = [];
+  let recordedCoreData = false;
 
   try {
     // 1. Fetch authenticated user profile
@@ -123,6 +124,7 @@ export async function fetchGitlabAccount(account: AccountRow) {
       followers: user.followers ?? 0,
       following: user.following ?? 0,
     });
+    recordedCoreData = true;
 
     // 2. Fetch all projects for this user (membership=true for owned+contributed projects)
     getLogger().info("GitLab", "Fetching projects for %s...", account.screen_name);
@@ -249,7 +251,24 @@ export async function fetchGitlabAccount(account: AccountRow) {
       error_message: errorMessages.length > 0 ? errorMessages.join("; ") : null,
     });
 
+    const capabilityGaps: Array<{ capability: string; message?: string }> = [];
+    if (errorMessages.some((message) => message.startsWith("Releases"))) {
+      capabilityGaps.push({
+        capability: "gitlab_releases",
+        message: errorMessages.filter((message) => message.startsWith("Releases")).join("; "),
+      });
+    }
+    if (errorMessages.some((message) => message.startsWith("Contributions"))) {
+      capabilityGaps.push({
+        capability: "gitlab_contributions",
+        message: errorMessages.filter((message) => message.startsWith("Contributions")).join("; "),
+      });
+    }
+
     getLogger().info("GitLab", "Fetch complete for %s: %d projects", account.screen_name, projects.length);
+    if (capabilityGaps.length > 0) {
+      return { status: "partial", capabilityGaps };
+    }
     return projects.length;
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "GitLab fetch failed";
@@ -258,7 +277,9 @@ export async function fetchGitlabAccount(account: AccountRow) {
       error_message: msg,
     });
     getLogger().error("GitLab", "Fetch failed for %s: %s", account.screen_name, msg);
-    throw e;
+    const error = e instanceof Error ? e : new Error(msg) as Error & { fetchRunStatus?: "failed" | "partial" };
+    error.fetchRunStatus = recordedCoreData ? "partial" : "failed";
+    throw error;
   } finally {
     runningGitlabAccounts.delete(account.id);
   }

@@ -67,6 +67,7 @@ export async function fetchGithubAccount(account: AccountRow) {
   }
   runningAccounts.add(account.id);
   getLogger().info("GitHub", "Fetching @%s...", account.screen_name);
+  let recordedCoreData = false;
 
   try {
     const token = account.auth_token;
@@ -90,6 +91,7 @@ export async function fetchGithubAccount(account: AccountRow) {
     }
 
     getLogger().info("GitHub", "@%s: stats recorded (%d followers, %d repos)", username, userData.followers, userData.public_repos);
+    recordedCoreData = true;
 
     // 2. Fetch repos (up to 100)
     await sleep(1000);
@@ -97,6 +99,7 @@ export async function fetchGithubAccount(account: AccountRow) {
 
     const today = new Date().toISOString().slice(0, 10);
     let trafficError: string | null = null;
+    let releaseError: string | null = null;
 
     for (const repo of repos) {
       await upsertGithubRepo({
@@ -129,6 +132,8 @@ export async function fetchGithubAccount(account: AccountRow) {
 
     getLogger().info("GitHub", "@%s: %d repos saved + snapshots recorded", username, repos.length);
 
+    const capabilityGaps: Array<{ capability: string; message?: string }> = [];
+
     // 3. Fetch traffic & releases for each repo (requires classic PAT with repo scope)
     if (token) {
       let repoCount = 0;
@@ -136,7 +141,8 @@ export async function fetchGithubAccount(account: AccountRow) {
         repoCount++;
         const err = await fetchRepoTraffic(account.id, repo.id, repo.full_name, token);
         if (err && !trafficError) trafficError = err;
-        await fetchRepoReleases(account.id, repo.id, repo.full_name, token);
+        const releaseErr = await fetchRepoReleases(account.id, repo.id, repo.full_name, token);
+        if (releaseErr && !releaseError) releaseError = releaseErr;
         if (repoCount % 5 === 0 || repoCount === repos.length) {
           getLogger().info("GitHub", "@%s: traffic/releases %d/%d done", username, repoCount, repos.length);
         }
@@ -144,11 +150,19 @@ export async function fetchGithubAccount(account: AccountRow) {
       }
       if (trafficError) {
         getLogger().warn("GitHub", "@%s: traffic fetch issue — %s", username, trafficError);
+        capabilityGaps.push({ capability: "github_traffic", message: trafficError });
       } else {
         getLogger().info("GitHub", "@%s: traffic & releases fetched", username);
       }
     } else {
       getLogger().info("GitHub", "@%s: no token — skipping traffic & releases", username);
+      capabilityGaps.push({
+        capability: "github_traffic",
+        message: "No GitHub PAT configured; traffic, referrers, paths, releases, and download counts are unavailable.",
+      });
+    }
+    if (releaseError) {
+      capabilityGaps.push({ capability: "github_releases", message: releaseError });
     }
 
     // 4. Fetch contribution calendar
@@ -159,21 +173,28 @@ export async function fetchGithubAccount(account: AccountRow) {
       await upsertGithubContributions(account.id, contributions);
       getLogger().info("GitHub", "@%s: %d contributions saved", username, contributions.length);
     } catch (e: unknown) {
-      getLogger().warn("GitHub", "@%s: contributions fetch skipped (%s)", username, e instanceof Error ? e.message : String(e));
+      const message = e instanceof Error ? e.message : String(e);
+      getLogger().warn("GitHub", "@%s: contributions fetch skipped (%s)", username, message);
+      capabilityGaps.push({ capability: "github_contributions", message });
     }
 
     await updateAccount(account.id, {
       last_fetched_at: new Date().toISOString(),
-      error_message: trafficError || null,
+      error_message: capabilityGaps.map((gap) => gap.message).filter(Boolean).join("; ") || null,
     });
 
     getLogger().info("GitHub", "@%s: done", username);
-    return true;
+    return {
+      status: capabilityGaps.length > 0 ? "partial" : "success",
+      capabilityGaps,
+    };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     getLogger().error("GitHub", "@%s error: %s", account.screen_name, msg);
     await updateAccount(account.id, { error_message: msg, last_fetched_at: new Date().toISOString() });
-    return false;
+    const error = new Error(msg) as Error & { fetchRunStatus?: "failed" | "partial" };
+    error.fetchRunStatus = recordedCoreData ? "partial" : "failed";
+    throw error;
   } finally {
     runningAccounts.delete(account.id);
   }
@@ -262,10 +283,15 @@ async function fetchRepoTraffic(accountId: number, repoId: number, fullName: str
   return null;
 }
 
-async function fetchRepoReleases(accountId: number, repoId: number, fullName: string, token: string) {
+async function fetchRepoReleases(
+  accountId: number,
+  repoId: number,
+  fullName: string,
+  token: string,
+): Promise<string | null> {
   try {
     const releases: Array<Record<string, unknown>> = await ghFetch(`/repos/${fullName}/releases?per_page=30`, token);
-    if (!releases) return;
+    if (!releases) return null;
 
     for (const release of releases) {
       const totalDownloads = ((release.assets as Array<Record<string, unknown>>) || [])
@@ -321,7 +347,10 @@ async function fetchRepoReleases(accountId: number, repoId: number, fullName: st
         }
       }
     }
-  } catch { /* releases may be unavailable */ }
+  } catch (e: unknown) {
+    return e instanceof Error ? e.message : String(e);
+  }
+  return null;
 }
 
 async function fetchContributions(username: string, token: string | undefined, year: number) {

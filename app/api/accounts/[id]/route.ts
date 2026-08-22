@@ -3,14 +3,16 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { getAccountById, updateAccount, deleteAccount } from "@/lib/services/accounts";
 import { validateConfirmToken } from "@/lib/confirm-helpers";
 import { getLatestUserStats } from "@/lib/repositories/twitter";
+import { getRecentFetchRuns } from "@/lib/services/fetch-health";
 
 async function GET(req: Request, params: Record<string, string>) {
   const { id } = params;
   const account = await getAccountById(Number(id));
   if (!account) return json({ error: "Not found" }, { status: 404 });
   const stats = await getLatestUserStats(account.id);
+  const recentFetchRuns = await getRecentFetchRuns(account.id);
   const { auth_token: _, ...rest } = account;
-  return json({ ...rest, stats: stats || null });
+  return json({ ...rest, stats: stats || null, recentFetchRuns });
 }
 
 async function PUT(req: Request, params: Record<string, string>) {

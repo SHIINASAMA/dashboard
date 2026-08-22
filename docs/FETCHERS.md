@@ -121,6 +121,10 @@ Every HTTP request now has a 30-second timeout (curl: `--max-time`; fetch: `Abor
 
 A per-platform `Set<number>` of in-flight account IDs prevents the same account from being fetched concurrently (e.g., scheduler and manual trigger overlapping). If an account fetch is already running, subsequent calls log a skip and return immediately.
 
+Manual and scheduler dispatches are also wrapped by `lib/fetch-dispatch.ts`, which owns a process-level in-flight guard, creates a `fetch_runs` record, marks the terminal status (`success`, `partial`, or `failed`), and stores structured capability gaps. Fetchers return structured results when optional data fails (for example GitHub traffic permissions) so partial success remains distinguishable from a complete failure.
+
+Only X/Twitter, GitHub, GitLab, and Reddit are dispatchable. Scheduler queries filter out other platform values, manual dispatch rejects them before creating a run, and account creation validates the allowlist.
+
 ```
 if (runningAccounts.has(account.id)) {
   getLogger().info(...);

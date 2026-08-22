@@ -1,9 +1,7 @@
-import { getActiveAccounts, getAccountById, updateAccount } from "./services/accounts";
-import { fetchAccount } from "./fetcher";
-import { fetchGithubAccount } from "./fetchers/github";
-import { fetchGitlabAccount } from "./fetchers/gitlab";
-import { fetchRedditAccount, fetchRedditPublicAccount } from "./fetchers/reddit";
+import { getActiveAccounts, getAccountById } from "./services/accounts";
+import { dispatchFetch } from "./fetch-dispatch";
 import { getLogger } from "./logger";
+import { isSupportedPlatform } from "./platforms";
 
 // Minimum seconds between fetching two accounts of the same platform.
 // Prevents hammering a single API with back-to-back full-profile fetches.
@@ -43,7 +41,7 @@ async function runCycle() {
   if (g.__cycleRunning) return;
   g.__cycleRunning = true;
   try {
-    const accounts = await getActiveAccounts();
+    const accounts = (await getActiveAccounts()).filter((account) => isSupportedPlatform(account.platform));
     if (accounts.length === 0) return;
     let now = Date.now();
     const lastPlatformFetch = new Map<string, number>();
@@ -63,27 +61,11 @@ async function runCycle() {
 
       // Re-fetch the account to ensure it's still active and has the latest state.
       const freshAccount = await getAccountById(account.id);
-      if (!freshAccount || !freshAccount.is_active) {
+      if (!freshAccount || !freshAccount.is_active || !isSupportedPlatform(freshAccount.platform)) {
         continue;
       }
 
-      // Mark fetch as started so other cycles (or other workers) see a fresh
-      // last_fetched_at and skip this account.
-      await updateAccount(freshAccount.id, { last_fetched_at: new Date().toISOString() });
-
-      if (freshAccount.platform === "github") {
-        await fetchGithubAccount(freshAccount);
-      } else if (freshAccount.platform === "gitlab") {
-        await fetchGitlabAccount(freshAccount);
-      } else if (freshAccount.platform === "reddit") {
-        if (freshAccount.auth_type === "reddit_public") {
-          await fetchRedditPublicAccount(freshAccount);
-        } else {
-          await fetchRedditAccount(freshAccount);
-        }
-      } else {
-        await fetchAccount(freshAccount);
-      }
+      await dispatchFetch(freshAccount, "scheduler");
 
       lastPlatformFetch.set(freshAccount.platform, Date.now());
       // Refresh now after each fetch so the interval check reflects real elapsed time

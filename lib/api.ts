@@ -29,6 +29,7 @@ import type {
   GitlabContribution, GitlabOverview, GitlabProject, GitlabRelease,
   RedditOverview, RedditPost, RedditComment, PaginatedRedditPosts, PaginatedRedditComments,
   PulseResponse,
+  FetchHealthResponse,
   LoginResponse, AuthCheckResponse, UserPublic,
 } from "@/shared/types";
 
@@ -40,6 +41,7 @@ export type {
   GitlabContribution, GitlabOverview, GitlabProject, GitlabRelease,
   RedditOverview, RedditPost, RedditComment, PaginatedRedditPosts, PaginatedRedditComments,
   PulseResponse,
+  FetchHealthResponse,
   LoginResponse, AuthCheckResponse, UserPublic,
 };
 
@@ -54,6 +56,7 @@ export const api = {
   updateAccount: (id: number, data: { screenName?: string; authToken?: string; fetchInterval?: number; isActive?: boolean; instanceUrl?: string; authType?: string }) =>
     fetchJSON<Account>(`/accounts/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   triggerFetch: (id: number) => fetchJSON<{ message: string }>(`/fetch/${id}`, { method: "POST" }),
+  getFetchHealth: () => fetchJSON<FetchHealthResponse>("/fetch-health"),
 
   // Twitter
   getOverview: () => fetchJSON<OverviewStats>("/stats/overview"),

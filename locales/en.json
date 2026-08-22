@@ -79,6 +79,28 @@
       "noData": "No account data yet",
       "unavailable": "Business Pulse is temporarily unavailable"
     },
+    "health": {
+      "heading": "Fetch health",
+      "healthy": "Healthy",
+      "stale": "Stale",
+      "failed": "Failed / partial",
+      "capabilityGap": "Capability gaps",
+      "activeCount": "{{count}} active accounts",
+      "beyondInterval": "Beyond planned interval",
+      "failedHint": "Includes partial content runs",
+      "capabilityHint": "Credential or permission limits",
+      "moreIssues": "{{count}} more issues",
+      "unsupportedAccounts": "Ignored {{count}} unsupported platform account(s) ({{platforms}}); they are excluded from health stats and scheduling.",
+      "unavailable": "Fetch health is temporarily unavailable",
+      "status": {
+        "healthy": "Healthy",
+        "running": "Running",
+        "partial": "Partial",
+        "failed": "Failed",
+        "stale": "Stale",
+        "capability_gap": "Capability gap"
+      }
+    },
     "bothPlatforms": "3 platforms",
     "platformX": "X",
     "platformGitHub": "GitHub",
@@ -403,6 +425,7 @@
     "noAccountsDesc": "No accounts of this type yet. Add one to start tracking.",
     "interval": "Every {{minutes}}m",
     "lastFetched": "Last: {{date}}",
+    "fetchNow": "Retry now",
     "nAccounts": "{{count}} accounts",
     "heading": "Settings",
     "description": "Manage appearance and preferences.",
@@ -434,6 +457,20 @@
     "theme": "Theme",
     "timezone": "Timezone",
     "timezoneHint": "Dates on this page will use the selected timezone."
+  },
+  "fetchHistory": {
+    "title": "Recent fetch runs",
+    "nextDue": "Next due: {{date}}",
+    "runningNow": "Run in progress",
+    "unknown": "Unknown",
+    "manual": "Manual",
+    "scheduler": "Scheduled",
+    "status": {
+      "success": "Success",
+      "running": "Running",
+      "partial": "Partial",
+      "failed": "Failed"
+    }
   },
   "addAccountForm": {
     "title": "Add Account",

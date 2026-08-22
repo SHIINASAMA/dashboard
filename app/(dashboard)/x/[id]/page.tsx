@@ -20,6 +20,7 @@ import { useIsMobile } from "@/lib/client/useIsMobile";
 import { StatCardSkeleton, ChartCardSkeleton, Skeleton } from "@/components/Skeleton";
 import { TimeRangeSelector } from "@/components/TimeRangeSelector";
 import { XFollowerGrowthChart } from "@/components/XFollowerGrowthChart";
+import { FetchRunHistory } from "@/components/FetchRunHistory";
 
 function MetricCard({ label, value }: { label: string; value: string }) {
   return (
@@ -198,6 +199,8 @@ export default function XDetail() {
           <AlertCircle size={14} /> {account.error_message}
         </div>
       )}
+
+      <FetchRunHistory account={account} runs={account.recentFetchRuns} />
 
       {account.stats && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">

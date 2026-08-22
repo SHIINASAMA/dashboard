@@ -85,6 +85,7 @@ export async function fetchRedditAccount(account: AccountRow) {
   runningRedditAccounts.add(account.id);
   const refreshToken = account.auth_token;
   const username = account.screen_name;
+  let recordedCoreData = false;
 
   // Content-age window (shared with X): skip posts/comments older than this.
   const windowDays = contentWindowDays();
@@ -111,6 +112,7 @@ export async function fetchRedditAccount(account: AccountRow) {
       post_karma: pdata.link_karma ?? 0,
       comment_karma: pdata.comment_karma ?? 0,
     });
+    recordedCoreData = true;
     getLogger().info("Reddit", "@%s: profile fetched, karma recorded (post=%d, comment=%d)", username, pdata.link_karma, pdata.comment_karma);
 
     // 3. Fetch posts
@@ -219,7 +221,9 @@ export async function fetchRedditAccount(account: AccountRow) {
       error_message: e instanceof Error ? e.message : "Reddit fetch failed",
     });
     getLogger().error("Reddit", "Fetch failed for @%s: %s", username, e instanceof Error ? e.message : String(e));
-    throw e;
+    const error = e instanceof Error ? e : new Error(e instanceof Error ? e.message : "Reddit fetch failed") as Error & { fetchRunStatus?: "failed" | "partial" };
+    error.fetchRunStatus = recordedCoreData ? "partial" : "failed";
+    throw error;
   } finally {
     runningRedditAccounts.delete(account.id);
   }
@@ -289,6 +293,7 @@ export async function fetchRedditPublicAccount(account: AccountRow) {
     cookies = { loid: account.auth_token };
   }
   const username = account.screen_name;
+  let recordedCoreData = false;
 
   try {
     getLogger().info("Reddit", "Fetching @%s (public)...", username);
@@ -306,6 +311,7 @@ export async function fetchRedditPublicAccount(account: AccountRow) {
       post_karma: pdata.link_karma ?? 0,
       comment_karma: pdata.comment_karma ?? 0,
     });
+    recordedCoreData = true;
     getLogger().info("Reddit", "@%s (public): profile fetched, karma recorded (post=%d, comment=%d)", username, pdata.link_karma, pdata.comment_karma);
 
     // 2. Fetch posts
@@ -393,7 +399,9 @@ export async function fetchRedditPublicAccount(account: AccountRow) {
       error_message: e instanceof Error ? e.message : "Reddit public fetch failed",
     });
     getLogger().error("Reddit", "Fetch failed for @%s (public): %s", username, e instanceof Error ? e.message : String(e));
-    throw e;
+    const error = e instanceof Error ? e : new Error(e instanceof Error ? e.message : "Reddit public fetch failed") as Error & { fetchRunStatus?: "failed" | "partial" };
+    error.fetchRunStatus = recordedCoreData ? "partial" : "failed";
+    throw error;
   } finally {
     runningRedditAccounts.delete(account.id);
   }
