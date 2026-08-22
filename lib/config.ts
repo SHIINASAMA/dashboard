@@ -146,3 +146,21 @@ export function loadOrGenerateKey(): string {
   if (envKey.length !== 64) throw new Error("DASHBOARD_SECRET must be 64 hex characters (32 bytes)");
   return envKey;
 }
+
+// ── AI Analysis ─────────────────────────────────────────────────
+
+export interface AiConfig {
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+  dailyTokenLimit: number;
+}
+
+export function aiConfig(): AiConfig {
+  return {
+    baseUrl: process.env.AI_BASE_URL || "",
+    apiKey: process.env.AI_API_KEY || "",
+    model: process.env.AI_MODEL || "gpt-4o-mini",
+    dailyTokenLimit: Number(process.env.AI_DAILY_TOKEN_LIMIT) || 100_000,
+  };
+}
