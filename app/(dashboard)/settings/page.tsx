@@ -5,6 +5,7 @@ import { themes, type Theme } from "@/lib/client/themes";
 import { api } from "@/lib/api";
 import { getTimezone, setTimezone } from "@/lib/client/datetime";
 import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { validatePassword } from "@/lib/client/validatePassword";
 import { PasswordHints } from "@/components/ui/PasswordHints";
 
@@ -242,7 +243,75 @@ export default function Settings() {
           </div>
         </div>
       </section>
+
+      <AiSettingsSection />
     </div>
+  );
+}
+
+function AiSettingsSection() {
+  const { t } = useTranslation();
+  const [saved, setSaved] = useState(false);
+  const { data: settings, isLoading } = useQuery({
+    queryKey: ["settings"],
+    queryFn: () => fetch("/api/settings", { credentials: "include" }).then(r => r.json()),
+  });
+
+  const mutation = useMutation({
+    mutationFn: async (data: { baseUrl?: string; apiKey?: string; model?: string }) => {
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to save");
+      return res.json();
+    },
+    onSuccess: () => {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    },
+  });
+
+  if (isLoading || !settings?.ai) return null;
+
+  return (
+    <section className="space-y-4">
+      <h3 className="text-sm font-semibold">AI Analysis</h3>
+      <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--card)] space-y-4">
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Endpoint URL</label>
+          <input
+            type="text"
+            defaultValue={settings.ai.baseUrl}
+            onBlur={(e) => mutation.mutate({ baseUrl: e.target.value })}
+            placeholder="https://api.openai.com/v1"
+            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border)] bg-[var(--muted)]"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium">API Key</label>
+          <input
+            type="password"
+            defaultValue={settings.ai.apiKey === "••••••••" ? "" : settings.ai.apiKey}
+            onBlur={(e) => { if (e.target.value) mutation.mutate({ apiKey: e.target.value }); }}
+            placeholder="••••••••"
+            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border)] bg-[var(--muted)]"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Model</label>
+          <input
+            type="text"
+            defaultValue={settings.ai.model}
+            onBlur={(e) => mutation.mutate({ model: e.target.value })}
+            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border)] bg-[var(--muted)]"
+          />
+        </div>
+        {saved && <p className="text-sm text-[var(--success)]">{t("aiAgent.saved")}</p>}
+      </div>
+    </section>
   );
 }
 
