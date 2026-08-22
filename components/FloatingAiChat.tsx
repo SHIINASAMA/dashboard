@@ -1,0 +1,109 @@
+import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
+import { Bot, X, MapPin } from "lucide-react";
+import { useAiChat } from "@/app/(dashboard)/overview/useAiChat";
+import { AiChatUI } from "./AiChatUI";
+
+const PAGE_LABELS: Record<string, string> = {
+  "/": "Overview",
+  "/x": "X (Twitter)",
+  "/github": "GitHub",
+  "/gitlab": "GitLab",
+  "/reddit": "Reddit",
+  "/accounts": "Accounts",
+  "/settings": "Settings",
+  "/admin": "Admin",
+};
+
+function getPageLabel(pathname: string): string {
+  if (PAGE_LABELS[pathname]) return PAGE_LABELS[pathname];
+  if (pathname.startsWith("/x/")) return "X Detail";
+  if (pathname.startsWith("/github/")) return "GitHub Detail";
+  if (pathname.startsWith("/gitlab/")) return "GitLab Detail";
+  if (pathname.startsWith("/reddit/")) return "Reddit Detail";
+  return pathname;
+}
+
+export function FloatingAiChat({ pathname = "/" }: { pathname?: string }) {
+  const { t } = useTranslation();
+  const [isOpen, setIsOpen] = useState(false);
+  const chat = useAiChat();
+
+  const toggle = useCallback(() => setIsOpen(prev => !prev), []);
+
+  // Close on Escape
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsOpen(false);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [isOpen]);
+
+  // Focus input when opened
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => chat.inputRef.current?.focus(), 100);
+    }
+  }, [isOpen, chat.inputRef]);
+
+  return (
+    <>
+      {/* Floating button */}
+      <button
+        onClick={toggle}
+        aria-expanded={isOpen}
+        aria-label={t("overview.aiAgent.heading")}
+        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 flex items-center justify-center"
+      >
+        {isOpen ? <X size={22} /> : <Bot size={22} />}
+      </button>
+
+      {/* Chat panel */}
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm md:bg-transparent md:backdrop-blur-none"
+            onClick={() => setIsOpen(false)}
+          />
+          {/* Panel */}
+          <div className="fixed z-50 bottom-24 right-6 w-[min(400px,calc(100vw-48px))] h-[min(560px,calc(100vh-140px))] bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-200">
+            {/* Header */}
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border)] shrink-0">
+              <Bot size={18} className="text-[var(--primary)]" />
+              <span className="text-sm font-semibold">{t("overview.aiAgent.heading")}</span>
+              <span className="ml-auto flex items-center gap-1 text-xs text-[var(--muted-foreground)] bg-[var(--muted)] px-2 py-0.5 rounded-full">
+                <MapPin size={10} />
+                {getPageLabel(pathname)}
+              </span>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Chat content */}
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <AiChatUI
+                messages={chat.messages}
+                input={chat.input}
+                setInput={chat.setInput}
+                isStreaming={chat.isStreaming}
+                error={chat.error}
+                status={chat.status}
+                messagesEndRef={chat.messagesEndRef}
+                inputRef={chat.inputRef}
+                handleSubmit={chat.handleSubmit}
+                onClear={chat.clearMessages}
+              />
+            </div>
+          </div>
+        </>
+      )}
+    </>
+  );
+}
