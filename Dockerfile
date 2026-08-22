@@ -20,10 +20,9 @@ RUN pnpm install --frozen-lockfile --child-concurrency=1 --network-concurrency=4
 
 # Copy source, typecheck, then build client + SSR in separate passes.
 COPY . .
-# tsc cold-check needs ~440MB heap (432 OOMs, 448 passes) and peaks
-# ~580MB RSS in a cold x86_64 container; the 256MB baseline ENV is too
-# tight, so this single step gets its own heap. Keep it as tight as
-# possible - CI kaniko has no explicit resources limits.
+# Keep tsc on the proven 448MB heap. Limiting automatic global types to
+# Node excludes unused @types packages; explicit imports still resolve.
+# The 256MB baseline is still too tight for this single step.
 RUN NODE_OPTIONS="--max-old-space-size=448" pnpm exec tsc --noEmit
 RUN pnpm build
 
