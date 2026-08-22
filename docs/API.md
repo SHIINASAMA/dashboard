@@ -72,6 +72,14 @@ Public API paths: `POST /auth/login`, `GET /auth/me`, `GET /reddit/callback`, `G
 
 The response contains the time range, aggregate activity and repository-traction deltas, per-platform follower/karma summaries, top tweets and Reddit content, and repositories/projects with the largest star movement. Audience deltas are calculated only when both current and previous window samples exist for an account; platform-native audience metrics are not added into a single cross-platform total.
 
+## Top Content
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/top-content?days=7\|30\|90` | Unified content leaderboard for the selected window (maximum 365 days) |
+
+Returns tweets, Reddit posts/comments, releases, and repository growth items ranked by each platform's primary native metric (engagement, score, or downloads). Repository items include a growth rate when snapshot baselines exist; content without baseline history reports `growthRate: null`. Metrics are not normalized across platforms.
+
 ## X (Twitter)
 
 | Method | Path | Description |

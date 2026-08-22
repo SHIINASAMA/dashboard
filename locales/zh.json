@@ -2,7 +2,7 @@
   "timeRange": {
     "label": "时间范围",
     "7d": "7 天",
-"14d": "14 天",
+    "14d": "14 天",
     "30d": "30 天",
     "90d": "3 个月",
     "180d": "6 个月",
@@ -164,7 +164,24 @@
       "redditSubredditsDesc": "发布最多的板块"
     },
     "pinnedRepos": "已置顶仓库",
-    "pinnedProjects": "已置顶项目"
+    "pinnedProjects": "已置顶项目",
+    "topContent": {
+      "heading": "内容表现榜",
+      "colContent": "内容",
+      "colPlatform": "平台",
+      "colMetric": "指标",
+      "colGrowth": "增长率",
+      "metric": {
+        "engagement": "互动量",
+        "score": "得分",
+        "comments": "评论数",
+        "downloads": "下载量",
+        "starGrowth": "星标增长",
+        "forks": "Fork 数"
+      },
+      "noData": "该时间段暂无内容数据",
+      "unavailable": "内容表现榜暂时不可用"
+    }
   },
   "x": {
     "heading": "X (Twitter)",

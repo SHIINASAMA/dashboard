@@ -2,7 +2,7 @@
   "timeRange": {
     "label": "Time range",
     "7d": "7 days",
-"14d": "14 days",
+    "14d": "14 days",
     "30d": "30 days",
     "90d": "3 months",
     "180d": "6 months",
@@ -164,7 +164,24 @@
       "redditSubredditsDesc": "Where you post most"
     },
     "pinnedRepos": "Pinned Repositories",
-    "pinnedProjects": "Pinned Projects"
+    "pinnedProjects": "Pinned Projects",
+    "topContent": {
+      "heading": "Top Content",
+      "colContent": "Content",
+      "colPlatform": "Platform",
+      "colMetric": "Metric",
+      "colGrowth": "Growth",
+      "metric": {
+        "engagement": "engagement",
+        "score": "score",
+        "comments": "comments",
+        "downloads": "downloads",
+        "starGrowth": "star growth",
+        "forks": "forks"
+      },
+      "noData": "No content data for this range",
+      "unavailable": "Top Content is temporarily unavailable"
+    }
   },
   "x": {
     "heading": "X (Twitter)",

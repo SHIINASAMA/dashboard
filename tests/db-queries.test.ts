@@ -13,6 +13,7 @@ import {
   getRecentRuns,
   startFetchRun,
 } from "../lib/repositories/fetch-runs";
+import { getTopContent } from "../lib/services/top-content";
 import { createUser } from "../lib/services/users";
 
 beforeAll(async () => {
@@ -378,5 +379,89 @@ describe("gitlab queries", () => {
     const contribs = await gitlabQ.getGitlabContributions(acctId);
     expect(contribs.length).toBe(1);
     expect(contribs[0].count).toBe(3);
+  });
+});
+
+describe("top content service queries", () => {
+  let ghAcctId: number;
+  let glAcctId: number;
+
+  beforeAll(async () => {
+    const u = await usersQ.insertUser({ username: `top_content_${Date.now()}`, password_hash: "pass", role: "user" });
+    const pool = getTestPool();
+    const [gh, gl] = await Promise.all([
+      pool.query("INSERT INTO accounts (owner_id, screen_name, platform, auth_token) VALUES ($1, $2, $3, $4) RETURNING id", [u.id, "tc_gh", "github", "tok"]),
+      pool.query("INSERT INTO accounts (owner_id, screen_name, platform, auth_token) VALUES ($1, $2, $3, $4) RETURNING id", [u.id, "tc_gl", "gitlab", "tok"]),
+    ]);
+    ghAcctId = gh.rows[0].id;
+    glAcctId = gl.rows[0].id;
+
+    const today = new Date();
+    const dayStr = (offset: number) => new Date(today.getTime() - offset * 86_400_000).toISOString().slice(0, 10);
+
+    // GitHub: baseline snapshot (10 days ago), current repo has grown.
+    await pool.query(
+      `INSERT INTO github_repo_snapshots (account_id, repo_id, stars, forks, snapshot_date) VALUES ($1, 100, 50, 5, $2)`,
+      [ghAcctId, dayStr(10)],
+    );
+    await pool.query(
+      `INSERT INTO github_repos (account_id, repo_id, name, full_name, stars, forks, is_fork)
+       VALUES ($1, 100, 'rising', 'tc_gh/rising', 80, 8, 0)`,
+      [ghAcctId],
+    );
+    // GitHub release published inside the window.
+    await pool.query(
+      `INSERT INTO github_releases (account_id, repo_id, release_id, tag_name, name, published_at, html_url, total_downloads)
+       VALUES ($1, 100, 9001, 'v1.0', 'First release', $2, 'https://github.com/tc_gh/rising/releases/v1.0', 250)`,
+      [ghAcctId, dayStr(3)],
+    );
+
+    // GitLab: project with snapshot and a release + assets inside the window.
+    await pool.query(
+      `INSERT INTO gitlab_project_snapshots (account_id, project_id, stars, forks, snapshot_date) VALUES ($1, 200, 30, 3, $2)`,
+      [glAcctId, dayStr(10)],
+    );
+    await pool.query(
+      `INSERT INTO gitlab_projects (account_id, project_id, name, path_with_namespace, stars, forks, is_fork)
+       VALUES ($1, 200, 'growing', 'tc_gl/growing', 45, 6, 0)`,
+      [glAcctId],
+    );
+    const rel = await pool.query(
+      `INSERT INTO gitlab_releases (account_id, project_id, release_tag, name, released_at)
+       VALUES ($1, 200, 'v0.1', 'Initial release', $2) RETURNING id`,
+      [glAcctId, dayStr(2)],
+    );
+    const releaseRowId = rel.rows[0].id;
+    await pool.query(
+      `INSERT INTO gitlab_release_assets (release_id, name, download_count) VALUES ($1, 'app.tar.gz', 120)`,
+      [releaseRowId],
+    );
+  });
+
+  it("returns github and gitlab items without SQL errors", async () => {
+    const accounts = [
+      { id: ghAcctId, screen_name: "tc_gh", platform: "github", is_active: 1 },
+      { id: glAcctId, screen_name: "tc_gl", platform: "gitlab", is_active: 1 },
+    ];
+    const result = await getTopContent(accounts, 7);
+
+    expect(result.items.length).toBeGreaterThan(0);
+
+    const kinds = new Set(result.items.map((item) => item.kind));
+    expect(kinds.has("release")).toBe(true);
+    expect(kinds.has("repo_growth")).toBe(true);
+
+    const ghRepo = result.items.find((item) => item.kind === "repo_growth" && item.platform === "github");
+    expect(ghRepo).toBeDefined();
+    expect(ghRepo!.metricValue).toBe(30); // 80 - 50
+    expect(ghRepo!.growthRate).toBe(60); // (80 - 50) / 50
+
+    const glRelease = result.items.find((item) => item.kind === "release" && item.platform === "gitlab");
+    expect(glRelease).toBeDefined();
+    expect(glRelease!.metricValue).toBe(120); // summed from gitlab_release_assets
+
+    const ghRelease = result.items.find((item) => item.kind === "release" && item.platform === "github");
+    expect(ghRelease).toBeDefined();
+    expect(ghRelease!.metricValue).toBe(250);
   });
 });

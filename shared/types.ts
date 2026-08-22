@@ -334,3 +334,9 @@ export type {
   FetchHealthSummary,
   FetchRun,
 } from "../lib/fetch-health";
+export type {
+  TopContentItem,
+  TopContentKind,
+  TopContentPlatform,
+  TopContentResponse,
+} from "../lib/top-content";
