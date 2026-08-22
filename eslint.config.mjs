@@ -32,7 +32,7 @@ export default tseslint.config(
   {
     // Plain Node ESM entry (server/index.mjs) — no TS parser, so give it the
     // handful of runtime globals it references.
-    files: ["server/**/*.mjs"],
+    files: ["server/**/*.mjs", "scripts/**/*.mjs"],
     languageOptions: {
       globals: {
         process: "readonly",
