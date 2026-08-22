@@ -3,10 +3,11 @@ import { useLocation, useNavigate } from "react-router";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-import { LayoutDashboard, PanelLeftClose, Settings, LogOut, Shield, Users, Menu } from "lucide-react";
+import { LayoutDashboard, PanelLeftClose, Settings, LogOut, Shield, Users, Menu, Bot } from "lucide-react";
 import { XIcon, GithubIcon, GitlabIcon, RedditIcon } from "./BrandIcons";
 import { NavigationProgress } from "./NavigationProgress";
 import { NavigatingOverlay } from "./NavigatingOverlay";
+import { FloatingAiChat } from "./FloatingAiChat";
 import { api } from "@/lib/api";
 import { useBingWallpaper } from "@/lib/client/useBingWallpaper";
 import { useIsMobile } from "@/lib/client/useIsMobile";
@@ -165,6 +166,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { to: "/github", label: t("nav.github"), icon: GithubIcon },
     { to: "/gitlab", label: t("nav.gitlab"), icon: GitlabIcon },
     { to: "/reddit", label: t("nav.reddit"), icon: RedditIcon },
+    { to: "/ai", label: t("nav.ai"), icon: Bot },
   ] as const;
 
   const sidebarContent = (onNavClick?: () => void) => (
@@ -276,6 +278,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </aside>
         </>
       )}
+
+      {/* Floating AI chat — desktop only, hidden on /ai page */}
+      {!isMobile && pathname !== "/ai" && <FloatingAiChat pathname={pathname} />}
 
       {/* Main content */}
       <main className="flex-1 min-w-0 h-full overflow-hidden flex flex-col relative">

@@ -41,6 +41,7 @@
     "reddit": "Reddit",
     "admin": "管理",
     "settings": "设置",
+    "ai": "AI",
     "logout": "退出登录"
   },
   "badge": {
@@ -181,6 +182,19 @@
       },
       "noData": "该时间段暂无内容数据",
       "unavailable": "内容表现榜暂时不可用"
+    },
+    "aiAgent": {
+      "heading": "AI 分析",
+      "placeholder": "询问关于你的数据...",
+      "analyzing": "分析中...",
+      "unavailable": "AI 分析未配置，请联系管理员",
+      "configureHint": "前往 设置 → AI 分析 配置你的 API 端点。",
+      "welcome": "问我任何关于你数据的问题。我可以分析趋势、检查抓取健康状态等。",
+      "quotaExceeded": "已达每日 token 上限",
+      "quotaUsed": "今日已用 {{used}} / {{limit}} tokens",
+      "saved": "设置已保存",
+      "error": "获取响应失败",
+      "clear": "清空对话"
     }
   },
   "x": {

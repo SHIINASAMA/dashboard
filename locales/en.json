@@ -41,6 +41,7 @@
     "reddit": "Reddit",
     "admin": "Admin",
     "settings": "Settings",
+    "ai": "AI",
     "logout": "Log out"
   },
   "badge": {
@@ -181,6 +182,19 @@
       },
       "noData": "No content data for this range",
       "unavailable": "Top Content is temporarily unavailable"
+    },
+    "aiAgent": {
+      "heading": "AI Analysis",
+      "placeholder": "Ask about your data...",
+      "analyzing": "Analyzing...",
+      "unavailable": "AI analysis is not configured. Contact admin.",
+      "configureHint": "Go to Settings → AI Analysis to configure your API endpoint.",
+      "welcome": "Ask me anything about your data. I can analyze trends, check fetch health, and more.",
+      "quotaExceeded": "Daily token limit reached",
+      "quotaUsed": "Used {{used}} / {{limit}} tokens today",
+      "saved": "Settings saved",
+      "error": "Failed to get response",
+      "clear": "Clear chat"
     }
   },
   "x": {
