@@ -1,8 +1,12 @@
 import { json } from "@/lib/api-server";
 import type { LoaderFunctionArgs } from "react-router";
 import { getTweetById } from "@/lib/repositories/twitter";
+import { requireSession } from "@/lib/auth-helpers";
 
 async function GET(req: Request, params: Record<string, string>) {
+  const auth = await requireSession(req);
+  if (!auth) return json({ error: "Unauthorized" }, { status: 401 });
+
   const { id } = params;
   const tweet = await getTweetById(id);
   if (!tweet) return json({ error: "Not found" }, { status: 404 });

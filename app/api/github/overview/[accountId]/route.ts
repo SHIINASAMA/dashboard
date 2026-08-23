@@ -1,9 +1,16 @@
 import { json } from "@/lib/api-server";
 import type { LoaderFunctionArgs } from "react-router";
 import { getGithubOverview } from "@/lib/repositories/github";
+import { requireSession, authorizeAccountOwner } from "@/lib/auth-helpers";
 
 async function GET(req: Request, params: Record<string, string>) {
+  const auth = await requireSession(req);
+  if (!auth) return json({ error: "Unauthorized" }, { status: 401 });
+
   const { accountId } = params;
+  const { authorized } = await authorizeAccountOwner(auth.user, Number(accountId));
+  if (!authorized) return json({ error: "Forbidden" }, { status: 403 });
+
   const data = await getGithubOverview(Number(accountId));
   return json(data);
 }

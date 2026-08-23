@@ -10,10 +10,16 @@ import {
 } from "../db";
 import { getLogger } from "../logger";
 import { fetchWithConfig } from "../http";
+import { validateUpstreamUrl } from "../ssrf-guard";
 
 function getApiBase(account: AccountRow): string {
   if (account.instance_url) {
-    return account.instance_url.replace(/\/+$/, "") + "/api/v4";
+    const baseUrl = account.instance_url.replace(/\/+$/, "");
+    const validation = validateUpstreamUrl(baseUrl);
+    if (!validation.ok) {
+      throw new Error(`Invalid GitLab instance URL: ${validation.error}`);
+    }
+    return baseUrl + "/api/v4";
   }
   return "https://gitlab.com/api/v4";
 }

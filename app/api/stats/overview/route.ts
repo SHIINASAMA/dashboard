@@ -1,10 +1,19 @@
 import { json, getSearchParams } from "@/lib/api-server";
 import type { LoaderFunctionArgs } from "react-router";
 import { getOverviewStats } from "@/lib/repositories/twitter";
+import { requireSession, filterOwnedAccountIds } from "@/lib/auth-helpers";
 
 async function GET(req: Request) {
-  const accountIds = getSearchParams(req).get("accountIds");
-  const ids = accountIds ? accountIds.split(",").map(Number) : undefined;
+  const auth = await requireSession(req);
+  if (!auth) return json({ error: "Unauthorized" }, { status: 401 });
+
+  const accountIdsParam = getSearchParams(req).get("accountIds");
+  let ids = accountIdsParam ? accountIdsParam.split(",").map(Number) : undefined;
+  if (ids && ids.length > 0) {
+    ids = await filterOwnedAccountIds(auth.user, ids);
+    if (ids.length === 0) return json({});
+  }
+
   const stats = await getOverviewStats(ids);
   return json(stats);
 }

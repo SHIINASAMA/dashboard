@@ -1,9 +1,16 @@
 import { json, getSearchParams } from "@/lib/api-server";
 import type { LoaderFunctionArgs } from "react-router";
 import { getGitlabProjectSnapshots } from "@/lib/repositories/gitlab";
+import { requireSession, authorizeAccountOwner } from "@/lib/auth-helpers";
 
 async function GET(req: Request, params: Record<string, string>) {
+  const auth = await requireSession(req);
+  if (!auth) return json({ error: "Unauthorized" }, { status: 401 });
+
   const { accountId, projectId } = params;
+  const { authorized } = await authorizeAccountOwner(auth.user, Number(accountId));
+  if (!authorized) return json({ error: "Forbidden" }, { status: 403 });
+
   const days = Number(getSearchParams(req).get("days") ?? "30");
   const data = await getGitlabProjectSnapshots(Number(accountId), Number(projectId), days);
   return json(data);

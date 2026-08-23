@@ -1,14 +1,35 @@
-import { json, getRequestCookie } from "@/lib/api-server";
+import { json } from "@/lib/api-server";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
-import { validateSession } from "@/lib/auth-helpers";
-import { getUserByUsername } from "@/lib/services/users";
 import { runAgentStream, getAiStatus, type ChatMessage } from "@/lib/services/ai-analysis";
 import { aiConfig, isMockMode } from "@/lib/config";
+import { requireSession } from "@/lib/auth-helpers";
+
+// ── Rate limiting ─────────────────────────────────────────────────
+// Per-user: max N requests per minute window.
+const rateLimitMap = new Map<number, { count: number; resetAt: number }>();
+const RATE_WINDOW_MS = 60_000;
+const RATE_MAX_REQUESTS = 10;
+
+function checkRateLimit(userId: number): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(userId);
+  if (!entry || entry.resetAt < now) {
+    rateLimitMap.set(userId, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= RATE_MAX_REQUESTS) return false;
+  entry.count++;
+  return true;
+}
+
+// ── Request limits ────────────────────────────────────────────────
+const MAX_MESSAGES = 50;
+const MAX_MESSAGE_CONTENT_LENGTH = 4000;
+const MAX_BODY_SIZE_BYTES = 256 * 1024; // 256 KB
 
 async function POST(req: Request) {
-  const token = getRequestCookie(req, "dash_session");
-  const session = token ? await validateSession(token) : null;
-  if (!session) return json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireSession(req);
+  if (!auth) return json({ error: "Unauthorized" }, { status: 401 });
 
   if (!isMockMode()) {
     const config = aiConfig();
@@ -17,18 +38,37 @@ async function POST(req: Request) {
     }
   }
 
-  try {
-    const user = await getUserByUsername(session.username);
-    if (!user) return json({ error: "User not found" }, { status: 404 });
+  // Rate limit check
+  if (!checkRateLimit(auth.user.id)) {
+    return json({ error: "Too many requests. Please try again later." }, { status: 429 });
+  }
 
-    const body = await req.json();
-    const messages: ChatMessage[] = body.messages;
+  try {
+    // Body size check (read as text first to enforce limit)
+    const rawBody = await req.text();
+    if (rawBody.length > MAX_BODY_SIZE_BYTES) {
+      return json({ error: "Request body too large" }, { status: 413 });
+    }
+
+    let body: { messages?: unknown };
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      return json({ error: "Invalid JSON" }, { status: 400 });
+    }
+
+    const messages = body.messages as ChatMessage[];
 
     if (!Array.isArray(messages) || messages.length === 0) {
       return json({ error: "messages array is required" }, { status: 400 });
     }
 
-    // Validate message format
+    // Message count limit
+    if (messages.length > MAX_MESSAGES) {
+      return json({ error: `Too many messages. Maximum is ${MAX_MESSAGES}.` }, { status: 400 });
+    }
+
+    // Validate message format and length
     for (const m of messages) {
       if (m.role !== "user" && m.role !== "assistant") {
         return json({ error: "Invalid message role" }, { status: 400 });
@@ -36,9 +76,12 @@ async function POST(req: Request) {
       if (typeof m.content !== "string" || !m.content.trim()) {
         return json({ error: "Invalid message content" }, { status: 400 });
       }
+      if (m.content.length > MAX_MESSAGE_CONTENT_LENGTH) {
+        return json({ error: `Message content too long. Maximum is ${MAX_MESSAGE_CONTENT_LENGTH} characters.` }, { status: 400 });
+      }
     }
 
-    const { stream } = await runAgentStream(user.id, messages);
+    const { stream } = await runAgentStream(auth.user.id, messages);
 
     // Return as streaming text response
     return new Response(stream, {
@@ -61,14 +104,10 @@ async function POST(req: Request) {
 }
 
 async function GET(req: Request) {
-  const token = getRequestCookie(req, "dash_session");
-  const session = token ? await validateSession(token) : null;
-  if (!session) return json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireSession(req);
+  if (!auth) return json({ error: "Unauthorized" }, { status: 401 });
 
-  const user = await getUserByUsername(session.username);
-  if (!user) return json({ error: "User not found" }, { status: 404 });
-
-  const status = await getAiStatus(user.id);
+  const status = await getAiStatus(auth.user.id);
   return json(status);
 }
 

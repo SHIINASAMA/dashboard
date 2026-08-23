@@ -1,16 +1,13 @@
-import { json, getRequestCookie } from "@/lib/api-server";
+import { json } from "@/lib/api-server";
 import type { LoaderFunctionArgs } from "react-router";
-import { validateSession } from "@/lib/auth-helpers";
-import { getUserByUsername } from "@/lib/services/users";
 import { getFetchHealth } from "@/lib/services/fetch-health";
+import { requireSession, getOwnerId } from "@/lib/auth-helpers";
 
 async function GET(req: Request) {
-  const token = getRequestCookie(req, "dash_session");
-  const session = token ? await validateSession(token) : null;
-  if (!session) return json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireSession(req);
+  if (!auth) return json({ error: "Unauthorized" }, { status: 401 });
 
-  const user = await getUserByUsername(session.username);
-  const ownerId = user && session.role !== "admin" ? user.id : undefined;
+  const ownerId = getOwnerId(auth.user);
   return json(await getFetchHealth(ownerId));
 }
 

@@ -1,6 +1,7 @@
 import { json } from "@/lib/api-server";
 import type { LoaderFunctionArgs } from "react-router";
 import { getGithubReleaseDownloadTimeline } from "@/lib/repositories/github";
+import { requireSession, authorizeAccountOwner } from "@/lib/auth-helpers";
 
 const ALLOWED_DAYS = new Set([7, 14, 30]);
 
@@ -11,7 +12,13 @@ function parseDays(raw: string | null): number {
 }
 
 async function GET(req: Request, params: Record<string, string>) {
+  const auth = await requireSession(req);
+  if (!auth) return json({ error: "Unauthorized" }, { status: 401 });
+
   const { accountId, repoId } = params;
+  const { authorized } = await authorizeAccountOwner(auth.user, Number(accountId));
+  if (!authorized) return json({ error: "Forbidden" }, { status: 403 });
+
   const url = new URL(req.url);
   const days = parseDays(url.searchParams.get("days"));
   const data = await getGithubReleaseDownloadTimeline(Number(accountId), Number(repoId), days);

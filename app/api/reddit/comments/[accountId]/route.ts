@@ -1,9 +1,16 @@
 import { json, getSearchParams } from "@/lib/api-server";
 import type { LoaderFunctionArgs } from "react-router";
 import { getRedditComments } from "@/lib/repositories/reddit";
+import { requireSession, authorizeAccountOwner } from "@/lib/auth-helpers";
 
 async function GET(req: Request, params: Record<string, string>) {
+  const auth = await requireSession(req);
+  if (!auth) return json({ error: "Unauthorized" }, { status: 401 });
+
   const { accountId } = params;
+  const { authorized } = await authorizeAccountOwner(auth.user, Number(accountId));
+  if (!authorized) return json({ error: "Forbidden" }, { status: 403 });
+
   const sp = getSearchParams(req);
   const page = Number(sp.get("page")) || 1;
   const limit = Number(sp.get("limit")) || 20;

@@ -4,19 +4,32 @@ import { getAccountById, updateAccount, deleteAccount } from "@/lib/services/acc
 import { validateConfirmToken } from "@/lib/confirm-helpers";
 import { getLatestUserStats } from "@/lib/repositories/twitter";
 import { getRecentFetchRuns } from "@/lib/services/fetch-health";
+import { requireSession, authorizeAccountOwner } from "@/lib/auth-helpers";
 
 async function GET(req: Request, params: Record<string, string>) {
+  const auth = await requireSession(req);
+  if (!auth) return json({ error: "Unauthorized" }, { status: 401 });
+
   const { id } = params;
-  const account = await getAccountById(Number(id));
+  const { authorized, account } = await authorizeAccountOwner(auth.user, Number(id));
   if (!account) return json({ error: "Not found" }, { status: 404 });
+  if (!authorized) return json({ error: "Forbidden" }, { status: 403 });
+
   const stats = await getLatestUserStats(account.id);
   const recentFetchRuns = await getRecentFetchRuns(account.id);
-  const { auth_token: _, ...rest } = account;
+  const { auth_token: _, ...rest } = account as unknown as { auth_token: string; [k: string]: unknown };
   return json({ ...rest, stats: stats || null, recentFetchRuns });
 }
 
 async function PUT(req: Request, params: Record<string, string>) {
+  const auth = await requireSession(req);
+  if (!auth) return json({ error: "Unauthorized" }, { status: 401 });
+
   const { id } = params;
+  const { authorized, account } = await authorizeAccountOwner(auth.user, Number(id));
+  if (!account) return json({ error: "Not found" }, { status: 404 });
+  if (!authorized) return json({ error: "Forbidden" }, { status: 403 });
+
   const body = await req.json();
   const { screenName, authToken, fetchInterval, isActive, instanceUrl, authType } = body;
 
@@ -31,7 +44,7 @@ async function PUT(req: Request, params: Record<string, string>) {
   await updateAccount(Number(id), updates);
   const updated = await getAccountById(Number(id));
   if (!updated) return json({ error: "Not found" }, { status: 404 });
-  const { auth_token: _, ...pub } = updated;
+  const { auth_token: _, ...pub } = updated as unknown as { auth_token: string; [k: string]: unknown };
   return json(pub);
 }
 

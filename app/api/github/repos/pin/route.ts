@@ -1,9 +1,16 @@
 import { json } from "@/lib/api-server";
 import type { ActionFunctionArgs } from "react-router";
 import { setPinnedRepos } from "@/lib/repositories/github";
+import { requireSession, authorizeAccountOwner } from "@/lib/auth-helpers";
 
 async function PUT(req: Request) {
+  const auth = await requireSession(req);
+  if (!auth) return json({ error: "Unauthorized" }, { status: 401 });
+
   const { accountId, repoIds } = await req.json();
+  const { authorized } = await authorizeAccountOwner(auth.user, Number(accountId));
+  if (!authorized) return json({ error: "Forbidden" }, { status: 403 });
+
   await setPinnedRepos(accountId, repoIds);
   return json({ ok: true });
 }
