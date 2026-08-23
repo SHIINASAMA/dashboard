@@ -99,7 +99,7 @@ Replace raw SQL in `server/db.ts` with Drizzle ORM for schema definition and que
 
 A reusable `ConfirmDialog` component in `client/src/components/ui/`:
 
-- Props: `open`, `onOpenChange`, `title`, `description`, `onConfirm`, `confirmLabel` (default "删除").
+- Props: `open`, `onOpenChange`, `title`, `description`, `onConfirm`, `confirmLabel` (default "Delete").
 - On open, calls `POST /api/confirm-token` to get a random 6-char token.
 - Displays the token prominently (monospace, highlighted background).
 - User types the token into an input field.

@@ -1,316 +1,316 @@
-# 框架迁移评估：React Router Framework Mode vs SvelteKit
+# Framework Migration Evaluation: React Router Framework Mode vs SvelteKit
 
-- **日期**：2026-08-06
-- **范围**：在现有 Next.js 16 App Router 仪表盘基础上，评估迁移到 React Router Framework Mode（v7/v8）与 SvelteKit（Svelte 5）的可行性、成本、内存收益与风险。
-- **依据**：两份一手研究文档（`.agents/research/react-router-framework-mode.md`、`.agents/research/sveltekit.md`，全部结论已用官方文档 URL 验证）+ 本地代码盘点（本文件仅评估，未做任何代码改动，未 commit）。
-- **历史背景**：本仓库 2026-07-08 刚从 **Hono + Vite SPA** 迁到 Next.js App Router（见 `.agents/plans/2026-07-08-nextjs-migration.md`）。因此"迁移到 RR/SvelteKit"在 RR 场景下实质是**迁回 Vite 系**，需要重新审视当初离开 Vite 的理由。
+- **Date**: 2026-08-06
+- **Scope**: Evaluating the feasibility, cost, memory benefits, and risks of migrating from the existing Next.js 16 App Router dashboard to React Router Framework Mode (v7/v8) and SvelteKit (Svelte 5).
+- **Basis**: Two primary research documents (`.agents/research/react-router-framework-mode.md`, `.agents/research/sveltekit.md`, all conclusions verified with official documentation URLs) + local code inventory (this file is evaluation only; no code changes were made, no commits).
+- **Historical context**: This repository was migrated from **Hono + Vite SPA** to Next.js App Router on 2026-07-08 (see `.agents/plans/2026-07-08-nextjs-migration.md`). Therefore, "migrating to RR/SvelteKit" in the RR scenario essentially means **migrating back to the Vite family**, requiring a reassessment of why Vite was left in the first place.
 
 ---
 
-## 0. 结论摘要（TL;DR）
+## 0. Executive Summary (TL;DR)
 
-| 选项 | 结论 | 一句话理由 |
+| Option | Verdict | One-sentence rationale |
 |---|---|---|
-| 留在 Next.js 16 | ❌ 已不可行 | 构建已 OOMKilled，压到 ~900MB 仍不稳，无更优机器可用，不能放弃自动化 |
-| React Router Framework Mode | ✅ 唯一可行路线 | 真实仓库 spike 已完整跑通：拆 client/SSR 双进程构建后峰值 **client ~500MB / SSR ~230MB**（见 §10），组件层几乎全部保留 |
-| SvelteKit | ❌ 不建议 | 内存实测 525MB–1.2GB 超配额，且需全量重写（React→Svelte），成本 2–5 倍 |
+| Stay on Next.js 16 | ❌ No longer viable | Build already OOMKilled; even throttled to ~900MB is unstable; no better machine available; cannot give up automation |
+| React Router Framework Mode | ✅ Only viable path | Real repository spike fully completed: after splitting client/SSR into dual-process builds, peak memory is **client ~500MB / SSR ~230MB** (see §10); nearly all components retained |
+| SvelteKit | ❌ Not recommended | Measured memory 525MB–1.2GB exceeds quota, and requires full rewrite (React→Svelte) at 2–5× the cost |
 
-**所有选项都无法达成"构建峰值 200MB 以内"**：Node.js 进程基线约 164MB RSS（此前已实测），加上 `pnpm install`、`tsc --noEmit`、框架构建，任何自托管全栈框架（Next / RR / SvelteKit）的容器构建峰值都不可能低于 200MB。迁移的目标应重新定义为"**比当前 ~900MB 峰值显著更低、稳定落在 CI 容器配额内**"，而不是 200MB。
+**All options fail to achieve "build peak under 200MB"**: Node.js process baseline is approximately 164MB RSS (previously measured), and with `pnpm install`, `tsc --noEmit`, and framework builds, any self-hosted full-stack framework (Next / RR / SvelteKit) build peak cannot realistically fall below 200MB. The migration goal should be redefined as "**significantly lower than the current ~900MB peak, stably within the CI container quota**", not 200MB.
 
-**迁移决策已收敛（见 §10 实测）**：React Router v7 + Vite 7/Rollup 为唯一可行路线，采用 **client / SSR 两个独立进程分阶段构建**（各进程峰值均 ≤ ~500MB）；产品定位同步更新为**纯数据平台**（去掉"社交媒体"定位描述）。
+**Migration decision has converged (see §10 measurements)**: React Router v7 + Vite 7/Rollup is the only viable path, using **client / SSR two independent processes with staged builds** (each process peak ≤ ~500MB); product positioning updated to **pure data platform** (removing "social media" positioning language).
 
 ---
 
-## 1. 评估背景：现状盘点与内存优化历史
+## 1. Evaluation Context: Current State Inventory & Memory Optimization History
 
-### 1.1 代码规模（本地核实）
+### 1.1 Code Scale (Local Verification)
 
-- **前端**：100 个 ts/tsx（`app/` + `components/` + `lib/client`），约 6.1k LOC；16 个 dashboard 页面 + login
-- **API**：**46 个 route handler**（`app/api/**/route.ts`，38 GET / 7 POST / 3 PUT / 2 DELETE），全部基于 `next/server` `NextRequest/NextResponse` + `next/headers` `cookies()` + `@/lib/auth-helpers`
-- **框架实际用途**：文件路由 + SSR 外壳（页面以客户端组件为主，数据全部走 React Query）+ 46 个 JSON 接口 + `proxy.ts` 中间件（jose JWT）+ `instrumentation.ts` 启动钩子 + standalone Docker
-- **导航 API**：`next/navigation` 14 文件（`useRouter`×11、`useParams`×6、`usePathname`×3、`redirect`×1）、`next/link` 4 文件
-- **`next/image`：0 使用**（全原生 `<img>`）；**`next/font`：0**；**无 loading/error/not-found/template**；metadata 仅根 layout 静态导出
-- **前端技术栈**：@tanstack/react-query（`app/providers.tsx` 带 `useSyncExternalStore` 水合守卫）、react-i18next、ThemeProvider、recharts、lucide-react、shadcn/ui 风格组件、Tailwind CSS v4、Vitest + @testing-library（3 个组件测试）
-- **后端/共享**：`lib/`（services/repositories/fetchers）、`db/`（Drizzle + pg）、`shared/`；调度器 `lib/scheduler-singleton.ts`（globalThis 守卫，每 60s 拉取）
+- **Frontend**: 100 ts/tsx files (`app/` + `components/` + `lib/client`), approximately 6.1k LOC; 16 dashboard pages + login
+- **API**: **46 route handlers** (`app/api/**/route.ts`, 38 GET / 7 POST / 3 PUT / 2 DELETE), all based on `next/server` `NextRequest/NextResponse` + `next/headers` `cookies()` + `@/lib/auth-helpers`
+- **Framework actual usage**: File routing + SSR shell (pages are primarily client-side components, all data via React Query) + 46 JSON endpoints + `proxy.ts` middleware (jose JWT) + `instrumentation.ts` startup hook + standalone Docker
+- **Navigation API**: `next/navigation` 14 files (`useRouter`×11, `useParams`×6, `usePathname`×3, `redirect`×1), `next/link` 4 files
+- **`next/image`**: 0 usage (all native `<img>`); **`next/font`**: 0; **No loading/error/not-found/template**; metadata only in root layout static export
+- **Frontend tech stack**: @tanstack/react-query (`app/providers.tsx` with `useSyncExternalStore` hydration guard), react-i18next, ThemeProvider, recharts, lucide-react, shadcn/ui-style components, Tailwind CSS v4, Vitest + @testing-library (3 component tests)
+- **Backend/shared**: `lib/` (services/repositories/fetchers), `db/` (Drizzle + pg), `shared/`; scheduler `lib/scheduler-singleton.ts` (globalThis guard, fetches every 60s)
 
 ### 1.2 Docker / CI
 
-- Dockerfile：`node:22-slim` 两阶段；`NODE_OPTIONS` 256MB（install/tsc）→ 352MB（webpack build）；`--child-concurrency=1 --network-concurrency=4`；独立 `tsc -p tsconfig.build.json --noEmit` + `SKIP_NEXT_TYPECHECK=1` + `pnpm build`（即 `next build --webpack`）；产物 `.next/standalone` + `docker-entrypoint.sh`
-- `.gitlab-ci.yml`：kaniko 构建镜像 + kubectl set image；**未配置显式 resources limits**（OOMKilled 来自 kaniko 构建容器/节点的内存上限）
-- `next.config.ts` 已压到：`experimental.cpus: 1`、`staticGenerationMaxConcurrency: 1`、`staticGenerationMinPagesPerWorker: 29`、`webpackBuildWorker: false`、`webpackMemoryOptimizations: true`、`workerThreads: true`、`output: "standalone"`、`serverExternalPackages` 8 项
-- 上一轮已把构建峰值从 OOM 压到 **~900MB RSS**（核心手段：所有页面 `force-dynamic` 关掉静态生成、单 CPU、关 worker、堆上限 352MB、串行化原生编译）
+- Dockerfile: `node:22-slim` two-stage; `NODE_OPTIONS` 256MB (install/tsc) → 352MB (webpack build); `--child-concurrency=1 --network-concurrency=4`; standalone `tsc -p tsconfig.build.json --noEmit` + `SKIP_NEXT_TYPECHECK=1` + `pnpm build` (i.e., `next build --webpack`); artifacts `.next/standalone` + `docker-entrypoint.sh`
+- `.gitlab-ci.yml`: kaniko image build + kubectl set image; **no explicit resources limits configured** (OOMKilled comes from kaniko build container/node memory cap)
+- `next.config.ts` already throttled: `experimental.cpus: 1`, `staticGenerationMaxConcurrency: 1`, `staticGenerationMinPagesPerWorker: 29`, `webpackBuildWorker: false`, `webpackMemoryOptimizations: true`, `workerThreads: true`, `output: "standalone"`, `serverExternalPackages` 8 items
+- Previous round already throttled build peak from OOM down to **~900MB RSS** (core approach: `force-dynamic` on all pages to disable static generation, single CPU, workers off, heap cap 352MB, serialized native compilation)
 
-### 1.3 内存约束结论（必须清醒）
+### 1.3 Memory Constraint Conclusions (Must Be Clear-Headed)
 
-- 200MB 内做 Next / RR / SvelteKit 任何一家的生产构建，物理上不可能（Node 基线 ~164MB）
-- 当前 900MB 与 CI 容器配额的关系未知（CI 未配置 resources limits，OOM 来自节点总内存压力）。**在动手迁移前，应先确认 CI 容器实际配额**（`kubectl describe node` / 询问运维），避免迁移后仍撞同一堵墙
-- 迁移到 Vite 系（RR/SvelteKit）**可能**把峰值降到 400–700MB（Vite/Rollup 通常比 webpack+RSC 管线轻），但**没有任何官方基准数据**，必须实测
+- 200MB is physically impossible for production builds of Next / RR / SvelteKit or any other framework (Node baseline ~164MB)
+- The relationship between the current 900MB and CI container quota is unknown (CI has no resources limits configured; OOM comes from aggregate node memory pressure). **Before starting the migration, verify the actual CI container quota** (`kubectl describe node` / ask ops) to avoid hitting the same wall after migrating
+- Migrating to the Vite family (RR/SvelteKit) **may** reduce the peak to 400–700MB (Vite/Rollup is typically lighter than webpack+RSC pipelines), but **there is no official benchmark data** — must be measured empirically
 
 ---
 
-## 2. React Router Framework Mode 评估
+## 2. React Router Framework Mode Evaluation
 
-### 2.1 版本现实（2026-08-06 核实）
+### 2.1 Version Reality (Verified 2026-08-06)
 
-- npm `latest` = **v8.3.0**（2026-07-22，Node ≥22.22，React ≥19.2.7，ESM-only，middleware 常开，`react-router-dom` 移除，`@react-router/serve` 用 Express 5.2.1）
-- **v7.18.2** 仍在维护（2026-07-28，Node ≥20，React ≥18）——v7 是"经典 Framework Mode"（原 Remix 路线），官方文档按版本发布
-- 本仓库 Node 22 / React 19.2.7 / Vite 兼容性：**v7 与 v8 都满足**；新项目建议直接上 v8（v7 是上一代）
+- npm `latest` = **v8.3.0** (2026-07-22, Node ≥22.22, React ≥19.2.7, ESM-only, middleware always-on, `react-router-dom` removed, `@react-router/serve` uses Express 5.2.1)
+- **v7.18.2** still maintained (2026-07-28, Node ≥20, React ≥18) — v7 is the "classic Framework Mode" (original Remix approach), official docs organized by version
+- This repository's Node 22 / React 19.2.7 / Vite compatibility: **both v7 and v8 satisfy requirements**; new projects should go directly to v8 (v7 is previous generation)
 
-### 2.2 迁移映射（哪些改、哪些不改）
+### 2.2 Migration Mapping (What Changes, What Doesn't)
 
-**几乎全部保留（≈95% 前端代码）：**
+**Nearly all retained (≈95% frontend code):**
 
-- 所有 React 页面/组件（16 页面 + 组件库）、react-query providers、i18n、ThemeProvider、shadcn 组件、recharts、lucide-react、Tailwind v4（仅把 `@tailwindcss/postcss` 换成 `@tailwindcss/vite`）
-- `lib/`、`db/`、`shared/` 全部业务逻辑（框架无关）
-- 原生 `<img>`（无 next/image 迁移）
+- All React pages/components (16 pages + component library), react-query providers, i18n, ThemeProvider, shadcn components, recharts, lucide-react, Tailwind v4 (only replace `@tailwindcss/postcss` with `@tailwindcss/vite`)
+- `lib/`, `db/`, `shared/` — all business logic (framework-agnostic)
+- Native `<img>` (no next/image migration)
 
-**结构性改动（机械但面广）：**
+**Structural changes (mechanical but broad):**
 
-| 现状 | RR Framework Mode | 工作量 |
+| Current | RR Framework Mode | Effort |
 |---|---|---|
-| `app/` 文件路由 | `app/routes.ts` + `root.tsx`，`route()/index()/layout()/prefix()` | 中（一次性） |
-| 16 个页面 | route 模块（组件体基本原样） | 低 |
-| 46 个 route handler | **resource routes**（`loader`=GET、`action`=其他；无默认组件） | 低-中（机械） |
-| `NextRequest/NextResponse` | 标准 Web `Request/Response` | 低（机械） |
-| `cookies()`（`next/headers`） | `request.headers.get("Cookie")` + `createCookie/createCookieSessionStorage` 或 middleware 上下文 | 低 |
-| `proxy.ts`（edge middleware） | route 模块 `export const middleware`（root 或 dashboard/api 分支）；**无 matcher 配置，路径手动匹配**；运行于 Node 进程而非 edge（自托管无影响） | 低（jose 逻辑原样） |
-| `instrumentation.ts` 启动钩子 | **无直接等价**：需自定义 server（`@react-router/express` + `createRequestHandler`）或 `entry.server.tsx` 启动逻辑；scheduler-singleton 守卫保留 | 中（本项目核心功能，必须处理） |
-| `next/navigation`（14 文件） | `useNavigate/useLocation/useParams/Link` 等 | 低 |
-| metadata（根 layout） | root route `meta`/`Links` | 低 |
-| Docker standalone | **无 standalone 等价**：`react-router build` → `build/client` + `build/server/index.js`，镜像需复制 `build/` + **生产 node_modules**（比 standalone 大，但更简单）；或自定义 Express server | 中 |
-| tsconfig | 需 `rootDirs` + `.react-router/types`（typegen）；`react-router build` 不 typecheck，需 `typegen && tsc` | 低 |
-| env | `VITE_*` 前缀（替换 `NEXT_PUBLIC_*`） | 低 |
+| `app/` file routing | `app/routes.ts` + `root.tsx`, `route()/index()/layout()/prefix()` | Medium (one-time) |
+| 16 pages | Route modules (component body largely unchanged) | Low |
+| 46 route handlers | **Resource routes** (`loader`=GET, `action`=other; no default component) | Low-Medium (mechanical) |
+| `NextRequest/NextResponse` | Standard Web `Request/Response` | Low (mechanical) |
+| `cookies()` (`next/headers`) | `request.headers.get("Cookie")` + `createCookie/createCookieSessionStorage` or middleware context | Low |
+| `proxy.ts` (edge middleware) | Route module `export const middleware` (root or dashboard/api branch); **no matcher config, manual path matching**; runs in Node process instead of edge (no impact for self-hosted) | Low (jose logic unchanged) |
+| `instrumentation.ts` startup hook | **No direct equivalent**: requires custom server (`@react-router/express` + `createRequestHandler`) or `entry.server.tsx` startup logic; scheduler-singleton guard retained | Medium (core project functionality, must be handled) |
+| `next/navigation` (14 files) | `useNavigate/useLocation/useParams/Link` etc. | Low |
+| Metadata (root layout) | Root route `meta`/`Links` | Low |
+| Docker standalone | **No standalone equivalent**: `react-router build` → `build/client` + `build/server/index.js`, image needs `build/` + **production node_modules** (larger than standalone but simpler); or custom Express server | Medium |
+| tsconfig | Needs `rootDirs` + `.react-router/types` (typegen); `react-router build` does not typecheck, needs `typegen && tsc` | Low |
+| env | `VITE_*` prefix (replaces `NEXT_PUBLIC_*`) | Low |
 
-### 2.3 与 Next 16 的能力差异（对本项目的影响）
+### 2.3 Feature Differences vs Next 16 (Impact on This Project)
 
-| 能力 | Next 16 现状 | RR | 影响 |
+| Feature | Next 16 Current | RR | Impact |
 |---|---|---|---|
-| ISR / `revalidateTag` | **未使用**（全部 `force-dynamic` + React Query） | 无内置等价（`clientLoader` 缓存 / HTTP Cache-Control / `prerender`） | **无影响** |
-| Server Components (RSC) | 未实质使用（客户端组件为主） | 无稳定等价（RSC 实验性） | **无影响** |
-| 流式渲染 | 未使用 | `defer`/`<Await>` 支持 | 无影响 |
-| 边缘中间件 | `proxy.ts`（edge） | Node 进程内 middleware | 自托管无影响；行为需回归测试（尤其 `from` 重定向与 401 JSON） |
-| 开发体验 | webpack HMR | Vite HMR + **HDR**（热数据再验证） | 更优 |
-| 官方迁移指南 | — | **无官方 Next→RR 指南**（仅 modes 文档提及） | 增加不确定性，靠 Remix 社区经验 |
+| ISR / `revalidateTag` | **Not used** (all `force-dynamic` + React Query) | No built-in equivalent (`clientLoader` caching / HTTP Cache-Control / `prerender`) | **No impact** |
+| Server Components (RSC) | Not substantively used (primarily client components) | No stable equivalent (RSC experimental) | **No impact** |
+| Streaming rendering | Not used | `defer`/`<Await>` supported | No impact |
+| Edge middleware | `proxy.ts` (edge) | Middleware in Node process | No impact for self-hosted; behavior needs regression testing (especially `from` redirects and 401 JSON) |
+| Developer experience | webpack HMR | Vite HMR + **HDR** (hot data revalidation) | Better |
+| Official migration guide | — | **No official Next→RR guide** (only mentioned in modes docs) | Increases uncertainty; relies on Remix community experience |
 
-### 2.4 构建内存（无官方数据，需实测）
+### 2.4 Build Memory (No Official Data; Must Be Measured)
 
-- **没有任何官方 Vite-vs-Next 构建内存对比**（RR 仓库搜索无结果）
-- RR 构建链路 = `react-router typegen`（Node v22.12 曾有 CPU/内存回归 issue，已关闭）+ `vite build`（client + server 两个 Rollup bundle）+ 独立 `tsc` + `pnpm install`
-- 已知可调旋钮：`minify: 'oxc'`、`maxParallelFileOps`、`reportCompressedSize`、`NODE_OPTIONS=--max-old-space-size`；server 构建是**单文件大 bundle**，Rollup 阶段峰值需要实测
-- 乐观估计 400–700MB RSS；**200MB 仍不可能**
+- **There are no official Vite-vs-Next build memory comparisons** (RR repo search returns nothing)
+- RR build chain = `react-router typegen` (Node v22.12 had a CPU/memory regression issue, now closed) + `vite build` (client + server two Rollup bundles) + standalone `tsc` + `pnpm install`
+- Known tunable knobs: `minify: 'oxc'`, `maxParallelFileOps`, `reportCompressedSize`, `NODE_OPTIONS=--max-old-space-size`; server build is a **single large bundle** — Rollup phase peak needs measurement
+- Optimistic estimate 400–700MB RSS; **200MB still impossible**
 
-### 2.5 风险与成本评估
+### 2.5 Risk and Cost Assessment
 
-- **成本**：结构性迁移为主，前端组件零重写。估计 **5–10 个工作日**（含 Docker/CI、回归测试）
-- **风险**：中等。集中在（a）scheduler 启动（自定义 server）、（b）proxy 语义回归、（c）46 个接口的 JSON 格式一致性、（d）v8 生态较新（发布约 1 个月）
-- **长期收益**：脱离 webpack 内存怪癖与 RSC 管线；构建更快（Vite）；HDR 开发体验；自托管部署模型更透明
-- **历史讽刺**：本项目 2026-07-08 刚从 Vite SPA 迁到 Next（当时动机是统一前后端/SSR/standalone）；RR 能提供同样的"统一 + SSR + 自托管"，但等于绕了一圈回到 Vite 系——**除非内存实测有显著收益，否则不值得再动一次**
-
----
-
-## 3. SvelteKit 评估
-
-### 3.1 版本现实（2026-08-06 核实）
-
-- `@sveltejs/kit` **2.70.2** stable（2026-07-29，Node ≥18.13；SvelteKit 3 仍 `3.0.0-next.14` **未稳定**）
-- `svelte` **5.56.8**（Svelte 5 runes）、`@sveltejs/adapter-node` **5.5.7**、Vite **8.2.0**（Node 20.19+/22.12+，本仓库 Node 22 兼容）
-- **没有 `adapter-standalone`**（npm 404）；Docker 等价物是 `adapter-node`（`node build`，HOST/PORT，优雅退出）
-- **没有官方 React→Svelte 迁移工具**（`sv migrate` 只覆盖 Svelte 4→5）；**没有官方 React 互操作**（在 SvelteKit 中嵌 React 需要手写 mount/SSR 桥接，不受支持）→ **必须全量重写**
-
-### 3.2 迁移映射
-
-**机械部分（可保留思路）：**
-
-| 现状 | SvelteKit | 工作量 |
-|---|---|---|
-| 46 个 route handler | `+server.ts`（标准 Request/Response，`json()/text()`） | 低-中（机械） |
-| `proxy.ts` | `hooks.server.ts` `handle()` + `sequence`（`event.cookies.get('dash_session')`、`redirect()/json()`；注意静态资源/预渲染页不进 handle） | 低 |
-| `instrumentation.ts` | `init` hook 或实验性 `src/instrumentation.server.js`（需 adapter 支持） | 中 |
-| `app/layout.tsx` | `+layout.svelte` + `app.html` | 中 |
-| 安全头/CORS | `setHeaders`（注意：`set-cookie` 必须走 `cookies` API） | 低 |
-| Tailwind v4 | `@tailwindcss/vite`（官方支持 SvelteKit） | 低 |
-
-**全量重写部分（成本主体）：**
-
-| 现状 | SvelteKit 等价 | 说明 |
-|---|---|---|
-| 16 页面 + 全部组件（~6.1k LOC React） | Svelte 5 runes + snippets | **全部重写**；无互操作、无自动迁移 |
-| recharts 图表 | ECharts / LayerChart / shadcn-svelte Chart | 图表是交互核心，重写+调优成本高 |
-| @tanstack/react-query | @tanstack/svelte-query | 数据层 API 重写 |
-| react-i18next | Paraglide（官方 add-on，编译期类型安全） | 字典/翻译键可复用，调用点全改 |
-| lucide-react | lucide-svelte | 低（图标名基本一致） |
-| shadcn/ui | shadcn-svelte（bits-ui） | 组件 API 不同，逐个重写 |
-| Vitest + @testing-library/react | Vitest + @testing-library/svelte | 3 个测试重写 + 新增覆盖 |
-| `next/link` / `NEXT_PUBLIC_*` / `@/*` | `<a>` / `PUBLIC_*` / `$lib/` | 低（机械） |
-
-### 3.3 构建内存与部署
-
-- **同样无官方 SvelteKit-vs-Next 基准**；Vite/Rollup 管线通常较轻，可调 `output.bundleStrategy`（默认 `'split'`）、`prerender.concurrency`（默认 1）、`NODE_OPTIONS`——但这些 Next 侧也有等价物
-- adapter-node 产物为 `build/`（server + client），与 RR 一样**需要携带生产 node_modules**（或外部化 dependencies），Docker 体积比 standalone 大
-- 200MB 目标同样不可能；与 RR 相比**没有明显内存优势**（两者同一代 Vite 8）
-
-### 3.4 风险与成本评估
-
-- **成本**：全量重写。估计 **3–6 周**（单人、含图表/测试/回归），是 RR 路径的 2–5 倍
-- **风险**：高。核心交互（recharts 图表、抽屉/表格、水合守卫）在 Svelte 5 下全部重做；SvelteKit 3 即将发布，现在投入 2.x 意味着短期内还要再迁一次
-- **收益**：与 RR 重叠（Vite 构建、轻量运行时），额外收益仅是 Svelte 本身的包体积/运行时效率——对本项目（自托管、数据全走 API、构建内存瓶颈）**不构成决定性优势**
+- **Cost**: Primarily structural migration; zero frontend component rewriting. Estimated **5–10 business days** (including Docker/CI, regression testing)
+- **Risk**: Moderate. Concentrated in (a) scheduler startup (custom server), (b) proxy semantic regression, (c) JSON format consistency across 46 endpoints, (d) v8 ecosystem is relatively new (~1 month since release)
+- **Long-term benefits**: Escape webpack memory quirks and RSC pipeline; faster builds (Vite); HDR developer experience; more transparent self-hosted deployment model
+- **Historical irony**: This project migrated from Vite SPA to Next on 2026-07-08 (motivation was unifying frontend/backend/SSR/standalone); RR provides the same "unified + SSR + self-hosted" but effectively means circling back to Vite — **unless memory measurements show significant gains, another migration is not worth it**
 
 ---
 
-## 4. 对比总表
+## 3. SvelteKit Evaluation
 
-| 维度 | 留在 Next 16 | React Router v7/v8 | SvelteKit 2 |
+### 3.1 Version Reality (Verified 2026-08-06)
+
+- `@sveltejs/kit` **2.70.2** stable (2026-07-29, Node ≥18.13; SvelteKit 3 still at `3.0.0-next.14`, **not stable**)
+- `svelte` **5.56.8** (Svelte 5 runes), `@sveltejs/adapter-node` **5.5.7**, Vite **8.2.0** (Node 20.19+/22.12+, this repository's Node 22 is compatible)
+- **No `adapter-standalone`** (npm 404); Docker equivalent is `adapter-node` (`node build`, HOST/PORT, graceful shutdown)
+- **No official React→Svelte migration tool** (`sv migrate` only covers Svelte 4→5); **no official React interop** (embedding React in SvelteKit requires manual mount/SSR bridging, unsupported) → **full rewrite required**
+
+### 3.2 Migration Mapping
+
+**Mechanical parts (approach reusable):**
+
+| Current | SvelteKit | Effort |
+|---|---|---|
+| 46 route handlers | `+server.ts` (standard Request/Response, `json()/text()`) | Low-Medium (mechanical) |
+| `proxy.ts` | `hooks.server.ts` `handle()` + `sequence` (`event.cookies.get('dash_session')`, `redirect()/json()`; note static assets/pre-rendered pages don't go through handle) | Low |
+| `instrumentation.ts` | `init` hook or experimental `src/instrumentation.server.js` (requires adapter support) | Medium |
+| `app/layout.tsx` | `+layout.svelte` + `app.html` | Medium |
+| Security headers/CORS | `setHeaders` (note: `set-cookie` must use `cookies` API) | Low |
+| Tailwind v4 | `@tailwindcss/vite` (official SvelteKit support) | Low |
+
+**Full rewrite parts (major cost):**
+
+| Current | SvelteKit Equivalent | Notes |
+|---|---|---|
+| 16 pages + all components (~6.1k LOC React) | Svelte 5 runes + snippets | **Full rewrite**; no interop, no auto-migration |
+| recharts charts | ECharts / LayerChart / shadcn-svelte Chart | Charts are interaction core; rewrite + tuning cost is high |
+| @tanstack/react-query | @tanstack/svelte-query | Data layer API rewrite |
+| react-i18next | Paraglide (official add-on, compile-time type safety) | Dictionary/translation keys reusable, call sites all change |
+| lucide-react | lucide-svelte | Low (icon names largely identical) |
+| shadcn/ui | shadcn-svelte (bits-ui) | Different component APIs, rewrite individually |
+| Vitest + @testing-library/react | Vitest + @testing-library/svelte | 3 tests rewrite + new coverage |
+| `next/link` / `NEXT_PUBLIC_*` / `@/*` | `<a>` / `PUBLIC_*` / `$lib/` | Low (mechanical) |
+
+### 3.3 Build Memory and Deployment
+
+- **Also no official SvelteKit-vs-Next benchmarks**; Vite/Rollup pipelines are typically lighter; tunable `output.bundleStrategy` (default `'split'`), `prerender.concurrency` (default 1), `NODE_OPTIONS` — but Next has equivalents for these as well
+- adapter-node output is `build/` (server + client), same as RR — **requires production node_modules** (or externalized dependencies); Docker image larger than standalone
+- 200MB target equally impossible; **no clear memory advantage over RR** (both same generation Vite 8)
+
+### 3.4 Risk and Cost Assessment
+
+- **Cost**: Full rewrite. Estimated **3–6 weeks** (single developer, including charts/tests/regression), 2–5× the RR path
+- **Risk**: High. Core interactions (recharts charts, drawers/tables, hydration guards) all redone under Svelte 5; SvelteKit 3 is imminent, so investing in 2.x means another migration in the near future
+- **Benefits**: Overlap with RR (Vite build, lightweight runtime); additional benefit is only Svelte's own bundle size/runtime efficiency — **not a decisive advantage** for this project (self-hosted, all data via API, build memory bottleneck)
+
+---
+
+## 4. Comparison Matrix
+
+| Dimension | Stay on Next 16 | React Router v7/v8 | SvelteKit 2 |
 |---|---|---|---|
-| 前端代码复用 | 100% | ≈95%（组件零重写） | ≈0%（全量重写） |
-| 46 个 API 路由 | 不变 | 机械迁移（resource routes） | 机械迁移（+server.ts） |
-| 中间件（proxy.ts） | 不变 | route middleware（Node 进程） | hooks.server.ts |
-| 启动/调度器 | instrumentation 不变 | 自定义 server / entry.server 钩子 | init hook / instrumentation（实验） |
-| Docker 形态 | standalone（最小） | `build/` + prod node_modules | adapter-node `build/` + deps |
-| 构建内存 | **实测 ~900MB**（基线） | 未知，预期更低（**需 spike**） | 未知，预期相近于 RR（**需 spike**） |
-| 200MB 目标 | 不可能 | 不可能 | 不可能 |
-| ISR/revalidateTag | 未用 | 无等价（无影响） | 无等价（无影响） |
-| 官方迁移指南 | — | 无（Remix 社区经验） | 无 React→Svelte 工具 |
-| 生态成熟度 | 最成熟 | 成熟（Remix 血统；v8 较新） | 较成熟（SvelteKit 3 将至） |
-| 迁移成本 | 0 | 5–10 个工作日 | 3–6 周 |
-| 回归风险 | 0 | 中低 | 高 |
-| 唯一强理由 | — | 内存（未证实）+ 摆脱 webpack | 内存（未证实）+ Svelte 运行时效率（与本项目无关） |
+| Frontend code reuse | 100% | ≈95% (zero component rewrites) | ≈0% (full rewrite) |
+| 46 API routes | Unchanged | Mechanical migration (resource routes) | Mechanical migration (+server.ts) |
+| Middleware (proxy.ts) | Unchanged | Route middleware (Node process) | hooks.server.ts |
+| Startup/Scheduler | instrumentation unchanged | Custom server / entry.server hooks | init hook / instrumentation (experimental) |
+| Docker form | standalone (minimal) | `build/` + prod node_modules | adapter-node `build/` + deps |
+| Build memory | **Measured ~900MB** (baseline) | Unknown, expected lower (**needs spike**) | Unknown, expected similar to RR (**needs spike**) |
+| 200MB target | Impossible | Impossible | Impossible |
+| ISR/revalidateTag | Not used | No equivalent (no impact) | No equivalent (no impact) |
+| Official migration guide | — | None (Remix community experience) | No React→Svelte tool |
+| Ecosystem maturity | Most mature | Mature (Remix lineage; v8 relatively new) | Fairly mature (SvelteKit 3 imminent) |
+| Migration cost | 0 | 5–10 business days | 3–6 weeks |
+| Regression risk | 0 | Medium-Low | High |
+| Only strong argument | — | Memory (unverified) + escape webpack | Memory (unverified) + Svelte runtime efficiency (irrelevant to this project) |
 
 ---
 
-## 5. 建议
+## 5. Recommendations
 
-1. **不迁移 SvelteKit**。成本/风险不成比例，内存收益未证实，且现在处于 SvelteKit 大版本交接期。
-2. **React Router 仅在"实测内存显著下降"时才值得**。它保留全部 React 投资，是三者中唯一合理的迁移候选；但决策依据必须是 spike 数据，而不是"Vite 应该更省内存"的直觉。
-3. **先做零成本实验**（§6），大概率可以留在 Next 并继续压内存。
-4. 若最终决定迁移 RR：建议直接上 **v8**（与仓库 React 19.2.7/Node 22 兼容、middleware 已是默认），按 §2.2 的映射表拆成小步提交，优先保证 46 个 API + proxy + scheduler 语义不变。
-
----
-
-## 6. 建议的验证路径（按成本递增）
-
-1. **确认 CI 真实配额**：`kubectl describe node` / 找运维确认 kaniko 构建容器内存上限——先弄清墙在哪，再决定要不要翻墙。
-2. **`next build --turbopack` 对照实验**（0.5–1 天，不动架构）：
-   - 当前 `package.json` 脚本为 `next build --webpack`（显式 webpack；`next --help` 确认 16.2.10 支持 `--turbopack`）
-   - 在同一 Dockerfile 约束下跑 `next build --turbopack`，对比峰值 RSS 与产物行为（standalone 是否一致）
-   - Turbopack 是 Rust 实现，内存画像与 webpack 完全不同；这是**留在 Next 内换构建器**的最低成本选项
-3. **React Router spike 原型**（2–3 天，独立临时目录或 worktree，不动主分支）：
-   - 用仓库真实页面子集 + 相同依赖，跑 `react-router build`（v8），在 `NODE_OPTIONS=--max-old-space-size=352` 与 `cpus=1` 同款限制下量峰值 RSS
-   - 顺带验证 scheduler（自定义 server）与 proxy 语义的可行性
-4. **SvelteKit spike**（可选，1–2 天）：仅构建内存对照（`sv create` + adapter-node + `vite build`），不必做页面——用于把"RR vs SvelteKit 内存"从猜测变成数据。
-5. 拿到三组峰值（webpack 900MB / turbopack ? / RR ? / SK ?）后再做最终决策。
+1. **Do not migrate to SvelteKit**. Cost/risk disproportionate, memory benefit unverified, and currently in the middle of a SvelteKit major version transition.
+2. **React Router is only worth it if measurements show significant memory reduction**. It preserves all React investment and is the only reasonable migration candidate among the three; but the decision must be based on spike data, not intuition that "Vite should use less memory."
+3. **Start with zero-cost experiments** (§6); most likely you can stay on Next and continue reducing memory.
+4. If the final decision is to migrate to RR: recommend going directly to **v8** (compatible with the repo's React 19.2.7/Node 22, middleware is default), follow the mapping table in §2.2 to break into small commits, prioritizing identical semantics for the 46 APIs + proxy + scheduler.
 
 ---
 
-## 7. 参考
+## 6. Proposed Verification Path (Increasing Cost Order)
 
-- `.agents/research/react-router-framework-mode.md`（RR v7/v8 版本、API 映射、Docker、内存、gotchas；全部 URL 已验证）
-- `.agents/research/sveltekit.md`（SvelteKit 版本、load/+server/hooks/streaming/adapter-node/i18n/Tailwind v4/内存/重写映射；全部 URL 已验证）
-- `.agents/plans/2026-07-08-nextjs-migration.md`（本项目当初 Hono+Vite → Next 的动机与约束）
-- 本地代码盘点：`package.json`、`next.config.ts`、`proxy.ts`、`instrumentation.ts`、`Dockerfile`、`.gitlab-ci.yml`、`app/`（16 pages + 46 route handlers）
+1. **Confirm actual CI quota**: `kubectl describe node` / ask ops to confirm kaniko build container memory cap — first figure out where the wall is, then decide whether to climb it.
+2. **`next build --turbopack` control experiment** (0.5–1 day, no architecture changes):
+   - Current `package.json` script is `next build --webpack` (explicit webpack; `next --help` confirms 16.2.10 supports `--turbopack`)
+   - Run `next build --turbopack` under the same Dockerfile constraints, compare peak RSS and output behavior (whether standalone is consistent)
+   - Turbopack is a Rust implementation with a completely different memory profile from webpack; this is the **lowest-cost option to switch builders while staying on Next**
+3. **React Router spike prototype** (2–3 days, in a separate temp directory or worktree, not on main):
+   - Use a real page subset from the repo + same dependencies, run `react-router build` (v8), measure peak RSS under `NODE_OPTIONS=--max-old-space-size=352` and `cpus=1` constraints
+   - Also verify scheduler (custom server) and proxy semantic feasibility
+4. **SvelteKit spike** (optional, 1–2 days): Build memory comparison only (`sv create` + adapter-node + `vite build`), no need to build pages — to turn "RR vs SvelteKit memory" from guesswork into data.
+5. After obtaining three peak measurements (webpack 900MB / turbopack ? / RR ? / SK ?), make the final decision.
 
 ---
 
-## 8. 构建内存实测（2026-08-06，双轨 spike 数据）
+## 7. References
 
-**方法**：同一台机器（macOS Apple Silicon）、Node v22.23.1、pnpm 11.10.0、`NODE_OPTIONS=--max-old-space-size=352`（与仓库 Dockerfile 相同）、`/usr/bin/time -l` 测量整棵进程树峰值 RSS。两个 spike 均为与仓库同重量级的原型（RR：19 路由模块；SK：28 源文件，9 页面 + 8 API 端点 + hooks）。
+- `.agents/research/react-router-framework-mode.md` (RR v7/v8 versions, API mapping, Docker, memory, gotchas; all URLs verified)
+- `.agents/research/sveltekit.md` (SvelteKit versions, load/+server/hooks/streaming/adapter-node/i18n/Tailwind v4/memory/rewrite mapping; all URLs verified)
+- `.agents/plans/2026-07-08-nextjs-migration.md` (original motivation and constraints for Hono+Vite → Next migration)
+- Local code inventory: `package.json`, `next.config.ts`, `proxy.ts`, `instrumentation.ts`, `Dockerfile`, `.gitlab-ci.yml`, `app/` (16 pages + 46 route handlers)
 
-| 轨 | 图表依赖 | 峰值 RSS | 构建耗时 | 客户端 JS |
+---
+
+## 8. Build Memory Measurements (2026-08-06, Dual-Track Spike Data)
+
+**Method**: Same machine (macOS Apple Silicon), Node v22.23.1, pnpm 11.10.0, `NODE_OPTIONS=--max-old-space-size=352` (same as repo Dockerfile), `/usr/bin/time -l` to measure peak RSS across the entire process tree. Both spikes are prototypes at the same weight as the repo (RR: 19 route modules; SK: 28 source files, 9 pages + 8 API endpoints + hooks).
+
+| Track | Chart Dependency | Peak RSS | Build Time | Client JS |
 |---|---|---|---|---|
 | **React Router v8.3.0** | recharts | **570 MB** | 1.8s | — |
-| **React Router v8.3.0** | echarts 整包 | **701 MB** | 2.3s | 1.22 MB |
+| **React Router v8.3.0** | echarts full bundle | **701 MB** | 2.3s | 1.22 MB |
 | **React Router v8.3.0** | echarts tree-shaken | **686 MB** | ~2s | 0.66 MB |
-| **SvelteKit 2.70.2** | echarts 整包 | **1,168 MB** | 6.2s | 1.22 MB |
+| **SvelteKit 2.70.2** | echarts full bundle | **1,168 MB** | 6.2s | 1.22 MB |
 | **SvelteKit 2.70.2** | echarts tree-shaken | **1,130–1,199 MB** | 5.5–5.9s | 0.66 MB |
 
-**结论（重要）**：
+**Conclusions (Important)**:
 
-1. **RR v8 原型构建峰值 ~570–700 MB，显著低于 Next 的 ~900 MB 真实基线，且构建极快（~2s，Vite 8 使用 Rust 原生 Rolldown）** —— CI 内存压力可大幅缓解。
-2. **SvelteKit 原型构建峰值 ~1.13–1.20 GB，反而高于 Next 基线**。tree-shaking echarts 只降产物体积（−46%），几乎不影响 RSS（−3% 内）。内存由 Vite 8/Rolldown 原生分配 + Svelte 编译器主导，与 bundle 大小无关。
-3. 若 CI 容器限制 ≈1 GB（Next 900MB OOM 的推断），**SvelteKit 真实应用构建大概率同样 OOM**，与"迁移到 SvelteKit 解决 CI"的目标冲突。
-4. 两者都是原型规模（RR 19 模块 / SK 28 文件），真实应用（6.1k LOC + 46 API 路由）只会更高；但相对排序稳健（同规模下 SK ≈ RR × 1.7）。
+1. **RR v8 prototype build peak ~570–700 MB, significantly lower than Next's ~900 MB real baseline, and builds extremely fast (~2s, Vite 8 uses Rust-native Rolldown)** — CI memory pressure can be greatly reduced.
+2. **SvelteKit prototype build peak ~1.13–1.20 GB, actually higher than the Next baseline**. Tree-shaking echarts only reduces output size (−46%), barely affecting RSS (within −3%). Memory is dominated by Vite 8/Rolldown native allocation + Svelte compiler, independent of bundle size.
+3. If the CI container limit ≈1 GB (inferred from Next 900MB OOM), **SvelteKit real application builds would very likely also OOM**, contradicting the goal of "migrating to SvelteKit to solve CI."
+4. Both are prototype-scale (RR 19 modules / SK 28 files); real application (6.1k LOC + 46 API routes) will only be higher; but the relative ordering is robust (at the same scale, SK ≈ RR × 1.7).
 
-**对 A/K 双版本方案的影响**：
-- **A 轨（React Router）**：内存友好，适合立即上，先救 CI。
-- **K 轨（SvelteKit）**：长期方向可保留，但必须先回答 CI 真实配额（若 >1.2GB 则可行，否则需要：拆 client/server 构建、换更轻图表、或接受不可行），并在真实规模迁移后复测。
-
----
-
-## 9. Vite 7 / Rollup 4 对照实测（2026-08-06 追加）
-
-用户随后确认：**CI 构建容器内存不止 500 MB，但不要抱高期望**。因此在 §8（Vite 8/Rolldown）之外，补测了 **Vite 7.3.6 + Rollup 4（纯 JS bundler，内存受 V8 堆控制）** 路线，验证"降并发、时间换空间"能否把构建压进 500 MB。
-
-**方法**：同一 spike 源码降级版本（RR：react-router 7.18.2 + @react-router/dev 7.18.2 + @react-router/node + vite 7.3.6；SK：@sveltejs/kit 2.70.2 + @sveltejs/vite-plugin-svelte 6.2.4 + vite 7.3.6），`/usr/bin/time -l` 测整树峰值 RSS，`NODE_OPTIONS=--max-old-space-size=N` 控制堆，`build.rollupOptions.maxParallelFileOps=1` 串行化模块处理。
-
-### RR v7 + Vite 7（Rollup 4）
-
-| 配置 | 结果 | 峰值 RSS | client 耗时 |
-|---|---|---|---|
-| 352 MB 堆 + 默认并行（含 echarts） | OOM（heap） | 517 MB | — |
-| 352 MB 堆 + 串行（含 echarts） | OOM（heap） | 507 MB | — |
-| 352 MB 堆 + 串行（去 echarts，对齐真实项目） | ✅ | **504 MB** | 2.16s |
-| 320 MB 堆 + 串行 | ✅ | 477 MB | 2.27s |
-| **300 MB 堆 + 串行** | ✅ | **445–458 MB** | 2.27s |
-| 300 MB 堆 + 默认并行 | ✅ | 472 MB | 2.37s |
-| 290 MB 堆 + 串行 | OOM（heap） | 437 MB | — |
-
-### RR v8 + Vite 8 同工作量对照（去 echarts 重测）
-
-| 配置 | 结果 | 峰值 RSS |
-|---|---|---|
-| RR 8.3.0 + Vite 8.2.0（Rolldown），352 MB 堆 | ✅ | **567 MB** |
-
-→ 同工作量下 **RR v7 + Rollup 比 RR v8 + Rolldown 省约 100–120 MB RSS**（Rollup 是 JS，堆可压；Rolldown 是 Rust 原生分配，堆帽无效）。
-
-### SK + Vite 7（Rollup 4）
-
-| 配置 | 结果 | 峰值 RSS |
-|---|---|---|
-| 352 MB 堆 + 默认并行（含 echarts tree-shaken） | OOM（SSR 阶段） | 525 MB |
-| 352 MB 堆 + 默认并行（去 echarts） | OOM（SSR 阶段） | 526 MB |
-| 352 MB 堆 + 串行（去 echarts） | OOM（client 阶段） | **652 MB** |
-| 320 / 300 / 280 MB 堆 | OOM | 465–491 MB |
-
-→ **SvelteKit + Rollup 4 连"最小原型 + 零图表依赖"都超过 352 MB 堆**（Svelte 5 编译器 + kit 运行时 + Rollup JS 模块图），RSS 下限 ≥ 525 MB。SK 在 Vite 8/Rolldown（1.13–1.20 GB）与 Vite 7/Rollup（≥525 MB）两条路线都超出当前 CI 可接受范围。
-
-### 更新结论
-
-1. **唯一能进 500 MB 的路线是：RR v7.18.2 + Vite 7（Rollup 4）+ `maxParallelFileOps=1` + `--max-old-space-size=300`**：spike 峰值 445–472 MB，留约 30–55 MB 余量。
-2. RR v7 的堆下限 ≈ 295–300 MB（290 即 OOM）；**串行化是必要的**（默认并行在 300 MB 堆时 RSS 高 ~27 MB，且更接近上限）。
-3. echarts 即使 tree-shaken 也会把 RR7 的堆需求从 ≤300 MB 推到 >352 MB（OOM）——**真实迁移不要引入 echarts；继续用 recharts**（recharts 未导致超限）。
-4. SvelteKit 在当前 CI 内存下**不可行**（两条 bundler 路线均超出），长期选项需等机器升级或拆 client/server 构建。
-5. 真实应用（6.1k LOC + 更多组件）client 构建会比 spike 重，预计堆需求 320–360 MB、RSS 480–520 MB；若 CI 实际配额明显高于 500 MB（用户确认"不止 500 MB"），RR v7 路线仍是最优选择，但必须**在真实迁移后于 CI 同款限制下复测**。
+**Impact on A/K dual-track strategy**:
+- **Track A (React Router)**: Memory-friendly, suitable for immediate adoption to rescue CI.
+- **Track K (SvelteKit)**: Long-term direction can be retained, but must first answer the CI real quota question (if >1.2GB then viable, otherwise requires: split client/server builds, switch to lighter charts, or accept infeasibility), and re-test after real-scale migration.
 
 ---
 
-## 10. 真实仓库 spike 实测（2026-08-06 晚追加，全量 16 页 + 46 API + recharts）
+## 9. Vite 7 / Rollup 4 Control Measurements (2026-08-06 Addendum)
 
-在 `/tmp/rr-real-spike-20260806`（真实仓库副本，非 git）完成 **全部** 迁移（16 页面 + 46 API route + 中间件 + Node server 冒烟），用 `/usr/bin/time -l` 测整树峰值 RSS。与 §9 的简化 spike 不同，这里是真实代码规模（client 2617 modules / SSR 141 modules）。
+The user subsequently confirmed: **CI build container memory exceeds 500 MB, but don't get your hopes up**. Therefore, in addition to §8 (Vite 8/Rolldown), a supplementary test was run on the **Vite 7.3.6 + Rollup 4 (pure JS bundler, memory controlled by V8 heap)** path to verify whether "lower concurrency, trading time for space" could squeeze builds under 500 MB.
 
-### 单进程基线（RR CLI 原生流程）
+**Method**: Downgraded versions of the same spike source code (RR: react-router 7.18.2 + @react-router/dev 7.18.2 + @react-router/node + vite 7.3.6; SK: @sveltejs/kit 2.70.2 + @sveltejs/vite-plugin-svelte 6.2.4 + vite 7.3.6), `/usr/bin/time -l` to measure peak RSS across the tree, `NODE_OPTIONS=--max-old-space-size=N` to control heap, `build.rollupOptions.maxParallelFileOps=1` to serialize module processing.
 
-| 配置 | 结果 | 峰值 RSS | 说明 |
+### RR v7 + Vite 7 (Rollup 4)
+
+| Configuration | Result | Peak RSS | Client Time |
 |---|---|---|---|
-| `react-router build` @ 300MB 堆 | OOM | ~479MB | client ✓ 后 SSR 阶段崩 |
-| `react-router build` @ 352MB 堆 | OOM | ~569MB | SSR transform 阶段崩 |
-| `react-router build` @ 400MB 堆 + `--max-semi-space-size=8` | ✅ | **586MB** | 能跑通但超 500MB |
+| 352 MB heap + default parallelism (with echarts) | OOM (heap) | 517 MB | — |
+| 352 MB heap + serialized (with echarts) | OOM (heap) | 507 MB | — |
+| 352 MB heap + serialized (without echarts, aligned with real project) | ✅ | **504 MB** | 2.16s |
+| 320 MB heap + serialized | ✅ | 477 MB | 2.27s |
+| **300 MB heap + serialized** | ✅ | **445–458 MB** | 2.27s |
+| 300 MB heap + default parallelism | ✅ | 472 MB | 2.37s |
+| 290 MB heap + serialized | OOM (heap) | 437 MB | — |
 
-→ client（2617 modules）与 SSR（141 modules）两个 Rollup 环境在**同一 V8 堆**连续构建、堆不回收，峰值叠加是超限根因。
+### RR v8 + Vite 8 Same-Workload Control (without echarts, re-measured)
 
-### 双进程分阶段（推荐方案）
+| Configuration | Result | Peak RSS |
+|---|---|---|
+| RR 8.3.0 + Vite 8.2.0 (Rolldown), 352 MB heap | ✅ | **567 MB** |
 
-对 RR CLI（`@react-router/dev` 7.18.2 的 `viteBuild`）打了约 12 行补丁：支持 `RR_SKIP_SSR=1`（只 build client）与 `RR_SKIP_CLIENT=1`（跳过 clean + client，只 build SSR 且 `emptyOutDir:false`）。正式迁移用 `pnpm patch` 持久化。
+→ At the same workload, **RR v7 + Rollup saves approximately 100–120 MB RSS compared to RR v8 + Rolldown** (Rollup is JS, heap can be throttled; Rolldown is Rust-native allocation, heap cap is ineffective).
 
-| 阶段 | 命令 | 堆 | 峰值 RSS | 模块 | 耗时 |
+### SK + Vite 7 (Rollup 4)
+
+| Configuration | Result | Peak RSS |
+|---|---|---|
+| 352 MB heap + default parallelism (with echarts tree-shaken) | OOM (SSR phase) | 525 MB |
+| 352 MB heap + default parallelism (without echarts) | OOM (SSR phase) | 526 MB |
+| 352 MB heap + serialized (without echarts) | OOM (client phase) | **652 MB** |
+| 320 / 300 / 280 MB heap | OOM | 465–491 MB |
+
+→ **SvelteKit + Rollup 4 exceeds the 352 MB heap even with "minimal prototype + zero chart dependencies"** (Svelte 5 compiler + kit runtime + Rollup JS module graph); RSS floor ≥ 525 MB. SK exceeds the currently acceptable CI range on both Vite 8/Rolldown (1.13–1.20 GB) and Vite 7/Rollup (≥525 MB) paths.
+
+### Updated Conclusions
+
+1. **The only path that fits within 500 MB is: RR v7.18.2 + Vite 7 (Rollup 4) + `maxParallelFileOps=1` + `--max-old-space-size=300`**: spike peak 445–472 MB, leaving approximately 30–55 MB headroom.
+2. RR v7 heap floor is ≈295–300 MB (290 causes OOM); **serialization is mandatory** (default parallelism at 300 MB heap adds ~27 MB RSS and runs closer to the limit).
+3. echarts, even tree-shaken, pushes RR7's heap requirement from ≤300 MB to >352 MB (OOM) — **do not introduce echarts in a real migration; continue using recharts** (recharts did not cause overages).
+4. SvelteKit is **infeasible** under current CI memory (both bundler paths exceed limits); long-term options require machine upgrades or split client/server builds.
+5. Real application (6.1k LOC + more components) client build will be heavier than the spike; estimated heap requirement 320–360 MB, RSS 480–520 MB; if the actual CI quota is significantly higher than 500 MB (user confirmed "exceeds 500 MB"), the RR v7 path remains optimal, but must be **re-tested under actual CI constraints after real migration**.
+
+---
+
+## 10. Real Repository Spike Measurements (2026-08-06 Evening Addendum, Full 16 Pages + 46 APIs + recharts)
+
+Completed **full** migration (16 pages + 46 API routes + middleware + Node server smoke test) at `/tmp/rr-real-spike-20260806` (real repository copy, not git), measured peak RSS across the entire process tree with `/usr/bin/time -l`. Unlike the simplified spike in §9, this uses real code scale (client 2617 modules / SSR 141 modules).
+
+### Single-Process Baseline (RR CLI Native Flow)
+
+| Configuration | Result | Peak RSS | Notes |
+|---|---|---|---|
+| `react-router build` @ 300MB heap | OOM | ~479MB | Client ✓ then SSR phase crashes |
+| `react-router build` @ 352MB heap | OOM | ~569MB | SSR transform phase crashes |
+| `react-router build` @ 400MB heap + `--max-semi-space-size=8` | ✅ | **586MB** | Runs but exceeds 500MB |
+
+→ Client (2617 modules) and SSR (141 modules) two Rollup environments build sequentially within **the same V8 heap** without heap reclamation; peak overlap is the root cause of overages.
+
+### Dual-Process Staged Build (Recommended Approach)
+
+Applied approximately 12 lines of patches to the RR CLI (`@react-router/dev` 7.18.2's `viteBuild`): added support for `RR_SKIP_SSR=1` (build client only) and `RR_SKIP_CLIENT=1` (skip clean + client, build SSR only with `emptyOutDir:false`). Formal migration should persist this via `pnpm patch`.
+
+| Phase | Command | Heap | Peak RSS | Modules | Time |
 |---|---|---|---|---|---|
-| 1. client | `RR_SKIP_SSR=1 react-router build` | 320MB + semi 8 | **497–504MB** | 2617 | ~2.7–2.9s |
+| 1. Client | `RR_SKIP_SSR=1 react-router build` | 320MB + semi 8 | **497–504MB** | 2617 | ~2.7–2.9s |
 | 2. SSR | `RR_SKIP_CLIENT=1 react-router build` | 160–200MB + semi 8 | **227–229MB** | 141 | ~0.55s |
 
-- client 堆下限 ≈ **315–320MB**（315 OOM，320 通过）；`--minify=false`、Rollup `cache:false`、V8 `--optimize-for-size` 均无法突破，瓶颈是 2617 模块的 AST/模块图本身
-- 全量验证：`tsc --noEmit` ✅；`eslint` ✅（修复 66 个 codemod 残留 no-unused-vars）；运行时冒烟 ✅（`/api/health` 200、`/login` 200 SSR HTML、未登录 `/overview` 302→`/login`、`/api/*` 401）
-- 服务端入口：`server/index.mjs` 用 `@react-router/node` 的 `createRequestListener({ build })`
+- Client heap floor is ≈ **315–320MB** (315 OOM, 320 passes); `--minify=false`, Rollup `cache:false`, V8 `--optimize-for-size` cannot break through; bottleneck is the AST/module graph of 2617 modules itself
+- Full validation: `tsc --noEmit` ✅; `eslint` ✅ (fixed 66 codemod-residual no-unused-vars); runtime smoke test ✅ (`/api/health` 200, `/login` 200 SSR HTML, unauthenticated `/overview` 302→`/login`, `/api/*` 401)
+- Server entry: `server/index.mjs` uses `@react-router/node`'s `createRequestListener({ build })`
 
-### 更新结论
+### Updated Conclusions
 
-1. **RR v7 + Vite 7/Rollup 在真实应用规模下可以稳定压到每进程 ≤ ~500MB**，前提是 client/SSR **分阶段独立进程**构建（`RR_SKIP_SSR` / `RR_SKIP_CLIENT` 补丁）。
-2. client 阶段 497–504MB 的余量很薄：若 CI 配额是 0.5GiB（512MB），建议配额至少 **768MB–1GiB**；若必须 <500MB 且有富余时间，后续可继续降 client 模块图（如替换 recharts 为轻量图表）或拆更细。
-3. 产品定位已同步改为**纯数据平台**（README / AGENTS / CLAUDE / locales 去掉 "social media" 定位）。
+1. **RR v7 + Vite 7/Rollup can stably hold each process at ≤ ~500MB at real application scale**, provided client/SSR are built in **staged independent processes** (using the `RR_SKIP_SSR` / `RR_SKIP_CLIENT` patch).
+2. Client phase headroom at 497–504MB is very thin: if CI quota is 0.5GiB (512MB), recommend quota of at least **768MB–1GiB**; if <500MB is mandatory and time permits, further reduce the client module graph (e.g., replace recharts with a lighter charting library) or split more finely.
+3. Product positioning has been updated to **pure data platform** (README / AGENTS / CLAUDE / locales remove "social media" positioning).
