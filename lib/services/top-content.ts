@@ -154,69 +154,68 @@ async function readRepoGrowth(
   const db = getDb();
   const isGithub = platform === "github";
   const accountById = new Map(accounts.map((a) => [a.id, a]));
+  const snapshotTable = isGithub ? "github_repo_snapshots" : "gitlab_project_snapshots";
+  const idColumn = isGithub ? "repo_id" : "project_id";
 
-  const snapshotSql = isGithub
-    ? sql`
-        SELECT DISTINCT ON (account_id, repo_id)
-          account_id, repo_id AS external_id, stars, forks
-        FROM github_repo_snapshots
-        WHERE account_id = ANY(${intArray(accountIds)})
-          AND snapshot_date < ${sinceDay}
-        ORDER BY account_id, repo_id, snapshot_date DESC
-      `
-    : sql`
-        SELECT DISTINCT ON (account_id, project_id)
-          account_id, project_id AS external_id, stars, forks
-        FROM gitlab_project_snapshots
-        WHERE account_id = ANY(${intArray(accountIds)})
-          AND snapshot_date < ${sinceDay}
-        ORDER BY account_id, project_id, snapshot_date DESC
-      `;
+  // 1. Most recent snapshot BEFORE the time window (true baseline)
+  // 2. Earliest snapshot EVER (fallback when the repo was first tracked within the window)
+  const [baselineResult, oldestResult] = await Promise.all([
+    db.execute<{ account_id: number; external_id: number; stars: number; forks: number; }>(sql`
+      SELECT DISTINCT ON (account_id, ${sql.raw(idColumn)})
+        account_id,
+        ${sql.raw(idColumn)} AS external_id, stars, forks
+      FROM ${sql.raw(snapshotTable)}
+      WHERE account_id = ANY(${intArray(accountIds)})
+        AND snapshot_date < ${sinceDay}
+      ORDER BY account_id, ${sql.raw(idColumn)}, snapshot_date DESC
+    `),
+    db.execute<{ account_id: number; external_id: number; stars: number; forks: number; }>(sql`
+      SELECT DISTINCT ON (account_id, ${sql.raw(idColumn)})
+        account_id,
+        ${sql.raw(idColumn)} AS external_id, stars, forks
+      FROM ${sql.raw(snapshotTable)}
+      WHERE account_id = ANY(${intArray(accountIds)})
+      ORDER BY account_id, ${sql.raw(idColumn)}, snapshot_date ASC
+    `),
+  ]);
+
+  const baselines = new Map(baselineResult.rows.map((r) => [`${r.account_id}:${r.external_id}`, r]));
+  const oldest = new Map(oldestResult.rows.map((r) => [`${r.account_id}:${r.external_id}`, r]));
 
   let repoRows: Array<{
     accountId: number; externalId: number; name: string; fullName: string | null;
     stars: number | null; forks: number | null; isFork: number | null;
   }>;
-  let baselineRows: { rows: Array<{ account_id: number; external_id: number; stars: number; forks: number }> };
 
   if (isGithub) {
-    const [rows, baselineResult] = await Promise.all([
-      db.select({
-        accountId: github_repos.account_id,
-        externalId: github_repos.repo_id,
-        name: github_repos.name,
-        fullName: github_repos.full_name,
-        stars: github_repos.stars,
-        forks: github_repos.forks,
-        isFork: github_repos.is_fork,
-      }).from(github_repos).where(inArray(github_repos.account_id, accountIds)),
-      db.execute<{ account_id: number; external_id: number; stars: number; forks: number; }>(snapshotSql),
-    ]);
+    const rows = await db.select({
+      accountId: github_repos.account_id,
+      externalId: github_repos.repo_id,
+      name: github_repos.name,
+      fullName: github_repos.full_name,
+      stars: github_repos.stars,
+      forks: github_repos.forks,
+      isFork: github_repos.is_fork,
+    }).from(github_repos).where(inArray(github_repos.account_id, accountIds));
     repoRows = rows;
-    baselineRows = baselineResult;
   } else {
-    const [rows, baselineResult] = await Promise.all([
-      db.select({
-        accountId: gitlab_projects.account_id,
-        externalId: gitlab_projects.project_id,
-        name: gitlab_projects.name,
-        fullName: gitlab_projects.path_with_namespace,
-        stars: gitlab_projects.stars,
-        forks: gitlab_projects.forks,
-        isFork: gitlab_projects.is_fork,
-      }).from(gitlab_projects).where(inArray(gitlab_projects.account_id, accountIds)),
-      db.execute<{ account_id: number; external_id: number; stars: number; forks: number; }>(snapshotSql),
-    ]);
+    const rows = await db.select({
+      accountId: gitlab_projects.account_id,
+      externalId: gitlab_projects.project_id,
+      name: gitlab_projects.name,
+      fullName: gitlab_projects.path_with_namespace,
+      stars: gitlab_projects.stars,
+      forks: gitlab_projects.forks,
+      isFork: gitlab_projects.is_fork,
+    }).from(gitlab_projects).where(inArray(gitlab_projects.account_id, accountIds));
     repoRows = rows;
-    baselineRows = baselineResult;
   }
-
-  const baselines = new Map(baselineRows.rows.map((r) => [`${r.account_id}:${r.external_id}`, r]));
 
   return repoRows.flatMap((row) => {
     if (row.isFork) return [];
     const key = `${row.accountId}:${row.externalId}`;
-    const baseline = baselines.get(key);
+    // Priority: baseline before window > oldest ever recorded
+    const baseline = baselines.get(key) ?? oldest.get(key);
     const account = accountById.get(row.accountId);
     if (!account) return [];
     const url = isGithub

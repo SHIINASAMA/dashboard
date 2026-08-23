@@ -1,13 +1,24 @@
 import { useTranslation } from "react-i18next";
 import { useAiChat } from "../overview/useAiChat";
 import { AiChatUI } from "@/components/AiChatUI";
+import { useIsMobile } from "@/lib/client/useIsMobile";
 
 export default function AiPage() {
   const { t } = useTranslation();
   const chat = useAiChat();
+  const isMobile = useIsMobile();
+
+  // Counteract parent padding so the chat fills the viewport.
+  // Title bar = 48px + env(safe-area-inset-top); content padding = 12px (mobile) or 24px (desktop).
+  const negTop = isMobile ? "-mt-3" : "-mt-6";
+  const negX = isMobile ? "-mx-4" : "-mx-8";
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-48px-48px)] -mt-4 -mx-4 sm:-mx-8">
+    <div className={`flex flex-col ${negTop} ${negX}`}
+      style={{
+        height: `calc(100dvh - 48px - env(safe-area-inset-top) - ${isMobile ? 24 : 48}px - env(safe-area-inset-bottom))`,
+      }}
+    >
       {/* Header */}
       <div className="shrink-0 px-4 py-3 border-b border-[var(--border)]">
         <h2 className="text-lg font-semibold">{t("overview.aiAgent.heading")}</h2>

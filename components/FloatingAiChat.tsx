@@ -50,12 +50,13 @@ export function FloatingAiChat({ pathname = "/" }: { pathname?: string }) {
 
   return (
     <>
-      {/* Floating button */}
+      {/* Floating button — respects safe-area-inset-bottom */}
       <button
         onClick={toggle}
         aria-expanded={isOpen}
         aria-label={t("overview.aiAgent.heading")}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 flex items-center justify-center"
+        className="fixed z-50 w-14 h-14 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 flex items-center justify-center"
+        style={{ bottom: "max(1.5rem, env(safe-area-inset-bottom, 1.5rem))", right: "max(1.5rem, env(safe-area-inset-right, 1.5rem))" }}
       >
         {isOpen ? <X size={22} /> : <Bot size={22} />}
       </button>
@@ -68,8 +69,9 @@ export function FloatingAiChat({ pathname = "/" }: { pathname?: string }) {
             className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm md:bg-transparent md:backdrop-blur-none"
             onClick={() => setIsOpen(false)}
           />
-          {/* Panel */}
-          <div className="fixed z-50 bottom-24 right-6 w-[min(400px,calc(100vw-48px))] h-[min(560px,calc(100vh-140px))] bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-200">
+          {/* Panel — positioned above the FAB with safe-area awareness */}
+          <div className="fixed z-50 w-[min(400px,calc(100vw-48px))] h-[min(560px,calc(100vh-140px))] bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-200"
+            style={{ bottom: "max(5.5rem, calc(env(safe-area-inset-bottom, 1.5rem) + 4rem))", right: "max(1.5rem, env(safe-area-inset-right, 1.5rem))" }}>
             {/* Header */}
             <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border)] shrink-0">
               <Bot size={18} className="text-[var(--primary)]" />

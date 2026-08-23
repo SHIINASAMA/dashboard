@@ -143,7 +143,12 @@ export function PulseSection() {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 gap-2" style={{ gridTemplateColumns: `repeat(${Math.min(
+            (data.content.tweets.length > 0 ? 1 : 0) +
+            (data.content.redditPosts.length > 0 || data.content.redditComments.length > 0 ? 1 : 0) +
+            (data.repositories.length > 0 ? 1 : 0),
+            3
+          )}, minmax(0, 1fr))` }}>
             {data.content.tweets.length > 0 && (
               <HighlightCard title={t("overview.pulse.topTweets")} icon={<MessageSquare size={16} />}>
                 {data.content.tweets.map((item) => (

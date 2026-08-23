@@ -301,7 +301,7 @@ function AccountFormPanel({
 
       {/* platform selector — add mode only */}
       {!editing && (
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {TABS.map(({ key, Icon }) => (
             <button key={key} type="button" onClick={() => setPlatform(key)}
               className={`flex min-h-11 items-center justify-center gap-1.5 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors ${platform === key ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]" : "border-[var(--border)] hover:bg-[var(--muted)]"}`}
@@ -426,36 +426,38 @@ function CookieTable({
   return (
     <div className="space-y-2">
       <p className="text-[12px] text-[var(--muted-foreground)]">{t("addAccountForm.helpRedditPublicCookies")}</p>
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-left text-xs text-[var(--muted-foreground)] border-b border-[var(--border)]">
-            <th className="pb-1.5 font-medium w-1/3">{t("addAccountForm.cookieName")}</th>
-            <th className="pb-1.5 font-medium">{t("addAccountForm.cookieValue")}</th>
-            <th className="pb-1.5 w-10" />
-          </tr>
-        </thead>
-        <tbody>
-          {entries.map((row, i) => (
-            <tr key={i} className="border-b border-[var(--border)]/50">
-              <td className="py-1 pr-2">
-                <input type="text" value={row.key} onChange={(e) => updateRow(i, "key", e.target.value)}
-                  placeholder="cookie name"
-                  className="min-h-11 w-full rounded border border-[var(--border)] bg-transparent px-2 py-1.5 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[var(--ring)]" />
-              </td>
-              <td className="py-1 pr-2">
-                <input type="password" value={row.value} onChange={(e) => updateRow(i, "value", e.target.value)}
-                  placeholder="..."
-                  className="min-h-11 w-full rounded border border-[var(--border)] bg-transparent px-2 py-1.5 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[var(--ring)]" />
-              </td>
-              <td className="py-1">
-                <button onClick={() => removeRow(i)} className="flex min-h-11 min-w-11 items-center justify-center rounded text-xs text-[var(--danger)]/60 transition-colors hover:bg-[var(--danger)]/10 hover:text-[var(--danger)]">
-                  &times;
-                </button>
-              </td>
+      <div className="overflow-x-auto -mx-1 px-1">
+        <table className="w-full text-sm" style={{ minWidth: 360 }}>
+          <thead>
+            <tr className="text-left text-xs text-[var(--muted-foreground)] border-b border-[var(--border)]">
+              <th className="pb-1.5 font-medium w-1/3">{t("addAccountForm.cookieName")}</th>
+              <th className="pb-1.5 font-medium">{t("addAccountForm.cookieValue")}</th>
+              <th className="pb-1.5 w-10" />
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {entries.map((row, i) => (
+              <tr key={i} className="border-b border-[var(--border)]/50">
+                <td className="py-1 pr-2">
+                  <input type="text" value={row.key} onChange={(e) => updateRow(i, "key", e.target.value)}
+                    placeholder="cookie name"
+                    className="min-h-11 w-full rounded border border-[var(--border)] bg-transparent px-2 py-1.5 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[var(--ring)]" />
+                </td>
+                <td className="py-1 pr-2">
+                  <input type="password" value={row.value} onChange={(e) => updateRow(i, "value", e.target.value)}
+                    placeholder="..."
+                    className="min-h-11 w-full rounded border border-[var(--border)] bg-transparent px-2 py-1.5 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[var(--ring)]" />
+                </td>
+                <td className="py-1">
+                  <button onClick={() => removeRow(i)} className="flex min-h-11 min-w-11 items-center justify-center rounded text-xs text-[var(--danger)]/60 transition-colors hover:bg-[var(--danger)]/10 hover:text-[var(--danger)]">
+                    &times;
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <button onClick={addRow}
         className="flex min-h-11 w-full items-center justify-center gap-1 rounded-lg border border-dashed border-[var(--border)] px-3 py-1.5 text-xs text-[var(--muted-foreground)] transition-colors hover:border-[var(--primary)]/50 hover:text-[var(--foreground)]"
       >

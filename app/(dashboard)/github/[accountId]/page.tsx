@@ -21,6 +21,7 @@ import { FetchRunHistory } from "@/components/FetchRunHistory";
 
 function GithubHeatmap({ data }: { data: GithubContribution[] }) {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const dayMap = new Map(data.map((d) => [d.date, d.count]));
   const year = new Date().getFullYear();
   const startDate = new Date(year, 0, 1);
@@ -47,25 +48,33 @@ function GithubHeatmap({ data }: { data: GithubContribution[] }) {
     return "bg-[var(--chart-4)]";
   };
 
+  // Smaller cells on mobile for better fit
+  const cellClass = isMobile ? "w-2.5 h-2.5 rounded-sm" : "w-3 h-3 rounded-sm";
+
   return (
-    <div className="overflow-x-auto">
-      <div className="flex gap-0.5" style={{ minWidth: 700 }}>
-        {weeks.map((week, wi) => (
-          <div key={wi} className="flex flex-col gap-0.5">
-            {week.map((day) => (
-              <div key={day.date} className={`w-3 h-3 rounded-sm ${getColor(day.count)}`}
-                title={t("githubDetail.contributions", { date: day.date, count: day.count })} />
-            ))}
-          </div>
-        ))}
+    <div>
+      <div className="overflow-x-auto -mx-1 px-1">
+        <div className="flex gap-0.5" style={{ minWidth: isMobile ? 500 : 700 }}>
+          {weeks.map((week, wi) => (
+            <div key={wi} className="flex flex-col gap-0.5">
+              {week.map((day) => (
+                <div key={day.date} className={`${cellClass} ${getColor(day.count)}`}
+                  title={t("githubDetail.contributions", { date: day.date, count: day.count })} />
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
+      {isMobile && (
+        <p className="text-[11px] text-[var(--muted-foreground)] text-center mt-1.5">← scroll →</p>
+      )}
       <div className="flex items-center gap-1 mt-2 justify-end text-xs text-[var(--muted-foreground)]">
         <span>{t("githubDetail.less")}</span>
-        <div className="w-3 h-3 rounded-sm bg-[var(--muted)]" />
-        <div className="w-3 h-3 rounded-sm bg-[var(--chart-4)]/25" />
-        <div className="w-3 h-3 rounded-sm bg-[var(--chart-4)]/50" />
-        <div className="w-3 h-3 rounded-sm bg-[var(--chart-4)]/75" />
-        <div className="w-3 h-3 rounded-sm bg-[var(--chart-4)]" />
+        <div className={`${cellClass} bg-[var(--muted)]`} />
+        <div className={`${cellClass} bg-[var(--chart-4)]/25`} />
+        <div className={`${cellClass} bg-[var(--chart-4)]/50`} />
+        <div className={`${cellClass} bg-[var(--chart-4)]/75`} />
+        <div className={`${cellClass} bg-[var(--chart-4)]`} />
         <span>{t("githubDetail.more")}</span>
       </div>
     </div>

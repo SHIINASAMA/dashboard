@@ -193,7 +193,7 @@ async function readProjectBaselines(
   sinceDay: string,
   untilDay: string,
 ) {
-  if (accountIds.length === 0) return { baselines: new Map(), earliest: new Map() };
+  if (accountIds.length === 0) return { baselines: new Map(), earliest: new Map(), oldest: new Map() };
   const db = getDb();
   const isGithub = platform === "github";
   const snapshotTable = isGithub ? github_repo_snapshots : gitlab_project_snapshots;
@@ -201,7 +201,10 @@ async function readProjectBaselines(
   const key = (row: { account_id: number; external_id: number }) =>
     `${row.account_id}:${row.external_id}`;
 
-  const [priorRows, windowRows] = await Promise.all([
+  // 1. Most recent snapshot BEFORE the time window (true baseline)
+  // 2. Earliest snapshot WITHIN the time window (fallback when no prior snapshot exists)
+  // 3. Earliest snapshot EVER (fallback when the repo was first tracked within the window)
+  const [priorRows, windowRows, oldestRows] = await Promise.all([
     db.execute<{
       account_id: number; external_id: number; stars: number; forks: number; snapshot_date: string;
     }>(sql`
@@ -225,6 +228,17 @@ async function readProjectBaselines(
       gte(snapshotTable.snapshot_date, sinceDay),
       lte(snapshotTable.snapshot_date, untilDay),
     )).orderBy(snapshotTable.snapshot_date),
+    db.execute<{
+      account_id: number; external_id: number; stars: number; forks: number; snapshot_date: string;
+    }>(sql`
+      SELECT DISTINCT ON (account_id, ${sql.raw(isGithub ? "repo_id" : "project_id")})
+        account_id,
+        ${sql.raw(isGithub ? "repo_id" : "project_id")} AS external_id,
+        stars, forks, snapshot_date
+      FROM ${sql.raw(isGithub ? "github_repo_snapshots" : "gitlab_project_snapshots")}
+      WHERE account_id = ANY(${intArray(accountIds)})
+      ORDER BY account_id, ${sql.raw(isGithub ? "repo_id" : "project_id")}, snapshot_date ASC
+    `),
   ]);
 
   const baselines = new Map(priorRows.rows.map((row) => [key(row), row]));
@@ -233,7 +247,8 @@ async function readProjectBaselines(
     const rowKey = key(row);
     if (!earliest.has(rowKey)) earliest.set(rowKey, row);
   }
-  return { baselines, earliest };
+  const oldest = new Map(oldestRows.rows.map((row) => [key(row), row]));
+  return { baselines, earliest, oldest };
 }
 
 async function readRepositories(accounts: PulseAccount[], accountIds: number[], sinceDay: string, untilDay: string) {
@@ -265,7 +280,8 @@ async function readRepositories(accounts: PulseAccount[], accountIds: number[], 
     const platform = githubRepoRows.includes(row) ? "github" : "gitlab";
     const baselineSet = platform === "github" ? githubBaselines : gitlabBaselines;
     const projectKey = `${row.account_id}:${row.external_id}`;
-    const baseline = baselineSet.baselines.get(projectKey) ?? baselineSet.earliest.get(projectKey);
+    // Priority: baseline before window > earliest in window > oldest ever recorded
+    const baseline = baselineSet.baselines.get(projectKey) ?? baselineSet.earliest.get(projectKey) ?? baselineSet.oldest.get(projectKey);
     const url = platform === "github"
       ? `https://github.com/${row.fullName}`
       : account.instance_url

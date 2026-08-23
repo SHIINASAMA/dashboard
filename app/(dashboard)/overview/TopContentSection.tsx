@@ -63,10 +63,10 @@ export function TopContentSection() {
             <table className="w-full min-w-[480px] text-left text-sm">
               <thead>
                 <tr className="border-b border-[var(--border)] text-[11px] uppercase tracking-wide text-[var(--muted-foreground)]">
-                  <th className="px-4 py-2.5 font-medium">{t("overview.topContent.colContent")}</th>
-                  <th className="px-2 py-2.5 font-medium">{t("overview.topContent.colPlatform")}</th>
-                  <th className="px-2 py-2.5 text-right font-medium">{t("overview.topContent.colMetric")}</th>
-                  <th className="px-4 py-2.5 text-right font-medium">{t("overview.topContent.colGrowth")}</th>
+                  <th className="px-4 py-2.5 font-medium w-full">{t("overview.topContent.colContent")}</th>
+                  <th className="whitespace-nowrap px-2 py-2.5 font-medium">{t("overview.topContent.colPlatform")}</th>
+                  <th className="whitespace-nowrap px-2 py-2.5 text-right font-medium">{t("overview.topContent.colMetric")}</th>
+                  <th className="whitespace-nowrap px-4 py-2.5 text-right font-medium">{t("overview.topContent.colGrowth")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -91,10 +91,10 @@ function TopContentRow({ item }: { item: TopContentItem }) {
 
   return (
     <tr className="border-b border-[var(--border)] transition-colors last:border-0 hover:bg-[var(--muted)]">
-      <td className="max-w-0 px-4 py-2.5">
+      <td className="px-4 py-2.5" style={{ width: "100%" }}>
         <div className="flex items-center gap-1.5">
           <span className="shrink-0"><PlatformIcon platform={item.platform} /></span>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             {item.route ? (
               <Link to={item.route} className="block line-clamp-1 text-sm leading-5 hover:underline">{item.title}</Link>
             ) : (
