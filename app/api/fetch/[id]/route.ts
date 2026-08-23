@@ -4,6 +4,7 @@ import { updateAccount } from "@/lib/services/accounts";
 import { isMockMode } from "@/lib/config";
 import { dispatchFetch } from "@/lib/fetch-dispatch";
 import { requireSession, authorizeAccountOwner } from "@/lib/auth-helpers";
+import type { AccountRow } from "@/lib/repositories/accounts";
 
 async function POST(req: Request, params: Record<string, string>) {
   const auth = await requireSession(req);
@@ -20,15 +21,16 @@ async function POST(req: Request, params: Record<string, string>) {
   if (!account) return json({ error: "Account not found" }, { status: 404 });
   if (!authorized) return json({ error: "Forbidden" }, { status: 403 });
 
-  if (!account.is_active) {
+  const acct = account as AccountRow;
+  if (!acct.is_active) {
     await updateAccount(Number(id), { is_active: 1 });
-    account.is_active = 1;
+    acct.is_active = 1;
   }
 
-  void dispatchFetch(account as never, "manual").catch((e: unknown) =>
+  void dispatchFetch(acct, "manual").catch((e: unknown) =>
     console.error("Background fetch error:", e instanceof Error ? e.message : String(e))
   );
-  return json({ ok: true, message: `Fetch started for @${account.screen_name}` });
+  return json({ ok: true, message: `Fetch started for @${acct.screen_name}` });
 }
 
 export async function action({ request, params }: ActionFunctionArgs) {

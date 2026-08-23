@@ -1,7 +1,8 @@
 import { json, getSearchParams } from "@/lib/api-server";
 import type { LoaderFunctionArgs } from "react-router";
 import { getTopTweets } from "@/lib/repositories/twitter";
-import { requireSession } from "@/lib/auth-helpers";
+import { requireSession, getOwnerId } from "@/lib/auth-helpers";
+import { getAccounts } from "@/lib/services/accounts";
 
 async function GET(req: Request) {
   const auth = await requireSession(req);
@@ -9,7 +10,10 @@ async function GET(req: Request) {
 
   const metric = getSearchParams(req).get("metric") || "favorite_count";
   const limit = Number(getSearchParams(req).get("limit")) || 10;
-  const tweets = await getTopTweets(metric, limit);
+  const ownerId = getOwnerId(auth.user);
+  const accounts = await getAccounts(ownerId);
+  const twitterIds = accounts.filter((a) => a.platform === "twitter").map((a) => a.id);
+  const tweets = await getTopTweets(metric, limit, twitterIds.length > 0 ? twitterIds : undefined);
   return json(tweets);
 }
 

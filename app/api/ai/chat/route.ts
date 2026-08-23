@@ -6,6 +6,8 @@ import { requireSession } from "@/lib/auth-helpers";
 
 // ── Rate limiting ─────────────────────────────────────────────────
 // Per-user: max N requests per minute window.
+// NOTE: In-memory Map — per-process only. For multi-instance deployments,
+// consider using Redis or a shared store for consistent rate limiting.
 const rateLimitMap = new Map<number, { count: number; resetAt: number }>();
 const RATE_WINDOW_MS = 60_000;
 const RATE_MAX_REQUESTS = 10;

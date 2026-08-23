@@ -17,7 +17,7 @@ async function GET(req: Request, params: Record<string, string>) {
 
   const stats = await getLatestUserStats(account.id);
   const recentFetchRuns = await getRecentFetchRuns(account.id);
-  const { auth_token: _, ...rest } = account as unknown as { auth_token: string; [k: string]: unknown };
+  const { auth_token: _, ...rest } = account as unknown as Record<string, unknown>;
   return json({ ...rest, stats: stats || null, recentFetchRuns });
 }
 
@@ -44,7 +44,7 @@ async function PUT(req: Request, params: Record<string, string>) {
   await updateAccount(Number(id), updates);
   const updated = await getAccountById(Number(id));
   if (!updated) return json({ error: "Not found" }, { status: 404 });
-  const { auth_token: _, ...pub } = updated as unknown as { auth_token: string; [k: string]: unknown };
+  const { auth_token: _, ...pub } = updated as unknown as Record<string, unknown>;
   return json(pub);
 }
 

@@ -1,14 +1,18 @@
 import { json, getSearchParams } from "@/lib/api-server";
 import type { LoaderFunctionArgs } from "react-router";
 import { getCalendarData } from "@/lib/repositories/twitter";
-import { requireSession } from "@/lib/auth-helpers";
+import { requireSession, getOwnerId } from "@/lib/auth-helpers";
+import { getAccounts } from "@/lib/services/accounts";
 
 async function GET(req: Request) {
   const auth = await requireSession(req);
   if (!auth) return json({ error: "Unauthorized" }, { status: 401 });
 
   const year = Number(getSearchParams(req).get("year")) || new Date().getFullYear();
-  const data = await getCalendarData(year);
+  const ownerId = getOwnerId(auth.user);
+  const accounts = await getAccounts(ownerId);
+  const twitterIds = accounts.filter((a) => a.platform === "twitter").map((a) => a.id);
+  const data = await getCalendarData(year, twitterIds.length > 0 ? twitterIds : undefined);
   return json(data);
 }
 
