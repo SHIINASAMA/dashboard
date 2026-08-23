@@ -3,6 +3,7 @@ import { getJwtSecret } from "./crypto";
 import { isMockMode } from "./config";
 import { getRequestCookie } from "./api-server";
 import { getUserByUsername } from "./services/users";
+import { getAccountById, getAccounts } from "./services/accounts";
 import type { AccountRow } from "./repositories/accounts";
 
 const SESSION_MAX_AGE = 7 * 24 * 60 * 60; // 7 days
@@ -66,8 +67,6 @@ export async function authorizeAccountOwner(
   user: AuthUser,
   accountId: number,
 ): Promise<{ authorized: boolean; account?: AccountRow }> {
-  // Dynamic import to avoid circular dependency issues
-  const { getAccountById } = await import("./services/accounts");
   const account = await getAccountById(accountId);
   if (!account) return { authorized: false };
   // Admin can access all accounts; regular users can only access their own
@@ -90,7 +89,7 @@ export function getOwnerId(user: AuthUser): number | undefined {
  * with their owned accounts.
  */
 export async function filterOwnedAccountIds(user: AuthUser, requestedIds: number[]): Promise<number[]> {
-  const accounts = await import("./services/accounts").then((m) => m.getAccounts(getOwnerId(user)));
+  const accounts = await getAccounts(getOwnerId(user));
   const ownedIds = new Set(accounts.map((a) => a.id));
   return requestedIds.filter((id) => ownedIds.has(id));
 }

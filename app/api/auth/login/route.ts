@@ -5,7 +5,9 @@ import { createSessionToken, SESSION_MAX_AGE } from "@/lib/auth-helpers";
 import { isMockMode } from "@/lib/config";
 
 const SESSION_COOKIE = "dash_session";
-const IS_SECURE = process.env.HTTPS === "true";
+// Default to secure=true for production safety. Set HTTPS=false explicitly
+// only for local HTTP development.
+const IS_SECURE = process.env.HTTPS !== "false";
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_WINDOW_MS = 60_000;
@@ -41,7 +43,11 @@ async function POST(req: Request) {
   }
 
   try {
-    const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+    // Use first IP from x-forwarded-for (set by reverse proxy) to prevent
+    // clients from spoofing arbitrary IPs to bypass rate limiting.
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+      || req.headers.get("x-real-ip")
+      || "unknown";
     if (!checkRateLimit(ip)) {
       return json({ error: "Too many login attempts. Please try again later." }, { status: 429 });
     }

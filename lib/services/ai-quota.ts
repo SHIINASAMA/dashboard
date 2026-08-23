@@ -1,6 +1,6 @@
 import { sql, eq } from "drizzle-orm";
 import { getDb } from "../db/connection";
-import { isMockMode } from "../config";
+import { isMockMode, aiConfig } from "../config";
 import { ai_quota } from "@/db/schema";
 
 function today(): string {
@@ -27,7 +27,7 @@ export async function getTodayUsage(userId: number): Promise<number> {
 export async function checkQuota(userId: number): Promise<boolean> {
   if (isMockMode()) return true;
   const usage = await getTodayUsage(userId);
-  const config = (await import("../config")).aiConfig();
+  const config = aiConfig();
   return usage < config.dailyTokenLimit;
 }
 

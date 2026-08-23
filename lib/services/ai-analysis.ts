@@ -2,9 +2,19 @@
 import { streamText, isStepCount, type ModelMessage } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { z } from "zod";
+import { eq, desc } from "drizzle-orm";
 import { aiConfig, isMockMode } from "../config";
+import { getDb } from "../db/connection";
+import { github_repos, gitlab_stats, gitlab_projects } from "@/db/schema";
 import { checkQuota, recordUsage, getTodayUsage } from "./ai-quota";
 import { getSetting } from "../repositories/settings";
+import { getOverviewStats, getTweets } from "../repositories/twitter";
+import { getGithubOverview } from "../repositories/github";
+import { getRedditOverview, getRedditPosts } from "../repositories/reddit";
+import { getRecentRuns } from "../repositories/fetch-runs";
+import { getTopContent } from "./top-content";
+import { getPulse } from "./pulse";
+import { getFetchHealth } from "./fetch-health";
 import * as accountsService from "./accounts";
 
 // ── System prompt ──────────────────────────────────────────────────
@@ -72,12 +82,10 @@ function createTools(userId: number) {
         if (!account) return { error: "Account not found or access denied" };
 
         if (account.platform === "twitter") {
-          const { getOverviewStats } = await import("../repositories/twitter");
           const stats = await getOverviewStats([args.accountId]);
           return { platform: "twitter", screen_name: account.screen_name, ...stats };
         }
         if (account.platform === "github") {
-          const { getGithubOverview } = await import("../repositories/github");
           const overview = await getGithubOverview(args.accountId);
           return {
             platform: "github", screen_name: account.screen_name,
@@ -87,9 +95,6 @@ function createTools(userId: number) {
           };
         }
         if (account.platform === "gitlab") {
-          const { getDb } = await import("../db/connection");
-          const { gitlab_stats, gitlab_projects } = await import("@/db/schema");
-          const { eq } = await import("drizzle-orm");
           const db = getDb();
           const [stats] = await db.select().from(gitlab_stats).where(eq(gitlab_stats.account_id, args.accountId)).limit(1);
           const projects = await db.select().from(gitlab_projects).where(eq(gitlab_projects.account_id, args.accountId));
@@ -100,7 +105,6 @@ function createTools(userId: number) {
           };
         }
         if (account.platform === "reddit") {
-          const { getRedditOverview } = await import("../repositories/reddit");
           const overview = await getRedditOverview(args.accountId);
           return { platform: "reddit", screen_name: account.screen_name, ...overview };
         }
@@ -118,7 +122,6 @@ function createTools(userId: number) {
         const accounts = await accountsService.getAccounts(userId);
         const twitterIds = accounts.filter((a) => a.platform === "twitter").map((a) => a.id);
         if (twitterIds.length === 0) return [];
-        const { getTweets } = await import("../repositories/twitter");
         const result = await getTweets(1, args.limit || 10, "created_at", "desc", args.search, twitterIds);
         return result.data.map((t: any) => ({
           id: t.id, full_text: t.full_text?.slice(0, 200),
@@ -137,9 +140,6 @@ function createTools(userId: number) {
       execute: async (args: { accountId: number; limit?: number }) => {
         const account = await validateAccountOwnership(userId, args.accountId);
         if (!account || account.platform !== "github") return { error: "Account not found or access denied" };
-        const { getDb } = await import("../db/connection");
-        const { github_repos } = await import("@/db/schema");
-        const { eq, desc } = await import("drizzle-orm");
         const repos = await getDb().select().from(github_repos)
           .where(eq(github_repos.account_id, args.accountId))
           .orderBy(desc(github_repos.stars))
@@ -161,7 +161,6 @@ function createTools(userId: number) {
       execute: async (args: { accountId: number; limit?: number; sort?: string }) => {
         const account = await validateAccountOwnership(userId, args.accountId);
         if (!account || account.platform !== "reddit") return { error: "Account not found or access denied" };
-        const { getRedditPosts } = await import("../repositories/reddit");
         const result = await getRedditPosts(args.accountId, 1, args.limit || 10, args.sort || "score");
         return result.data.map((p: any) => ({
           title: p.title, subreddit: p.subreddit, score: p.score,
@@ -178,7 +177,6 @@ function createTools(userId: number) {
       execute: async (args: { limit?: number }) => {
         const accounts = await accountsService.getAccounts(userId);
         const accountIds = accounts.map((a: any) => a.id);
-        const { getRecentRuns } = await import("../repositories/fetch-runs");
         const runsMap = await getRecentRuns(accountIds, args.limit || 5);
         const result: Record<string, any[]> = {};
         for (const [acctId, runs] of runsMap) {
@@ -197,7 +195,6 @@ function createTools(userId: number) {
         days: z.number().describe("回溯天数，可选 7、30 或 90，默认 7"),
       }),
       execute: async (args: { days?: number }) => {
-        const { getTopContent } = await import("./top-content");
         const accounts = await accountsService.getAccounts(userId);
         return await getTopContent(accounts, args.days || 7);
       },
@@ -208,7 +205,6 @@ function createTools(userId: number) {
         days: z.number().describe("分析天数范围，默认 7"),
       }),
       execute: async (args: { days?: number }) => {
-        const { getPulse } = await import("./pulse");
         const accounts = await accountsService.getAccounts(userId);
         return await getPulse(accounts, args.days || 7);
       },
@@ -217,7 +213,6 @@ function createTools(userId: number) {
       description: "获取当前用户所有数据抓取任务的健康状态，包括成功率、最近的失败原因、连续失败次数和下次执行时间。用于诊断数据更新问题。",
       inputSchema: z.object({}),
       execute: async () => {
-        const { getFetchHealth } = await import("./fetch-health");
         return await getFetchHealth(userId);
       },
     },

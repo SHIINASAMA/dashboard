@@ -36,7 +36,7 @@ export async function getRecentRuns(accountIds: number[], limitPerAccount = 5): 
     FROM (
       SELECT fr.*, ROW_NUMBER() OVER (PARTITION BY fr.account_id ORDER BY fr.started_at DESC, fr.id DESC) AS run_rank
       FROM fetch_runs fr
-      WHERE fr.account_id IN ${sql.raw(`(${accountIds.join(",")})`)}
+      WHERE fr.account_id IN ${sql.join(accountIds.map((id) => sql`${id}`), sql`, `)}
     ) ranked
     WHERE ranked.run_rank <= ${limitPerAccount}
     ORDER BY ranked.account_id, ranked.started_at DESC, ranked.id DESC

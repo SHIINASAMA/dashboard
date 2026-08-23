@@ -1,7 +1,7 @@
 const tokens = new Map<string, number>();
 
 export function createConfirmToken(): string {
-  const token = Array.from(crypto.getRandomValues(new Uint8Array(3)))
+  const token = Array.from(crypto.getRandomValues(new Uint8Array(16)))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
   tokens.set(token, Date.now() + 5 * 60_000);

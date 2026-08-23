@@ -92,7 +92,11 @@ export async function getTweets(page: number, limit: number, sort: string, order
   const db = getDb();
   const offset = (page - 1) * limit;
   const conditions: SQL<unknown>[] = [];
-  if (search) conditions.push(like(tweets.full_text, `%${search}%`));
+  if (search) {
+    // Escape SQL LIKE wildcards to prevent users from matching unintended patterns
+    const escaped = search.replace(/%/g, "\\%").replace(/_/g, "\\_");
+    conditions.push(like(tweets.full_text, `%${escaped}%`));
+  }
   if (hasIds(accountIds)) conditions.push(inArray(tweets.account_id, accountIds));
   if (isReply !== undefined) conditions.push(eq(tweets.is_reply, isReply));
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
