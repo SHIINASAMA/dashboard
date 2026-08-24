@@ -57,10 +57,10 @@ export async function getGithubContributions(accountId: number, yr?: number) {
   return getDb().select().from(github_contributions).where(and(...conditions)).orderBy(github_contributions.date);
 }
 
-export async function upsertGithubRepo(repo: { account_id: number; repo_id: number; name: string; full_name: string; description: string | null; language: string | null; stars: number; forks: number; open_issues: number; topics: string; homepage: string | null; is_fork: number; created_at: string | null; updated_at: string | null; pushed_at: string | null }) {
+export async function upsertGithubRepo(repo: { account_id: number; repo_id: number; name: string; full_name: string; description: string | null; language: string | null; stars: number; forks: number; open_issues: number; open_issues_only?: number | null; open_pull_requests?: number | null; topics: string; homepage: string | null; is_fork: number; created_at: string | null; updated_at: string | null; pushed_at: string | null }) {
   await getDb().insert(github_repos).values({ ...repo, fetched_at: sql`NOW()` }).onConflictDoUpdate({
     target: [github_repos.account_id, github_repos.repo_id],
-    set: { stars: repo.stars, forks: repo.forks, open_issues: repo.open_issues, topics: repo.topics, language: repo.language, description: repo.description, pushed_at: repo.pushed_at, updated_at: repo.updated_at },
+    set: { stars: repo.stars, forks: repo.forks, open_issues: repo.open_issues, open_issues_only: repo.open_issues_only ?? null, open_pull_requests: repo.open_pull_requests ?? null, topics: repo.topics, language: repo.language, description: repo.description, pushed_at: repo.pushed_at, updated_at: repo.updated_at },
   });
 }
 
@@ -95,10 +95,10 @@ export async function upsertGithubContributions(accountId: number, contributions
   });
 }
 
-export async function upsertGithubRepoSnapshot(s: { account_id: number; repo_id: number; stars: number; forks: number; open_issues: number; snapshot_date: string }) {
+export async function upsertGithubRepoSnapshot(s: { account_id: number; repo_id: number; stars: number; forks: number; open_issues: number; open_issues_only?: number | null; open_pull_requests?: number | null; snapshot_date: string }) {
   await getDb().insert(github_repo_snapshots).values(s).onConflictDoUpdate({
     target: [github_repo_snapshots.account_id, github_repo_snapshots.repo_id, github_repo_snapshots.snapshot_date],
-    set: { stars: s.stars, forks: s.forks, open_issues: s.open_issues },
+    set: { stars: s.stars, forks: s.forks, open_issues: s.open_issues, open_issues_only: s.open_issues_only ?? null, open_pull_requests: s.open_pull_requests ?? null },
   });
 }
 
@@ -108,7 +108,10 @@ export async function getGithubRepoSnapshots(accountId: number, repoId: number, 
   const sinceStr = since.toISOString();
   return getDb().select({
     stars: github_repo_snapshots.stars, forks: github_repo_snapshots.forks,
-    open_issues: github_repo_snapshots.open_issues, date: github_repo_snapshots.snapshot_date,
+    open_issues: github_repo_snapshots.open_issues,
+    open_issues_only: github_repo_snapshots.open_issues_only,
+    open_pull_requests: github_repo_snapshots.open_pull_requests,
+    date: github_repo_snapshots.snapshot_date,
   }).from(github_repo_snapshots)
     .where(and(eq(github_repo_snapshots.account_id, accountId), eq(github_repo_snapshots.repo_id, repoId), gte(github_repo_snapshots.snapshot_date, sinceStr)))
     .orderBy(github_repo_snapshots.snapshot_date);

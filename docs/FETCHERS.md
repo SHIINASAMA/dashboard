@@ -52,10 +52,11 @@ Without recursive reply walking, only ~29 of 82 own tweets were found (35%). Wit
 ### Fetch flow
 1. User profile stats via REST API
 2. Repos list (up to 100)
-3. Daily snapshots of star/fork/open_issues counts
+3. Daily snapshots of star/fork counts and GitHub's aggregate open item count
 4. Traffic data (clones, views, referrers, paths) — requires PAT with repo scope
 5. Releases with asset download counts — requires PAT
-6. Contribution calendar via GraphQL
+6. Open Issue and open Pull Request totals via batched GraphQL (requires PAT)
+7. Contribution calendar via GraphQL
 
 ### Data stored
 - `github_stats` (public_repos, followers, following)
@@ -65,6 +66,8 @@ Without recursive reply walking, only ~29 of 82 own tweets were found (35%). Wit
 - `github_contributions`
 
 Steps 4–5 are silently skipped if no PAT is configured on the account.
+
+GitHub REST `open_issues_count` includes both Issues and Pull Requests. The dashboard preserves this value in `open_issues` and adds nullable `open_issues_only` / `open_pull_requests` fields where split data is available; null means unknown, not zero.
 
 ## GitLab — `lib/fetchers/gitlab.ts`
 

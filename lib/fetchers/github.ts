@@ -1,5 +1,6 @@
 // @ts-nocheck — existing business logic with loose types
 import type { AccountRow } from "../repositories/accounts";
+import { fetchGithubIssueSplits } from "./github-issue-split";
 import {
   upsertGithubRepo, insertGithubStats, upsertGithubContributions, updateAccount,
   upsertGithubRepoSnapshot,
@@ -100,8 +101,28 @@ export async function fetchGithubAccount(account: AccountRow) {
     const today = new Date().toISOString().slice(0, 10);
     let trafficError: string | null = null;
     let releaseError: string | null = null;
+    let issueSplitError: string | null = null;
+    const issueSplits = new Map<number, { issues: number; pullRequests: number }>();
+
+    if (token) {
+      try {
+        const splits = await fetchGithubIssueSplits(
+          repos.map(repo => ({ id: repo.id as number, full_name: repo.full_name as string })),
+          token,
+        );
+        for (const [repoId, counts] of splits) issueSplits.set(repoId, counts);
+      } catch (e: unknown) {
+        issueSplitError = e instanceof Error ? e.message : String(e);
+      }
+    } else {
+      issueSplitError = "No GitHub PAT configured; Issues and Pull Requests cannot be counted separately.";
+    }
 
     for (const repo of repos) {
+      const openIssuesAggregate = repo.open_issues_count || 0;
+      const split = issueSplits.get(repo.id as number);
+      const openPullRequests = split?.pullRequests ?? null;
+      const openIssuesOnly = split ? Math.max(openIssuesAggregate - (openPullRequests ?? 0), 0) : null;
       await upsertGithubRepo({
         account_id: account.id,
         repo_id: repo.id,
@@ -111,7 +132,9 @@ export async function fetchGithubAccount(account: AccountRow) {
         language: repo.language,
         stars: repo.stargazers_count || 0,
         forks: repo.forks_count || 0,
-        open_issues: repo.open_issues_count || 0,
+        open_issues: openIssuesAggregate,
+        open_issues_only: openIssuesOnly,
+        open_pull_requests: openPullRequests,
         topics: JSON.stringify(repo.topics || []),
         homepage: repo.homepage,
         is_fork: repo.fork ? 1 : 0,
@@ -125,7 +148,9 @@ export async function fetchGithubAccount(account: AccountRow) {
         repo_id: repo.id,
         stars: repo.stargazers_count || 0,
         forks: repo.forks_count || 0,
-        open_issues: repo.open_issues_count || 0,
+        open_issues: openIssuesAggregate,
+        open_issues_only: openIssuesOnly,
+        open_pull_requests: openPullRequests,
         snapshot_date: today,
       });
     }
@@ -163,6 +188,9 @@ export async function fetchGithubAccount(account: AccountRow) {
     }
     if (releaseError) {
       capabilityGaps.push({ capability: "github_releases", message: releaseError });
+    }
+    if (issueSplitError) {
+      capabilityGaps.push({ capability: "github_issue_split", message: issueSplitError });
     }
 
     // 4. Fetch contribution calendar

@@ -90,7 +90,7 @@ export const api = {
 
   // GitHub Repo Insights
   getGithubRepoSnapshots: (accountId: number, repoId: number, days = 30) =>
-    fetchJSON<{ stars: number; forks: number; open_issues: number; date: string }[]>(`/github/${accountId}/repos/${repoId}/snapshots?days=${days}`),
+    fetchJSON<{ stars: number; forks: number; open_issues: number; open_issues_only: number | null; open_pull_requests: number | null; date: string }[]>(`/github/${accountId}/repos/${repoId}/snapshots?days=${days}`),
   getGithubTrafficClones: (accountId: number, repoId: number, days = 30) =>
     fetchJSON<{ date: string; count: number; uniques: number }[]>(`/github/${accountId}/repos/${repoId}/clones?days=${days}`),
   getGithubTrafficViews: (accountId: number, repoId: number, days = 30) =>

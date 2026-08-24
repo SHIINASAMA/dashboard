@@ -44,9 +44,10 @@ Migrations are idempotent `CREATE TABLE IF NOT EXISTS` statements executed by `b
 1. Parses config and validates `DASHBOARD_SECRET`
 2. Creates the PostgreSQL pool and verifies connectivity
 3. Creates any missing tables from the schema list (indexes included in the DDL)
-4. Checks for a legacy SQLite file — if found without a migration flag, logs a warning and skips (the old `bun:sqlite` import is not available in the Node runtime)
-5. Re-encrypts any plaintext `auth_token` values found in `accounts`
-6. Bootstraps the `admin` user if it does not exist (using `ADMIN_PASSWORD_HASH` if set, otherwise a generated random password printed to the console)
+4. Adds idempotent missing columns required by newer releases
+5. Checks for a legacy SQLite file — if found without a migration flag, logs a warning and skips (the old `bun:sqlite` import is not available in the Node runtime)
+6. Re-encrypts any plaintext `auth_token` values found in `accounts`
+7. Bootstraps the `admin` user if it does not exist (using `ADMIN_PASSWORD_HASH` if set, otherwise a generated random password printed to the console)
 
 `db/migrate.ts` exists only as a backward-compat re-export of `bootstrap()`.
 
@@ -56,6 +57,12 @@ Migrations are idempotent `CREATE TABLE IF NOT EXISTS` statements executed by `b
 2. Export it from `db/schema/index.ts`
 3. Add the `CREATE TABLE IF NOT EXISTS` DDL to the `SCHEMA` list in `lib/setup.ts` so existing deployments pick it up
 4. Add a repository in `lib/repositories/`
+
+## Adding Columns To Existing Tables
+
+1. Add the column to the Drizzle schema and the matching bootstrap/test DDL.
+2. Add an idempotent `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` entry to `ensureSchemaColumns()` in `lib/setup.ts`.
+3. Use nullable columns when existing rows have no authoritative value; do not use zero for unknown data.
 
 ## Key Conventions
 

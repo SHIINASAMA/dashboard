@@ -347,6 +347,33 @@ describe("github queries", () => {
     expect(overview).toBeDefined();
   });
 
+  it("persists split Issue and Pull Request counts", async () => {
+    await githubQ.upsertGithubRepo({
+      account_id: acctId, repo_id: 200, name: "split", full_name: "gh_test/split",
+      description: null, language: null, stars: 3, forks: 1, open_issues: 7,
+      open_issues_only: 4, open_pull_requests: 3, topics: "[]", homepage: null,
+      is_fork: 0, created_at: null, updated_at: null, pushed_at: null,
+    });
+
+    await githubQ.upsertGithubRepoSnapshot({
+      account_id: acctId, repo_id: 200, stars: 3, forks: 1, open_issues: 8,
+      snapshot_date: "2026-08-23",
+    });
+    let snapshots = await githubQ.getGithubRepoSnapshots(acctId, 200);
+    expect(snapshots[0]).toMatchObject({ open_issues: 8, open_issues_only: null, open_pull_requests: null });
+
+    await githubQ.upsertGithubRepoSnapshot({
+      account_id: acctId, repo_id: 200, stars: 3, forks: 1, open_issues: 8,
+      open_issues_only: 5, open_pull_requests: 3, snapshot_date: "2026-08-23",
+    });
+    snapshots = await githubQ.getGithubRepoSnapshots(acctId, 200);
+    expect(snapshots[0]).toMatchObject({ open_issues: 8, open_issues_only: 5, open_pull_requests: 3 });
+
+    const overview = await githubQ.getGithubOverview(acctId);
+    const repo = overview.allRepos.find(item => item.repo_id === 200);
+    expect(repo).toMatchObject({ open_issues: 7, open_issues_only: 4, open_pull_requests: 3 });
+  });
+
   it("upserts a contribution", async () => {
     await githubQ.upsertGithubContribution({ account_id: acctId, date: "2024-01-01", count: 5, level: 2 });
     const contribs = await githubQ.getGithubContributions(acctId);

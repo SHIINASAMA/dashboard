@@ -34,6 +34,7 @@ export async function bootstrap() {
 
   // 4. Create missing tables (must run before migration)
   await createMissingTables();
+  await ensureSchemaColumns();
 
   // 5. Check for legacy SQLite migration (no-op once flagged)
   await autoMigrate();
@@ -99,9 +100,9 @@ const SCHEMA = [
   { table: "user_stats", sql: `CREATE TABLE IF NOT EXISTS user_stats (id SERIAL PRIMARY KEY, account_id INTEGER NOT NULL REFERENCES accounts(id), followers_count INTEGER NOT NULL, following_count INTEGER NOT NULL, tweet_count INTEGER NOT NULL, listed_count INTEGER DEFAULT 0, recorded_at TEXT NOT NULL DEFAULT NOW()); CREATE INDEX IF NOT EXISTS idx_user_stats_account_id ON user_stats(account_id); CREATE INDEX IF NOT EXISTS idx_user_stats_recorded_at ON user_stats(recorded_at)` },
   { table: "tweets", sql: `CREATE TABLE IF NOT EXISTS tweets (id TEXT PRIMARY KEY, account_id INTEGER NOT NULL REFERENCES accounts(id), full_text TEXT NOT NULL, created_at TEXT NOT NULL, favorite_count INTEGER DEFAULT 0, retweet_count INTEGER DEFAULT 0, reply_count INTEGER DEFAULT 0, view_count INTEGER DEFAULT 0, bookmark_count INTEGER DEFAULT 0, is_quote INTEGER DEFAULT 0, is_reply INTEGER DEFAULT 0, is_retweet INTEGER DEFAULT 0, media_urls TEXT DEFAULT '[]', urls TEXT DEFAULT '[]', hashtags TEXT DEFAULT '[]', mentions TEXT DEFAULT '[]', lang TEXT DEFAULT '', fetched_at TEXT NOT NULL DEFAULT NOW()); CREATE INDEX IF NOT EXISTS idx_tweets_created_at ON tweets(created_at); CREATE INDEX IF NOT EXISTS idx_tweets_account_id ON tweets(account_id)` },
   { table: "github_stats", sql: `CREATE TABLE IF NOT EXISTS github_stats (id SERIAL PRIMARY KEY, account_id INTEGER NOT NULL REFERENCES accounts(id), public_repos INTEGER NOT NULL, public_gists INTEGER DEFAULT 0, followers INTEGER NOT NULL, following INTEGER NOT NULL, recorded_at TEXT NOT NULL DEFAULT NOW())` },
-  { table: "github_repos", sql: `CREATE TABLE IF NOT EXISTS github_repos (id SERIAL PRIMARY KEY, account_id INTEGER NOT NULL REFERENCES accounts(id), repo_id INTEGER NOT NULL, name TEXT NOT NULL, full_name TEXT NOT NULL, description TEXT, language TEXT, stars INTEGER DEFAULT 0, forks INTEGER DEFAULT 0, open_issues INTEGER DEFAULT 0, topics TEXT DEFAULT '[]', homepage TEXT, is_fork INTEGER DEFAULT 0, pinned INTEGER DEFAULT 0, created_at TEXT, updated_at TEXT, pushed_at TEXT, fetched_at TEXT NOT NULL DEFAULT NOW()); CREATE UNIQUE INDEX IF NOT EXISTS idx_github_repos_uniq ON github_repos(account_id, repo_id)` },
+  { table: "github_repos", sql: `CREATE TABLE IF NOT EXISTS github_repos (id SERIAL PRIMARY KEY, account_id INTEGER NOT NULL REFERENCES accounts(id), repo_id INTEGER NOT NULL, name TEXT NOT NULL, full_name TEXT NOT NULL, description TEXT, language TEXT, stars INTEGER DEFAULT 0, forks INTEGER DEFAULT 0, open_issues INTEGER DEFAULT 0, open_issues_only INTEGER, open_pull_requests INTEGER, topics TEXT DEFAULT '[]', homepage TEXT, is_fork INTEGER DEFAULT 0, pinned INTEGER DEFAULT 0, created_at TEXT, updated_at TEXT, pushed_at TEXT, fetched_at TEXT NOT NULL DEFAULT NOW()); CREATE UNIQUE INDEX IF NOT EXISTS idx_github_repos_uniq ON github_repos(account_id, repo_id)` },
   { table: "github_contributions", sql: `CREATE TABLE IF NOT EXISTS github_contributions (id SERIAL PRIMARY KEY, account_id INTEGER NOT NULL REFERENCES accounts(id), date TEXT NOT NULL, count INTEGER DEFAULT 0, level INTEGER DEFAULT 0, fetched_at TEXT NOT NULL DEFAULT NOW()); CREATE UNIQUE INDEX IF NOT EXISTS idx_github_contributions_uniq ON github_contributions(account_id, date)` },
-  { table: "github_repo_snapshots", sql: `CREATE TABLE IF NOT EXISTS github_repo_snapshots (id SERIAL PRIMARY KEY, account_id INTEGER NOT NULL REFERENCES accounts(id), repo_id INTEGER NOT NULL, stars INTEGER NOT NULL, forks INTEGER DEFAULT 0, open_issues INTEGER DEFAULT 0, snapshot_date TEXT NOT NULL); CREATE UNIQUE INDEX IF NOT EXISTS idx_github_repo_snapshots_uniq ON github_repo_snapshots(account_id, repo_id, snapshot_date)` },
+  { table: "github_repo_snapshots", sql: `CREATE TABLE IF NOT EXISTS github_repo_snapshots (id SERIAL PRIMARY KEY, account_id INTEGER NOT NULL REFERENCES accounts(id), repo_id INTEGER NOT NULL, stars INTEGER NOT NULL, forks INTEGER DEFAULT 0, open_issues INTEGER DEFAULT 0, open_issues_only INTEGER, open_pull_requests INTEGER, snapshot_date TEXT NOT NULL); CREATE UNIQUE INDEX IF NOT EXISTS idx_github_repo_snapshots_uniq ON github_repo_snapshots(account_id, repo_id, snapshot_date)` },
   { table: "github_traffic_clones", sql: `CREATE TABLE IF NOT EXISTS github_traffic_clones (id SERIAL PRIMARY KEY, account_id INTEGER NOT NULL REFERENCES accounts(id), repo_id INTEGER NOT NULL, date TEXT NOT NULL, count INTEGER DEFAULT 0, uniques INTEGER DEFAULT 0); CREATE UNIQUE INDEX IF NOT EXISTS idx_github_traffic_clones_uniq ON github_traffic_clones(account_id, repo_id, date)` },
   { table: "github_traffic_views", sql: `CREATE TABLE IF NOT EXISTS github_traffic_views (id SERIAL PRIMARY KEY, account_id INTEGER NOT NULL REFERENCES accounts(id), repo_id INTEGER NOT NULL, date TEXT NOT NULL, count INTEGER DEFAULT 0, uniques INTEGER DEFAULT 0); CREATE UNIQUE INDEX IF NOT EXISTS idx_github_traffic_views_uniq ON github_traffic_views(account_id, repo_id, date)` },
   { table: "github_referrers", sql: `CREATE TABLE IF NOT EXISTS github_referrers (id SERIAL PRIMARY KEY, account_id INTEGER NOT NULL REFERENCES accounts(id), repo_id INTEGER NOT NULL, referrer TEXT NOT NULL, count INTEGER DEFAULT 0, uniques INTEGER DEFAULT 0, snapshot_date TEXT NOT NULL DEFAULT CURRENT_DATE); CREATE UNIQUE INDEX IF NOT EXISTS idx_github_referrers_uniq ON github_referrers(account_id, repo_id, referrer, snapshot_date)` },
@@ -136,6 +137,20 @@ async function createMissingTables(): Promise<void> {
   }
   if (created.length > 0) {
     console.log(`[Bootstrap] Created ${created.length} table(s): ${created.join(", ")}`);
+  }
+}
+
+const SCHEMA_COLUMNS = [
+  { table: "github_repos", ddl: "ADD COLUMN IF NOT EXISTS open_issues_only INTEGER" },
+  { table: "github_repos", ddl: "ADD COLUMN IF NOT EXISTS open_pull_requests INTEGER" },
+  { table: "github_repo_snapshots", ddl: "ADD COLUMN IF NOT EXISTS open_issues_only INTEGER" },
+  { table: "github_repo_snapshots", ddl: "ADD COLUMN IF NOT EXISTS open_pull_requests INTEGER" },
+];
+
+async function ensureSchemaColumns(): Promise<void> {
+  const pool = getPgPool()!;
+  for (const { table, ddl } of SCHEMA_COLUMNS) {
+    await pool.query(`ALTER TABLE ${table} ${ddl}`);
   }
 }
 

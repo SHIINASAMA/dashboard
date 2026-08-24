@@ -140,6 +140,8 @@ export interface GithubRepo {
   stars: number;
   forks: number;
   open_issues: number;
+  open_issues_only: number | null;
+  open_pull_requests: number | null;
   topics: string;
   homepage: string | null;
   is_fork: number;

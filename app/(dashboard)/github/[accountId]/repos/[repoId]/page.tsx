@@ -12,7 +12,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area, LineChart, Line,
 } from "recharts";
-import { ArrowLeft, Star, GitFork, Download, ExternalLink, Globe, TrendingUp, Eye, Activity, FileText } from "lucide-react";
+import { ArrowLeft, Star, GitFork, Download, ExternalLink, Globe, TrendingUp, Eye, CircleDot, GitPullRequest, FileText } from "lucide-react";
 import { useIsMobile } from "@/lib/client/useIsMobile";
 import { calcYAxisWidth } from "@/lib/client/utils";
 import { sumSelectedAssetDownloads } from "@/lib/utils/download-growth";
@@ -468,6 +468,12 @@ export default function RepoDetail() {
     );
   }
 
+  const openIssues = repo.open_issues_only ?? (
+    repo.open_pull_requests == null ? null : Math.max(repo.open_issues - repo.open_pull_requests, 0)
+  );
+  const openPullRequests = repo.open_pull_requests;
+  const splitUnavailable = openIssues == null || openPullRequests == null;
+
   let referrerHistoryChart: HistoryPoint[] | null = null;
   const referrerHistoryData = referrerHistory;
   const referrersData = referrers;
@@ -530,10 +536,23 @@ export default function RepoDetail() {
         <TimeRangeSelector value={days} onChange={setDays} />
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
         <Card><CardContent className="p-4 sm:p-4 text-center"><Star size={16} className="inline mb-1 text-[var(--muted-foreground)]" /><p className="text-2xl font-bold font-mono tabular-nums">{repo.stars.toLocaleString()}</p><p className="text-xs text-[var(--muted-foreground)]">{t("repoDetail.stars")}</p></CardContent></Card>
         <Card><CardContent className="p-4 sm:p-4 text-center"><GitFork size={16} className="inline mb-1 text-[var(--muted-foreground)]" /><p className="text-2xl font-bold font-mono tabular-nums">{repo.forks.toLocaleString()}</p><p className="text-xs text-[var(--muted-foreground)]">{t("repoDetail.forks")}</p></CardContent></Card>
-        <Card className="col-span-2 md:col-span-1"><CardContent className="p-4 sm:p-4 text-center"><Activity size={16} className="inline mb-1 text-[var(--muted-foreground)]" /><p className="text-2xl font-bold font-mono tabular-nums">{repo.open_issues.toLocaleString()}</p><p className="text-xs text-[var(--muted-foreground)]">{t("repoDetail.openIssues")}</p></CardContent></Card>
+        <Card>
+          <CardContent className="p-4 sm:p-4 text-center">
+            <CircleDot size={16} className="inline mb-1 text-[var(--muted-foreground)]" />
+            <p className="text-2xl font-bold font-mono tabular-nums" title={splitUnavailable ? t("repoDetail.splitUnavailable") : undefined}>{openIssues == null ? "—" : openIssues.toLocaleString()}</p>
+            <p className="text-xs text-[var(--muted-foreground)]">{t("repoDetail.openIssues")}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 sm:p-4 text-center">
+            <GitPullRequest size={16} className="inline mb-1 text-[var(--muted-foreground)]" />
+            <p className="text-2xl font-bold font-mono tabular-nums" title={splitUnavailable ? t("repoDetail.splitUnavailable") : undefined}>{openPullRequests == null ? "—" : openPullRequests.toLocaleString()}</p>
+            <p className="text-xs text-[var(--muted-foreground)]">{t("repoDetail.openPullRequests")}</p>
+          </CardContent>
+        </Card>
       </div>
 
       <Card>

@@ -71,6 +71,7 @@ const SCHEMA = [
       id SERIAL PRIMARY KEY, account_id INTEGER NOT NULL REFERENCES accounts(id),
       repo_id INTEGER NOT NULL, name TEXT NOT NULL, full_name TEXT NOT NULL, description TEXT,
       language TEXT, stars INTEGER DEFAULT 0, forks INTEGER DEFAULT 0, open_issues INTEGER DEFAULT 0,
+      open_issues_only INTEGER, open_pull_requests INTEGER,
       topics TEXT DEFAULT '[]', homepage TEXT, is_fork INTEGER DEFAULT 0, pinned INTEGER DEFAULT 0,
       created_at TEXT, updated_at TEXT, pushed_at TEXT, fetched_at TEXT NOT NULL DEFAULT NOW()
     );
@@ -89,7 +90,8 @@ const SCHEMA = [
     sql: `CREATE TABLE IF NOT EXISTS github_repo_snapshots (
       id SERIAL PRIMARY KEY, account_id INTEGER NOT NULL REFERENCES accounts(id),
       repo_id INTEGER NOT NULL, stars INTEGER NOT NULL, forks INTEGER DEFAULT 0,
-      open_issues INTEGER DEFAULT 0, snapshot_date TEXT NOT NULL
+      open_issues INTEGER DEFAULT 0, open_issues_only INTEGER, open_pull_requests INTEGER,
+      snapshot_date TEXT NOT NULL
     );
     CREATE UNIQUE INDEX IF NOT EXISTS idx_github_repo_snapshots_uniq ON github_repo_snapshots(account_id, repo_id, snapshot_date)`,
   },
@@ -170,7 +172,8 @@ const SCHEMA = [
       id SERIAL PRIMARY KEY, account_id INTEGER NOT NULL REFERENCES accounts(id),
       project_id INTEGER NOT NULL, name TEXT NOT NULL, path_with_namespace TEXT NOT NULL,
       description TEXT, language TEXT, stars INTEGER DEFAULT 0, forks INTEGER DEFAULT 0,
-      open_issues INTEGER DEFAULT 0, topics TEXT DEFAULT '[]', homepage TEXT, is_fork INTEGER DEFAULT 0,
+      open_issues INTEGER DEFAULT 0,
+      topics TEXT DEFAULT '[]', homepage TEXT, is_fork INTEGER DEFAULT 0,
       pinned INTEGER DEFAULT 0, visibility TEXT DEFAULT 'public', created_at TEXT, updated_at TEXT,
       last_activity_at TEXT, fetched_at TEXT NOT NULL DEFAULT NOW()
     );
@@ -181,7 +184,8 @@ const SCHEMA = [
     sql: `CREATE TABLE IF NOT EXISTS gitlab_project_snapshots (
       id SERIAL PRIMARY KEY, account_id INTEGER NOT NULL REFERENCES accounts(id),
       project_id INTEGER NOT NULL, stars INTEGER NOT NULL, forks INTEGER DEFAULT 0,
-      open_issues INTEGER DEFAULT 0, snapshot_date TEXT NOT NULL
+      open_issues INTEGER DEFAULT 0,
+      snapshot_date TEXT NOT NULL
     );
     CREATE UNIQUE INDEX IF NOT EXISTS idx_gitlab_project_snapshots_uniq ON gitlab_project_snapshots(account_id, project_id, snapshot_date)`,
   },

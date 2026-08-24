@@ -87,7 +87,7 @@ export const githubRepos = range(12).map((i) => {
     id: n, account_id: 2, repo_id: 1000 + n, name: `repo-${n}`, full_name: `mockuser/repo-${n}`,
     description: `Mock repository #${n} — ${languages[i % languages.length]} project`,
     language: languages[i % languages.length], stars: Math.max(stars, 12), forks: Math.round(stars / 8),
-    open_issues: (i * 3) % 20, topics: JSON.stringify(["mock", "demo"]),
+    open_issues: (i * 3) % 20, open_issues_only: i % 2 ? null : Math.ceil(((i * 3) % 20) / 2), open_pull_requests: i % 2 ? null : Math.floor(((i * 3) % 20) / 2),
     homepage: i % 2 ? "https://example.com" : null, is_fork: i % 4 === 0 ? 1 : 0, pinned: i < 3 ? 1 : 0,
     created_at: isoDaysAgo(200 - i * 10),
   };
@@ -120,6 +120,7 @@ export const githubContributions = range(365).map((i) => {
 
 export const githubSnapshots = range(30).map((i) => ({
   date: daysAgo(29 - i), stars: githubTotalStars - i * 2, forks: githubTotalForks - i, open_issues: 30 + i,
+  open_issues_only: i === 29 ? 24 : null, open_pull_requests: i === 29 ? 9 : null,
 }));
 
 export const githubClones = range(30).map((i) => ({ date: daysAgo(29 - i), count: (i * 11) % 90, uniques: (i * 5) % 40 }));

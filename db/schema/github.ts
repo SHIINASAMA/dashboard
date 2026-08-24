@@ -23,6 +23,8 @@ export const github_repos = pgTable("github_repos", {
   stars: integer("stars").default(0),
   forks: integer("forks").default(0),
   open_issues: integer("open_issues").default(0),
+  open_issues_only: integer("open_issues_only"),
+  open_pull_requests: integer("open_pull_requests"),
   topics: text("topics").default("[]"),
   homepage: text("homepage"),
   is_fork: integer("is_fork").default(0),
@@ -49,6 +51,8 @@ export const github_repo_snapshots = pgTable("github_repo_snapshots", {
   stars: integer("stars").notNull(),
   forks: integer("forks").default(0),
   open_issues: integer("open_issues").default(0),
+  open_issues_only: integer("open_issues_only"),
+  open_pull_requests: integer("open_pull_requests"),
   snapshot_date: text("snapshot_date").notNull(),
 });
 

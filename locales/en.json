@@ -318,6 +318,8 @@
     "stars": "Stars",
     "forks": "Forks",
     "openIssues": "Open Issues",
+    "openPullRequests": "Open Pull Requests",
+    "splitUnavailable": "Issue and Pull Request counts become separated after the next fetch with a GitHub token.",
     "homepage": "Homepage",
     "starHistory": "Star History",
     "starHistoryDesc": "Star count over time (recorded per fetch)",

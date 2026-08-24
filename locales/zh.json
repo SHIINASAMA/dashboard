@@ -318,6 +318,8 @@
     "stars": "星标",
     "forks": "Fork",
     "openIssues": "未关闭 Issue",
+    "openPullRequests": "未关闭 PR",
+    "splitUnavailable": "下次使用 GitHub Token 抓取后，将分开统计 Issue 和 PR。",
     "homepage": "主页",
     "starHistory": "星标历史",
     "starHistoryDesc": "星标数量随时间变化（每次抓取记录）",
