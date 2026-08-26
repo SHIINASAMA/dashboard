@@ -4,9 +4,9 @@ export function Skeleton({ className = "", style }: { className?: string; style?
 
 export function StatCardSkeleton() {
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-3 sm:p-4">
       <Skeleton className="h-3 w-16 mb-3" />
-      <Skeleton className="h-7 w-20 mb-1" />
+      <Skeleton className="h-8 w-20 mb-1" />
       <Skeleton className="h-3 w-12" />
     </div>
   );

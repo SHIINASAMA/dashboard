@@ -26,7 +26,7 @@ export function FetchHealthSection() {
         <h3 className="flex items-center gap-1.5 text-sm font-semibold text-[var(--muted-foreground)]">
           <CheckCircle2 size={16} /> {t("overview.health.heading")}
         </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {Array.from({ length: 4 }).map((_, index) => <StatCardSkeleton key={index} />)}
         </div>
       </section>
@@ -36,7 +36,7 @@ export function FetchHealthSection() {
   if (isError || !data) {
     return (
       <Card>
-        <CardContent className="p-5 pt-5 sm:p-5 sm:pt-5 text-sm text-[var(--muted-foreground)]">
+        <CardContent className="p-4 sm:p-6 text-sm text-[var(--muted-foreground)]">
           {t("overview.health.unavailable")}
         </CardContent>
       </Card>
@@ -76,7 +76,7 @@ export function FetchHealthSection() {
         <CheckCircle2 size={16} /> {t("overview.health.heading")}
       </h3>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {cards.map((card) => <StatCard key={card.title} {...card} />)}
       </div>
 
@@ -94,15 +94,15 @@ export function FetchHealthSection() {
 
       {data.issues.length > 0 && (
         <Card>
-          <CardContent className="p-3 pt-3 sm:p-3 sm:pt-3">
+          <CardContent className="p-3">
             <div className="space-y-0.5 -mx-2">
               {data.issues.slice(0, 5).map((issue) => (
-                <div key={issue.accountId} className="rounded-md p-2 transition-colors hover:bg-[var(--muted)]">
+                <div key={issue.accountId} className="rounded-md p-2 transition-colors hover:bg-[var(--muted)] active:bg-[var(--border)]/50">
                   <div className="flex items-start justify-between gap-3">
                     <p className="min-h-5 min-w-0 truncate text-sm leading-5 font-medium">
                       {issue.screenName}
                       {getPlatformLabelKey(issue.platform) && (
-                        <span className="ml-2 text-xs text-[var(--muted-foreground)]">
+                        <span className="ml-2 inline-flex items-center rounded bg-[var(--muted)] px-1.5 py-0.5 text-[11px] font-medium text-[var(--muted-foreground)]">
                           {t(getPlatformLabelKey(issue.platform)!)}
                         </span>
                       )}

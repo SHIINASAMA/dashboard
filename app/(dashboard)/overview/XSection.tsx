@@ -26,24 +26,24 @@ export function XSection({ stats, timeline, topLiked, xAccounts }: Props) {
     <section className="space-y-3">
       <h3 className="text-sm font-semibold flex items-center gap-1.5 text-[var(--muted-foreground)]"><XIcon /> {t("overview.xHeading")}</h3>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <StatCard title={t("overview.stats.tweetCount")} value={stats?.tweet_count ?? 0} icon={<MessageSquare size={16} />} description={stats ? t("overview.stats.today", { count: stats.todayTweets }) : undefined} />
         <StatCard title={t("overview.stats.tweetLikes")} value={(stats?.tweet_likes ?? 0).toLocaleString()} icon={<Heart size={16} />} />
         <StatCard title={t("overview.stats.tweetRetweets")} value={(stats?.tweet_retweets ?? 0).toLocaleString()} icon={<Repeat2 size={16} />} />
         <StatCard title={t("overview.stats.tweetViews")} value={(stats?.tweet_views ?? 0).toLocaleString()} icon={<Eye size={16} />} />
         <StatCard title={t("overview.stats.followers")} value={stats?.followersCount ?? 0} icon={<TrendingUp size={16} />} description={stats ? t("overview.stats.following", { count: stats.followingCount }) : undefined} />
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard title={t("overview.stats.replyCount")} value={stats?.reply_count ?? 0} icon={<MessageSquare size={16} />} />
         <StatCard title={t("overview.stats.replyLikes")} value={(stats?.reply_likes ?? 0).toLocaleString()} icon={<Heart size={16} />} />
         <StatCard title={t("overview.stats.replyRetweets")} value={(stats?.reply_retweets ?? 0).toLocaleString()} icon={<Repeat2 size={16} />} />
         <StatCard title={t("overview.stats.replyViews")} value={(stats?.reply_views ?? 0).toLocaleString()} icon={<Eye size={16} />} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-        <Card className="bg-[var(--card)] border border-[var(--border)] shadow-sm">
-          <CardHeader className="pb-1"><CardTitle className="text-xs font-medium text-[var(--muted-foreground)]">{t("overview.charts.tweetActivity")}</CardTitle></CardHeader>
-          <CardContent className="p-0">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-xs font-semibold text-[var(--muted-foreground)]">{t("overview.charts.tweetActivity")}</CardTitle></CardHeader>
+          <CardContent className="p-0 pb-2">
             {timeline?.dailyTweets && timeline.dailyTweets.length > 0 ? (
               <div role="img" aria-label={t("overview.charts.tweetActivity")}>
               <ResponsiveContainer width="100%" height={CHART_H}>
@@ -61,9 +61,9 @@ export function XSection({ stats, timeline, topLiked, xAccounts }: Props) {
             )}
           </CardContent>
         </Card>
-        <Card className="bg-[var(--card)] border border-[var(--border)] shadow-sm">
-          <CardHeader className="pb-1"><CardTitle className="text-xs font-medium text-[var(--muted-foreground)]">{t("overview.charts.dailyEngagement")}</CardTitle></CardHeader>
-          <CardContent className="p-0">
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-xs font-semibold text-[var(--muted-foreground)]">{t("overview.charts.dailyEngagement")}</CardTitle></CardHeader>
+          <CardContent className="p-0 pb-2">
             {timeline?.dailyTweets && timeline.dailyTweets.length > 0 ? (
               <div role="img" aria-label={t("overview.charts.dailyEngagement")}>
               <ResponsiveContainer width="100%" height={CHART_H}>
@@ -83,10 +83,10 @@ export function XSection({ stats, timeline, topLiked, xAccounts }: Props) {
           </CardContent>
         </Card>
       </div>
-      <div className="grid grid-cols-1 gap-2">
-        <Card className="bg-[var(--card)] border border-[var(--border)] shadow-sm">
-          <CardHeader className="pb-1"><CardTitle className="text-xs font-medium text-[var(--muted-foreground)]">{t("overview.charts.dailyViews")}</CardTitle></CardHeader>
-          <CardContent className="p-0">
+      <div className="grid grid-cols-1 gap-3">
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-xs font-semibold text-[var(--muted-foreground)]">{t("overview.charts.dailyViews")}</CardTitle></CardHeader>
+          <CardContent className="p-0 pb-2">
             {timeline?.dailyTweets && timeline.dailyTweets.length > 0 ? (
               <div role="img" aria-label={t("overview.charts.dailyViews")}>
               <ResponsiveContainer width="100%" height={CHART_H}>
@@ -110,7 +110,7 @@ export function XSection({ stats, timeline, topLiked, xAccounts }: Props) {
         <div className="space-y-1.5">
           <p className="text-[11px] font-medium text-[var(--muted-foreground)]">{t("overview.charts.topLiked")}</p>
           {topLiked.slice(0, 3).map((tweet) => (
-            <div key={tweet.id} className="flex items-start gap-2 px-2.5 py-1.5 rounded-md bg-[var(--muted)] text-xs">
+            <div key={tweet.id} className="flex items-start gap-2 px-2.5 py-1.5 rounded-md bg-[var(--muted)] text-xs transition-colors hover:bg-[var(--border)]/50">
               <Heart size={12} className="text-[var(--chart-5)] mt-0.5 shrink-0" />
               <span className="line-clamp-1 flex-1">{tweet.full_text}</span>
               <span className="text-[var(--muted-foreground)] shrink-0">{tweet.favorite_count.toLocaleString()}</span>

@@ -37,7 +37,7 @@ export function GitHubSection({ ghAllRepos, ghPinned, ghTotalStars, ghTotalForks
     <section className="space-y-3">
       <h3 className="text-sm font-semibold flex items-center gap-1.5 text-[var(--muted-foreground)]"><GithubIcon /> {t("overview.githubHeading")}</h3>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard title={t("overview.stats.repos")} value={ghAllRepos.length} icon={<GithubIcon />} />
         <StatCard title={t("overview.stats.totalStars")} value={ghTotalStars} icon={<Star size={16} />} />
         <StatCard title={t("overview.stats.totalForks")} value={ghTotalForks} icon={<GitFork size={16} />} />
@@ -47,7 +47,7 @@ export function GitHubSection({ ghAllRepos, ghPinned, ghTotalStars, ghTotalForks
       {ghPinned.length > 0 && (
         <div className="space-y-1.5">
           <p className="text-[11px] font-medium text-[var(--muted-foreground)]">{t("overview.pinnedRepos")}</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
             {ghPinned.map((repo) => {
               const acc = ghAccounts.find((a) => a.id === repo.account_id);
               return (

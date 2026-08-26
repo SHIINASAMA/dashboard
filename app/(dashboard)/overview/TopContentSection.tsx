@@ -47,20 +47,20 @@ export function TopContentSection() {
         <ChartCardSkeleton />
       ) : isError || !data ? (
         <Card>
-          <CardContent className="p-5 pt-5 sm:p-5 sm:pt-5 text-sm text-[var(--muted-foreground)]">
+          <CardContent className="p-4 sm:p-6 text-sm text-[var(--muted-foreground)]">
             {t("overview.topContent.unavailable")}
           </CardContent>
         </Card>
       ) : items.length === 0 ? (
         <Card>
-          <CardContent className="p-5 pt-5 sm:p-5 sm:pt-5 text-sm text-[var(--muted-foreground)]">
+          <CardContent className="p-4 sm:p-6 text-sm text-[var(--muted-foreground)]">
             {t("overview.topContent.noData")}
           </CardContent>
         </Card>
       ) : (
         <Card>
-          <CardContent className="p-0 pt-0 sm:p-0 sm:pt-0 overflow-x-auto">
-            <table className="w-full min-w-[480px] text-left text-sm">
+          <CardContent className="p-0 overflow-x-auto">
+            <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-[var(--border)] text-[11px] uppercase tracking-wide text-[var(--muted-foreground)]">
                   <th className="px-4 py-2.5 font-medium w-full">{t("overview.topContent.colContent")}</th>
@@ -90,7 +90,7 @@ function TopContentRow({ item }: { item: TopContentItem }) {
     : null;
 
   return (
-    <tr className="border-b border-[var(--border)] transition-colors last:border-0 hover:bg-[var(--muted)]">
+    <tr className="border-b border-[var(--border)] transition-colors last:border-0 hover:bg-[var(--muted)] active:bg-[var(--border)]/50">
       <td className="px-4 py-2.5" style={{ width: "100%" }}>
         <div className="flex items-center gap-1.5">
           <span className="shrink-0"><PlatformIcon platform={item.platform} /></span>

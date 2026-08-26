@@ -27,17 +27,17 @@ export default function Overview() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div><Skeleton className="h-6 w-32 mb-1" /></div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {Array.from({ length: 5 }).map((_, i) => <StatCardSkeleton key={i} />)}
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <ChartCardSkeleton /><ChartCardSkeleton />
         </div>
         <ChartCardSkeleton />
@@ -58,7 +58,7 @@ export default function Overview() {
   const showSepGL_Reddit = (xAccounts.length > 0 || ghAccounts.length > 0 || glAccounts.length > 0) && redditAccounts.length > 0;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold">{t("overview.heading")}</h2>
@@ -84,7 +84,7 @@ export default function Overview() {
       <TopContentSection />
       <XSection stats={stats} timeline={timeline} topLiked={topLiked} xAccounts={xAccounts} />
 
-      {showSepX_GH && <Separator className="my-6" />}
+      {showSepX_GH && <Separator />}
 
       <GitHubSection
         ghAllRepos={ghAllRepos}
@@ -95,7 +95,7 @@ export default function Overview() {
         ghAccounts={ghAccounts}
       />
 
-      {showSepGH_GL && <Separator className="my-6" />}
+      {showSepGH_GL && <Separator />}
 
       <GitLabSection
         glAllProjects={glAllProjects}
@@ -106,7 +106,7 @@ export default function Overview() {
         glAccounts={glAccounts}
       />
 
-      {showSepGL_Reddit && <Separator className="my-6" />}
+      {showSepGL_Reddit && <Separator />}
 
       {redditAccounts.length > 0 && (
         <RedditSection

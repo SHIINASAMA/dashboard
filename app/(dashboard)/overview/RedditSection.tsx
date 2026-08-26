@@ -32,17 +32,17 @@ export function RedditSection({ postKarma, commentKarma, totalPosts, totalCommen
   return (
     <section className="space-y-3">
       <h3 className="text-sm font-semibold flex items-center gap-1.5 text-[var(--muted-foreground)]"><RedditIcon /> {t("overview.redditHeading")}</h3>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard title={t("overview.stats.postKarma")} value={postKarma} icon={<ThumbsUp size={16} />} />
         <StatCard title={t("overview.stats.commentKarma")} value={commentKarma} icon={<MessageSquare size={16} />} />
         <StatCard title={t("overview.stats.redditPosts")} value={totalPosts} icon={<MessageSquare size={16} />} />
         <StatCard title={t("overview.stats.redditComments")} value={totalComments} icon={<MessageSquare size={16} />} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-        <Card className="bg-[var(--card)] border border-[var(--border)] shadow-sm">
-          <CardHeader className="pb-1"><CardTitle className="text-xs font-medium text-[var(--muted-foreground)]">{t("overview.charts.redditKarma")}</CardTitle></CardHeader>
-          <CardContent className="pt-0">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-xs font-semibold text-[var(--muted-foreground)]">{t("overview.charts.redditKarma")}</CardTitle></CardHeader>
+          <CardContent className="pt-0 pb-2">
             {karmaTimeline.length > 0 ? (
               <div role="img" aria-label={t("overview.charts.redditKarma")}>
               <div className={`flex flex-wrap gap-x-3 gap-y-0.5 mb-1 ${isMobile ? "text-[11px]" : "text-xs"}`}>
@@ -66,9 +66,9 @@ export function RedditSection({ postKarma, commentKarma, totalPosts, totalCommen
           </CardContent>
         </Card>
 
-        <Card className="bg-[var(--card)] border border-[var(--border)] shadow-sm">
-          <CardHeader className="pb-1"><CardTitle className="text-xs font-medium text-[var(--muted-foreground)]">{t("overview.charts.redditActivity")}</CardTitle></CardHeader>
-          <CardContent className="p-0">
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-xs font-semibold text-[var(--muted-foreground)]">{t("overview.charts.redditActivity")}</CardTitle></CardHeader>
+          <CardContent className="p-0 pb-2">
             {dailyActivity.length > 0 ? (
               <div role="img" aria-label={t("overview.charts.redditActivity")}>
               <ResponsiveContainer width="100%" height={CHART_H}>
@@ -90,9 +90,9 @@ export function RedditSection({ postKarma, commentKarma, totalPosts, totalCommen
       </div>
 
       {mergedSubreddits.length > 0 && (
-        <Card className="bg-[var(--card)] border border-[var(--border)] shadow-sm">
-          <CardHeader className="pb-1"><CardTitle className="text-xs font-medium text-[var(--muted-foreground)]">{t("overview.charts.redditSubreddits")}</CardTitle></CardHeader>
-          <CardContent className="p-0">
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-xs font-semibold text-[var(--muted-foreground)]">{t("overview.charts.redditSubreddits")}</CardTitle></CardHeader>
+          <CardContent className="p-0 pb-2">
             <div role="img" aria-label={t("overview.charts.redditSubreddits")}>
             <ResponsiveContainer width="100%" height={PIE_H}>
               <PieChart>

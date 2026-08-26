@@ -267,7 +267,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             aria-label={t("common.dashboard")}
             aria-hidden={!isOpen}
             inert={!isOpen}
-            className="fixed inset-y-0 left-0 z-40 border-r border-[var(--border)] bg-[var(--card)] flex flex-col overflow-y-auto overscroll-contain touch-pan-y pb-[env(safe-area-inset-bottom)]"
+            className="fixed inset-y-0 left-0 z-40 border-r border-[var(--border)] bg-[var(--card)]/95 backdrop-blur-xl flex flex-col overflow-y-auto overscroll-contain touch-pan-y pb-[env(safe-area-inset-bottom)] shadow-2xl"
             style={{
               width: SIDEBAR_WIDTH,
               transform: isOpen ? "translateX(0)" : "translateX(-100%)",
@@ -323,8 +323,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div
             className="max-w-6xl mx-auto transition-all duration-300"
             style={{
-              paddingTop: isMobile ? 12 : 24,
-              paddingBottom: isMobile ? 12 : 24,
+              paddingTop: isMobile ? 16 : 24,
+              paddingBottom: isMobile ? 16 : 24,
               paddingLeft: isMobile ? "max(16px, env(safe-area-inset-left))" : 32,
               paddingRight: isMobile ? "max(16px, env(safe-area-inset-right))" : 32,
             }}

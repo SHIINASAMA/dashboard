@@ -19,7 +19,7 @@ const TIME_OPTIONS = [
   { value: 90, labelKey: "timeRange.90d" },
 ];
 
-const COMPACT_CARD_PADDING = "p-3 pt-3 sm:p-3 sm:pt-3";
+const COMPACT_CARD_PADDING = "p-3";
 
 function signed(value: number) {
   return `${value > 0 ? "+" : ""}${value.toLocaleString()}`;
@@ -38,7 +38,7 @@ function PlatformIcon({ platform }: { platform: string }) {
 
 function ContentRow({ item, labels }: { item: PulseContentItem; labels: { metric: string; secondary?: string } }) {
   return (
-    <a href={item.url} target="_blank" rel="noopener noreferrer" className="block rounded-md p-2 transition-colors hover:bg-[var(--muted)]">
+    <a href={item.url} target="_blank" rel="noopener noreferrer" className="block rounded-md p-2 transition-colors hover:bg-[var(--muted)] active:bg-[var(--border)]/50">
       <div className="flex items-start justify-between gap-3">
         <p className="line-clamp-2 min-h-10 min-w-0 text-sm leading-5">{item.title}</p>
         <span className="shrink-0 text-sm font-semibold tabular-nums">{item.metricValue.toLocaleString()}</span>
@@ -74,18 +74,18 @@ export function PulseSection() {
 
       {isLoading ? (
         <div className="space-y-2">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {Array.from({ length: 4 }).map((_, index) => <StatCardSkeleton key={index} />)}
           </div>
           <ChartCardSkeleton />
         </div>
       ) : isError || !data ? (
-        <Card><CardContent className="p-5 pt-5 sm:p-5 sm:pt-5 text-sm text-[var(--muted-foreground)]">{t("overview.pulse.unavailable")}</CardContent></Card>
+        <Card><CardContent className="p-4 sm:p-6 text-sm text-[var(--muted-foreground)]">{t("overview.pulse.unavailable")}</CardContent></Card>
       ) : data.platforms.length === 0 ? (
-        <Card><CardContent className="p-5 pt-5 sm:p-5 sm:pt-5 text-sm text-[var(--muted-foreground)]">{t("overview.pulse.noData")}</CardContent></Card>
+        <Card><CardContent className="p-4 sm:p-6 text-sm text-[var(--muted-foreground)]">{t("overview.pulse.noData")}</CardContent></Card>
       ) : (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <StatCardCompact
               icon={<Layers size={16} />}
               title={t("overview.pulse.activePlatforms")}
@@ -112,9 +112,9 @@ export function PulseSection() {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
             {data.platforms.map((platform) => (
-              <Card key={platform.platform}>
+              <Card key={platform.platform} className="transition-colors hover:bg-[var(--muted)]/50">
                 <CardContent className={COMPACT_CARD_PADDING}>
                   <div className="flex items-center justify-between gap-2">
                     <span className="flex min-w-0 items-center gap-1.5 text-sm font-medium">
@@ -182,7 +182,7 @@ export function PulseSection() {
             {data.repositories.length > 0 && (
               <HighlightCard title={t("overview.pulse.projectMovers")} icon={<Star size={16} />}>
                 {data.repositories.map((item) => (
-                  <Link key={item.id} to={item.route} className="block rounded-md p-2 transition-colors hover:bg-[var(--muted)]">
+                  <Link key={item.id} to={item.route} className="block rounded-md p-2 transition-colors hover:bg-[var(--muted)] active:bg-[var(--border)]/50">
                     <div className="flex items-start justify-between gap-3">
                       <p className="line-clamp-2 min-h-10 min-w-0 text-sm font-medium leading-5">{item.name}</p>
                       <span className={`shrink-0 text-sm font-semibold tabular-nums ${item.starChange >= 0 ? "text-[var(--success)]" : "text-[var(--danger)]"}`}>
@@ -213,14 +213,14 @@ function StatCardCompact({
   description: string;
 }) {
   return (
-    <Card>
+    <Card className="transition-colors hover:bg-[var(--muted)]/50">
       <CardContent className={COMPACT_CARD_PADDING}>
-        <div className="flex items-start gap-2">
-          <span className="shrink-0 rounded-md bg-[var(--muted)] p-1.5 text-[var(--primary)]">{icon}</span>
+        <div className="flex items-start gap-2.5">
+          <span className="shrink-0 rounded-lg bg-[var(--muted)] p-2.5 text-[var(--primary)]">{icon}</span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[11px] leading-4 text-[var(--muted-foreground)]">{title}</p>
-            <p className="mt-1.5 truncate text-lg font-bold leading-7 tabular-nums">{value}</p>
-            <p className="truncate text-[11px] leading-4 tabular-nums text-[var(--muted-foreground)]">{description}</p>
+            <p className="truncate text-[11px] font-medium uppercase tracking-wider leading-4 text-[var(--muted-foreground)]">{title}</p>
+            <p className="mt-1 truncate text-xl font-bold leading-7 tabular-nums">{value}</p>
+            <p className="truncate text-[11px] leading-4 tabular-nums text-[var(--muted-foreground)]/80">{description}</p>
           </div>
         </div>
       </CardContent>

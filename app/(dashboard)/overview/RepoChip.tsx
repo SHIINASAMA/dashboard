@@ -6,7 +6,7 @@ export function RepoChip({ name, language, stars, forks, onClick }: {
 }) {
   return (
     <button onClick={onClick}
-      className="flex items-center gap-1.5 px-2.5 py-1.5 min-h-11 rounded-md bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-left min-w-0"
+      className="flex items-center gap-1.5 px-2.5 py-1.5 min-h-11 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] active:bg-[var(--primary)]/10 transition-colors text-left min-w-0"
     >
       {language && <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: languageColor(language) }} />}
       <span className="text-xs font-medium truncate">{name}</span>
