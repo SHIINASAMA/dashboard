@@ -111,11 +111,14 @@ export async function fetchGithubAccount(account: AccountRow) {
           token,
         );
         for (const [repoId, counts] of splits) issueSplits.set(repoId, counts);
+        getLogger().info("GitHub", "@%s: issue/PR split fetched for %d repos", username, splits.size);
       } catch (e: unknown) {
         issueSplitError = e instanceof Error ? e.message : String(e);
+        getLogger().warn("GitHub", "@%s: issue/PR split failed — %s", username, issueSplitError);
       }
     } else {
       issueSplitError = "No GitHub PAT configured; Issues and Pull Requests cannot be counted separately.";
+      getLogger().warn("GitHub", "@%s: %s", username, issueSplitError);
     }
 
     for (const repo of repos) {
