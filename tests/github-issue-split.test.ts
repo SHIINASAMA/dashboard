@@ -35,9 +35,21 @@ describe("GitHub Issue split helpers", () => {
     expect(result.get(20)).toEqual({ issues: 0, pullRequests: 9 });
   });
 
-  it("treats missing counts as an error rather than zero", () => {
-    expect(() => parseIssueSplitResponse([repos[0]], {
+  it("skips repos GitHub cannot resolve instead of failing the batch", () => {
+    const result = parseIssueSplitResponse(repos, {
+      r0: { issues: { totalCount: 3 }, pullRequests: { totalCount: 4 } },
+      r1: null,
+    });
+
+    expect(result.get(10)).toEqual({ issues: 3, pullRequests: 4 });
+    expect(result.has(20)).toBe(false);
+  });
+
+  it("skips repos with missing pullRequests field", () => {
+    const result = parseIssueSplitResponse([repos[0]], {
       r0: { issues: { totalCount: 1 } },
-    })).toThrow("GitHub Issue split is missing Pull Requests for owner/one");
+    });
+
+    expect(result.size).toBe(0);
   });
 });

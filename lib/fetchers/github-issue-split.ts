@@ -46,10 +46,11 @@ export function parseIssueSplitResponse(
   repos.forEach((repo, index) => {
     const node = values[`r${index}`];
     if (typeof node !== "object" || node === null) {
-      throw new Error(`GitHub Issue split is missing repository ${repo.full_name}`);
+      return; // skip repos GitHub cannot resolve (private, deleted, renamed)
     }
 
     const counts = node as Record<string, unknown>;
+    if (!counts.issues || !counts.pullRequests) return;
     result.set(repo.id, {
       issues: readTotalCount(counts.issues, `Issues for ${repo.full_name}`),
       pullRequests: readTotalCount(counts.pullRequests, `Pull Requests for ${repo.full_name}`),
@@ -128,7 +129,7 @@ async function requestIssueSplitQuery(query: string, token: string): Promise<unk
   if (!body) {
     throw new Error("GitHub GraphQL returned an invalid response");
   }
-  if (body.errors?.length) {
+  if (body.errors?.length && !body.data) {
     throw new Error(body.errors[0].message || "GitHub GraphQL request failed");
   }
   return body.data;
