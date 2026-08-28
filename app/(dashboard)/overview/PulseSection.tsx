@@ -19,7 +19,7 @@ const TIME_OPTIONS = [
   { value: 90, labelKey: "timeRange.90d" },
 ];
 
-const COMPACT_CARD_PADDING = "p-3";
+const COMPACT_CARD_PADDING = "p-3 sm:pt-3";
 
 function signed(value: number) {
   return `${value > 0 ? "+" : ""}${value.toLocaleString()}`;
