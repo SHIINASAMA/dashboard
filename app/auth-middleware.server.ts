@@ -97,8 +97,12 @@ async function authMiddleware({ request }: { request: Request }): Promise<Respon
       if (pathname.startsWith("/api/")) {
         return json({ error: "Unauthorized" }, { status: 401 });
       }
+      const reqUrl = new URL(request.url);
+      const from = reqUrl.pathname + reqUrl.search;
       const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("from", pathname);
+      if (from !== "/login" && !from.startsWith("/login?")) {
+        loginUrl.searchParams.set("from", from);
+      }
       return new Response(null, { status: 302, headers: { location: loginUrl.toString() } });
     }
     return;
@@ -121,8 +125,16 @@ async function authMiddleware({ request }: { request: Request }): Promise<Respon
 
   // Page routes — redirect to /login if no token
   if (!token) {
+    // Avoid an immediate loop if the request itself is already targeting
+    // /login (PUBLIC_PAGE_PATHS handles it, but be defensive if the list
+    // drifts). Also preserve the full original location (pathname + search)
+    // so the login page can return the user to the intended view.
+    const reqUrl = new URL(request.url);
+    const from = reqUrl.pathname + reqUrl.search;
     const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("from", pathname);
+    if (from !== "/login" && !from.startsWith("/login?")) {
+      loginUrl.searchParams.set("from", from);
+    }
     return new Response(null, { status: 302, headers: { location: loginUrl.toString() } });
   }
 
@@ -131,6 +143,21 @@ async function authMiddleware({ request }: { request: Request }): Promise<Respon
     await jwtVerify(token, JWT_SECRET_KEY, { algorithms: ["HS256"] });
   } catch {
     const loginUrl = new URL("/login", request.url);
+    // Don't leak an invalid token's original destination if it was /login
+    // itself — that would bounce between /login?from=/login and /login.
+    const reqUrl = new URL(request.url);
+    const from = reqUrl.pathname + reqUrl.search;
+    if (from !== "/login" && !from.startsWith("/login?")) {
+      // Preserve where the user was headed so post-reauth they land back
+      // on the same view instead of always on /overview.
+      const curFrom = reqUrl.searchParams.get("from");
+      if (!curFrom) loginUrl.searchParams.set("from", from);
+    }
+    // Include the original search of /login?from=... if it already carried one
+    const existing = reqUrl.searchParams.get("from");
+    if (existing && !loginUrl.searchParams.has("from")) {
+      loginUrl.searchParams.set("from", existing);
+    }
     return new Response(null, { status: 302, headers: { location: loginUrl.toString() } });
   }
 }

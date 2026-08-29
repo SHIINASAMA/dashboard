@@ -3,8 +3,7 @@ import { useTranslation } from "react-i18next";
 
 export function NavigatingOverlay() {
   const { t } = useTranslation();
-  const { pathname } = useLocation();
-  const search = typeof window !== "undefined" ? window.location.search : "";
+  const { pathname, search } = useLocation();
 
   return (
     <div key={pathname + search} className="fixed inset-0 z-[9998] bg-[var(--background)]/80 backdrop-blur-sm flex items-center justify-center pointer-events-none" style={{ animation: "overlay-fade 0.6s ease-out forwards" }}>

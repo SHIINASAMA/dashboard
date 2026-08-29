@@ -7,6 +7,7 @@ export class ApiError extends Error {
   }
 }
 
+let redirecting401 = false;
 async function fetchJSON<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${url}`, {
     headers: { "Content-Type": "application/json" },
@@ -14,6 +15,22 @@ async function fetchJSON<T>(url: string, options?: RequestInit): Promise<T> {
     ...options,
   });
   if (!res.ok) {
+    // Centralised 401 handling: a single expired/invalid session would
+    // otherwise make every parallel overview query throw independently.
+    // Hard-navigate to login once (preserving the intended destination)
+    // instead of letting each component retry and potentially trigger
+    // a render loop on the homepage.
+    if (res.status === 401 && typeof window !== "undefined" && !redirecting401) {
+      const onLogin = window.location.pathname === "/login";
+      const isAuthCheck = url.startsWith("/auth/");
+      if (!onLogin && !isAuthCheck) {
+        redirecting401 = true;
+        const from = window.location.pathname + window.location.search;
+        // Avoid self-redirect loops: never set ?from=/login
+        const safeFrom = from.startsWith("/login") ? "/overview" : from;
+        window.location.replace(`/login?from=${encodeURIComponent(safeFrom)}`);
+      }
+    }
     const body = await res.json().catch(() => ({})) as Record<string, string>;
     const msg = body.error || `API error: ${res.status}`;
     throw new ApiError(msg, res.status);

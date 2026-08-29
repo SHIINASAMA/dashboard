@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { LayoutDashboard, LogIn, Eye, EyeOff } from "lucide-react";
 import { api } from "@/lib/api";
 import { useBingWallpaper } from "@/lib/client/useBingWallpaper";
@@ -11,6 +11,25 @@ export default function Login() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { url } = useBingWallpaper();
+  const [searchParams] = useSearchParams();
+  const fromParam = searchParams.get("from");
+  // Only allow internal paths, strip protocol/host to avoid open-redirect.
+  const safeFrom = fromParam && fromParam.startsWith("/") && !fromParam.startsWith("//") ? fromParam : null;
+
+  const { data: auth } = useQuery({
+    queryKey: ["auth", "me"],
+    queryFn: () => api.checkAuth(),
+    staleTime: 2 * 60_000,
+  });
+
+  // If already authenticated, bounce to the original destination instead of
+  // showing the form — prevents an authenticated user stuck on /login.
+  useEffect(() => {
+    if (auth?.authenticated) {
+      const dest = safeFrom || "/overview";
+      navigate(dest, { replace: true });
+    }
+  }, [auth, safeFrom, navigate]);
   // Mock/debug mode (build-time mirror of MOCK_DATA): the server accepts any
   // credentials, so don't require a password client-side either.
   const isMock =
@@ -29,8 +48,13 @@ export default function Login() {
     try {
       const res = await api.login(username || "admin", password);
       if (res.ok) {
-        queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
-        navigate("/", { replace: true });
+        await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+        // Prefer the original destination captured by the auth middleware
+        // (?from=...) and fall back to /overview. Using validate-safeFrom
+        // avoids an open-redirect and avoids the extra "/" -> "/overview"
+        // client hop that previously caused a double replace.
+        const dest = safeFrom || "/overview";
+        navigate(dest, { replace: true });
       } else {
         setError(t("login.invalidPassword"));
       }

@@ -1,8 +1,7 @@
 import { useLocation } from "react-router";
 
 export function NavigationProgress() {
-  const { pathname } = useLocation();
-  const search = typeof window !== "undefined" ? window.location.search : "";
+  const { pathname, search } = useLocation();
 
   return (
     <div key={pathname + search} className="fixed top-0 left-0 right-0 z-[9999] h-[3px] pointer-events-none">
