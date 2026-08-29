@@ -12,4 +12,5 @@ export interface Account {
   /** Per-level overrides (minutes), null = use platform policy */
   fetchIntervals?: Partial<Record<FetchLevel, number | null>>;
   isActive: number;
+  authToken?: string | null;
 }

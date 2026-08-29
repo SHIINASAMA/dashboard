@@ -13,7 +13,7 @@ import {
   type PulseAccount,
   type PulseAudienceSample,
   type PulseResponse,
-} from "../pulse";
+} from "../domain/pulse";
 
 function intArray(ids: number[]) {
   if (ids.length === 0) return sql`ARRAY[]::int[]`;

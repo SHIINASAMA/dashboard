@@ -138,6 +138,13 @@ export function isMockMode(): boolean {
   return v === "1" || v === "true" || v === "yes" || v === "on";
 }
 
+export function isMockFetcherMode(): boolean {
+  const v = process.env.MOCK_FETCHER;
+  if (v === "1" || v === "true" || v === "yes" || v === "on") return true;
+  // Also treat mockuser screenName as mock fetcher in tests
+  return false;
+}
+
 // ── Encryption key ─────────────────────────────────────────────────
 
 export function loadOrGenerateKey(): string {

@@ -43,9 +43,10 @@ export default tseslint.config(
   },
   {
     // Standalone diagnostic scripts operate on untyped Twitter API payloads.
-    files: ["scripts/dump-x-data.ts", "scripts/test-fetch-algorithm.ts"],
+    files: ["scripts/dump-x-data.ts", "scripts/test-fetch-algorithm.ts", "scripts/mock-with-real-db.ts", "scripts/simulate-migration.ts"],
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
+      "no-empty": ["error", { "allowEmptyCatch": true }],
     },
   },
   {

@@ -1,12 +1,16 @@
 import { finishFetchRun, startFetchRun } from "./repositories/fetch-runs";
 import { updateAccount } from "./services/accounts";
 import { getLogger } from "./logger";
-import { isMockMode } from "./config";
+import { isMockMode, isMockFetcherMode } from "./config";
 import { fetchAccount } from "./fetcher";
 import { fetchGithubAccount } from "./fetchers/github";
 import { fetchGitlabAccount } from "./fetchers/gitlab";
 import { fetchRedditAccount, fetchRedditPublicAccount } from "./fetchers/reddit";
 import type { AccountRow } from "./repositories/accounts";
+import type { Account } from "./domain/account";
+import type { GithubClient } from "./infra/fetchers/GithubClient";
+import type { MockGithubClient } from "./infra/fetchers/MockGithubClient";
+import type { FetcherPort } from "./domain/ports";
 import type { CapabilityGap, FetchRunStatus, FetchTrigger } from "./fetch-health";
 import { isSupportedPlatform } from "./platforms";
 
@@ -42,7 +46,7 @@ function normalizeResult(result: FetcherResult): {
   return { status: "success", errorMessage: null, capabilityGaps: [] };
 }
 
-export async function dispatchFetch(account: AccountRow, trigger: FetchTrigger = "manual", _level?: string) {
+export async function dispatchFetch(account: AccountRow, trigger: FetchTrigger = "manual", level?: string) {
   if (!isSupportedPlatform(account.platform)) {
     getLogger().warn("FetchRun", "Account %s has unsupported platform %s; fetch skipped", account.id, account.platform);
     return { skipped: true };
@@ -80,7 +84,7 @@ export async function dispatchFetch(account: AccountRow, trigger: FetchTrigger =
       }
     }
 
-    return executeAndRecord(account, runId, trigger);
+    return executeAndRecord(account, runId, trigger, level);
   } finally {
     activeDispatches.delete(account.id);
   }
@@ -90,10 +94,26 @@ async function executeAndRecord(
   account: AccountRow,
   runId: number | undefined,
   trigger: FetchTrigger,
+  level?: string,
 ) {
   const startedAt = Date.now();
   try {
-    const result = await selectFetcher(account)(account) as FetcherResult;
+    // Level-aware new architecture with compatible fallback (Phase 2)
+    // For github with level, try new UseCase first (shadow), keep old as fallback/supplement
+    // Pure new architecture: level-aware, no fallback to old fetcher
+    let result: FetcherResult | null = null;
+    if (level && account.platform === "github" && !isMockMode()) {
+      result = await executeWithNewArch(account, level) as FetcherResult;
+      if (result === null) {
+        throw new Error(`Unsupported fetch level ${level} for pure new arch`);
+      }
+    } else if (account.platform === "github" && !isMockMode()) {
+      // No level supplied (manual trigger) -> default to L1 timely
+      result = await executeWithNewArch(account, "l1") as FetcherResult;
+    } else {
+      // Non-github or mock: keep existing fetcher (new GitLab/Reddit fetchers not yet implemented)
+      result = await selectFetcher(account)(account) as FetcherResult;
+    }
     const outcome = normalizeResult(result);
     await finishFetchRun({
       id: runId,
@@ -121,6 +141,62 @@ async function executeAndRecord(
     getLogger().warn("FetchRun", "Account %s failed in %dms: %s", account.id, Date.now() - startedAt, error.message);
     return false;
   }
+}
+
+
+function toDomainAccount(row: AccountRow): Account {
+  return {
+    id: row.id,
+    screenName: row.screen_name ?? "",
+    platform: row.platform as Account["platform"],
+    ownerId: (row as unknown as { owner_id?: number; user_id?: number }).owner_id ?? (row as unknown as { owner_id?: number; user_id?: number }).user_id ?? 0,
+    instanceUrl: row.instance_url ?? null,
+    isActive: row.is_active ?? 1,
+    authToken: (row as unknown as { auth_token?: string }).auth_token ?? null,
+  };
+}
+
+async function executeWithNewArch(account: AccountRow, level: string): Promise<FetcherResult> {
+  const domainAccount = toDomainAccount(account);
+  const { PgRepoRepository } = await import("./infra/drizzle/PgRepoRepository");
+  const { GithubClient } = await import("./infra/fetchers/GithubClient");
+  const { SyncRepoMeta } = await import("./application/usecases/SyncRepoMeta");
+  const { SyncActivity } = await import("./application/usecases/SyncActivity");
+
+  const repoRepo = new PgRepoRepository();
+  // Mock only under explicit env flags (MOCK_DATA / MOCK_FETCHER); never keyed off a screenName
+  const useMock = isMockMode() || isMockFetcherMode();
+  let client: GithubClient | MockGithubClient;
+  let fetcher: FetcherPort;
+  if (useMock) {
+    const { MockGithubClient } = await import("./infra/fetchers/MockGithubClient");
+    const { MockFetcher } = await import("./infra/fetchers/MockFetcher");
+    client = new MockGithubClient();
+    fetcher = new MockFetcher();
+  } else {
+    client = new GithubClient();
+    const { GithubFetcher } = await import("./infra/fetchers/GithubFetcher");
+    fetcher = new GithubFetcher(client);
+  }
+
+  if (level === "l0") {
+    const uc = new SyncRepoMeta(repoRepo, fetcher);
+    await uc.execute(domainAccount);
+    return { status: "success" as const, errorMessage: null, capabilityGaps: [] };
+  }
+  if (level === "l1") {
+    const uc = new SyncActivity(repoRepo, fetcher, undefined, client);
+    await uc.execute(domainAccount);
+    return { status: "success" as const, errorMessage: null, capabilityGaps: [] };
+  }
+  if (level === "l2") {
+    const { SyncTelemetry } = await import("./application/usecases/SyncTelemetry");
+    const uc = new SyncTelemetry(repoRepo, fetcher, client);
+    await uc.execute(domainAccount);
+    return { status: "success" as const, errorMessage: null, capabilityGaps: [] };
+  }
+  // l2 and others: new SyncTelemetry is still TODO, fallback to old
+  return null as unknown as FetcherResult;
 }
 
 export function selectFetcher(account: AccountRow) {

@@ -384,7 +384,7 @@ async function fetchRepoReleases(
   return null;
 }
 
-async function fetchContributions(username: string, token: string | undefined, year: number) {
+export async function fetchContributions(username: string, token: string | undefined, year: number) {
   const query = `
     query($login: String!, $from: DateTime!, $to: DateTime!) {
       user(login: $login) {
