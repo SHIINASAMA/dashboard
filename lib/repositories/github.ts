@@ -60,7 +60,7 @@ export async function getGithubContributions(accountId: number, yr?: number) {
 export async function upsertGithubRepo(repo: { account_id: number; repo_id: number; name: string; full_name: string; description: string | null; language: string | null; stars: number; forks: number; open_issues: number; open_issues_only?: number | null; open_pull_requests?: number | null; topics: string; homepage: string | null; is_fork: number; created_at: string | null; updated_at: string | null; pushed_at: string | null }) {
   await getDb().insert(github_repos).values({ ...repo, fetched_at: sql`NOW()` }).onConflictDoUpdate({
     target: [github_repos.account_id, github_repos.repo_id],
-    set: { stars: repo.stars, forks: repo.forks, open_issues: repo.open_issues, open_issues_only: repo.open_issues_only ?? null, open_pull_requests: repo.open_pull_requests ?? null, topics: repo.topics, language: repo.language, description: repo.description, pushed_at: repo.pushed_at, updated_at: repo.updated_at },
+    set: { name: repo.name, full_name: repo.full_name, stars: repo.stars, forks: repo.forks, open_issues: repo.open_issues, open_issues_only: repo.open_issues_only ?? null, open_pull_requests: repo.open_pull_requests ?? null, topics: repo.topics, language: repo.language, description: repo.description, homepage: repo.homepage, is_fork: repo.is_fork, pushed_at: repo.pushed_at, updated_at: repo.updated_at },
   });
 }
 

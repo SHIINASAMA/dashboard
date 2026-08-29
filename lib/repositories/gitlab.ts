@@ -55,7 +55,7 @@ export async function getGitlabContributions(accountId: number, yr?: number) {
 export async function upsertGitlabProject(project: { account_id: number; project_id: number; name: string; path_with_namespace: string; description: string | null; language: string | null; stars: number; forks: number; open_issues: number; topics: string; homepage: string | null; is_fork: number; visibility: string; created_at: string | null; updated_at: string | null; last_activity_at: string | null }) {
   await getDb().insert(gitlab_projects).values({ ...project, fetched_at: sql`NOW()` }).onConflictDoUpdate({
     target: [gitlab_projects.account_id, gitlab_projects.project_id],
-    set: { stars: project.stars, forks: project.forks, open_issues: project.open_issues, topics: project.topics, language: project.language, description: project.description, visibility: project.visibility, updated_at: project.updated_at, last_activity_at: project.last_activity_at },
+    set: { name: project.name, path_with_namespace: project.path_with_namespace, stars: project.stars, forks: project.forks, open_issues: project.open_issues, topics: project.topics, language: project.language, description: project.description, homepage: project.homepage, is_fork: project.is_fork, visibility: project.visibility, updated_at: project.updated_at, last_activity_at: project.last_activity_at },
   });
 }
 
