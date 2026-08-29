@@ -58,7 +58,7 @@ export default function AccountListPage({
     const map = new Map<number, boolean>();
     for (const a of accounts) {
       const last = a.last_fetched_at ? new Date(a.last_fetched_at).getTime() : 0;
-      map.set(a.id, last > 0 && (now - last) > (a.fetch_interval || 30) * 60 * 1000);
+      map.set(a.id, last > 0 && (now - last) > 90 * 60 * 1000 /* L1 auto 90m */);
     }
     return map;
   }, [accounts, now]);
@@ -151,7 +151,7 @@ export default function AccountListPage({
                           ) : null}
                         </div>
                         <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-[var(--muted-foreground)]">
-                          <span>{t(`${i18nKey}.accountCard.interval`, { minutes: account.fetch_interval })}</span>
+                          <span>{t("settings.autoSchedule")}</span>
                           {lastFetched && (
                             <span>{t(`${i18nKey}.accountCard.last`, { date: formatDateTime(lastFetched) })}</span>
                           )}

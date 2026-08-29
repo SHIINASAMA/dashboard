@@ -20,6 +20,9 @@ export class Forks {
 }
 
 export interface Repo {
+  // L0 static fields: name/fullName/language/description/homepage/topics/isFork
+  // L1 timely fields: stars/forks (updated 90m, not 24h)
+
   accountId: number;
   repoId: number;
   name: string;

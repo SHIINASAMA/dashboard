@@ -2,6 +2,8 @@ import { getActiveAccounts, getAccountById } from "./services/accounts";
 import { dispatchFetch } from "./fetch-dispatch";
 import { getLogger } from "./logger";
 import { isSupportedPlatform } from "./platforms";
+import { getFetchInterval, type FetchLevel } from "./application/scheduler/fetchPolicy";
+import { getAccountFetchState, upsertAccountFetchState } from "./repositories/account-fetch-state";
 
 // Minimum seconds between fetching two accounts of the same platform.
 // Prevents hammering a single API with back-to-back full-profile fetches.
@@ -14,12 +16,14 @@ const PLATFORM_COOLDOWN_MS: Record<string, number> = {
 
 const CYCLE_INTERVAL_MS = 60_000;
 
+const LEVELS: FetchLevel[] = ["l0", "l1", "l2"];
+
 const g = globalThis as unknown as { __running?: boolean; __cycleRunning?: boolean; __timeoutId?: ReturnType<typeof setTimeout> | null };
 
 export function startScheduler() {
   if (g.__running) return;
   g.__running = true;
-  getLogger().info("Scheduler", "Started (checking every %ds)", CYCLE_INTERVAL_MS / 1000);
+  getLogger().info("Scheduler", "Started (checking every %ds) — L0/L1/L2 aware", CYCLE_INTERVAL_MS / 1000);
   scheduleNext();
 }
 
@@ -47,9 +51,19 @@ async function runCycle() {
     const lastPlatformFetch = new Map<string, number>();
 
     for (const account of accounts) {
-      const lastFetched = account.last_fetched_at ? new Date(account.last_fetched_at).getTime() : 0;
-      const intervalMs = (account.fetch_interval || 30) * 60 * 1000;
-      if (now - lastFetched < intervalMs) continue;
+      // For each account, check per-level due state; dispatch the first due level (priority L0 > L1 > L2)
+      const states = await getAccountFetchState(account.id).catch(() => null);
+      const stateMap = new Map((states ?? []).map(s => [s.level, s.lastFetchedAt ? new Date(s.lastFetchedAt).getTime() : 0]));
+      let dueLevel: FetchLevel | null = null;
+      for (const level of LEVELS) { // L0: static 24h, L1: stars/issues/PR/downloads 90m, L2: telemetry trends 8h
+        const lastFetched = stateMap.get(level) ?? (account.last_fetched_at ? new Date(account.last_fetched_at).getTime() : 0);
+        const intervalMs = getFetchInterval(account.platform, level, null);
+        if (now - lastFetched >= intervalMs) {
+          dueLevel = level;
+          break;
+        }
+      }
+      if (!dueLevel) continue;
 
       const platform = account.platform;
       const platformLast = lastPlatformFetch.get(platform) || 0;
@@ -65,7 +79,16 @@ async function runCycle() {
         continue;
       }
 
-      await dispatchFetch(freshAccount, "scheduler");
+      await dispatchFetch(freshAccount, "scheduler", dueLevel);
+      // Record per-level fetch time
+      try {
+        await upsertAccountFetchState(account.id, dueLevel, new Date().toISOString());
+      } catch { /* per-level state table may not exist yet */ }
+      // Also update legacy last_fetched_at for backward compat / health display
+      try {
+        const { updateAccount } = await import("./services/accounts");
+        await updateAccount(account.id, { last_fetched_at: new Date().toISOString() } as unknown as Record<string, unknown>);
+      } catch { /* legacy update best-effort */ }
 
       lastPlatformFetch.set(freshAccount.platform, Date.now());
       // Refresh now after each fetch so the interval check reflects real elapsed time

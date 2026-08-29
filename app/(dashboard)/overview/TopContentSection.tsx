@@ -6,7 +6,7 @@ import { BarChart3, TrendingUp } from "lucide-react";
 import { api } from "@/lib/api";
 import { SectionShell } from "@/components/domain/shared/SectionShell";
 import type { TopContentItem } from "@/shared/types";
-import { Card, CardContent } from "@/components/ui/card";
+// Card removed — BaseCard used via OverviewCards
 import { BaseCard } from "@/components/ui/BaseCard";
 import { TableCard } from "@/components/domain/shared/OverviewCards";
 import { TimeRangeSelector } from "@/components/TimeRangeSelector";

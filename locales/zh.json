@@ -489,7 +489,8 @@
     "darkTheme": "深色主题",
     "theme": "主题",
     "timezone": "时区",
-    "timezoneHint": "此页面的日期将使用所选的时区。"
+    "timezoneHint": "此页面的日期将使用所选的时区。",
+    "autoSchedule": "自动 · L0 24小时 / L1 90分钟 / L2 8小时"
   },
   "fetchHistory": {
     "title": "最近抓取记录",
@@ -542,7 +543,12 @@
     "helpXToken": "从 X.com 的浏览器 Cookie 中复制 auth_token 的值。请勿泄露——这等同于你账号的登录凭证。",
     "redditAuthType": "访问模式",
     "redditOAuth": "OAuth",
-    "redditPublic": "浏览器 Cookie"
+    "redditPublic": "浏览器 Cookie",
+    "fetchSchedule": "抓取计划",
+    "helpFetchSchedule": "三档自动调度 —— L0 静态、L1 及时、L2 遥测。",
+    "helpFetchScheduleNote": "仅 L1 可覆盖。L0（仓库元数据全量校正 is_fork）与 L2（流量/Release）保持平台默认值。L1 保持 90 分钟可避免触发限频。",
+    "minutes": "分钟",
+    "helpFetchScheduleAuto": "L0（静态元数据 24小时）、L1（星标/议题/PR/下载数 90分钟）、L2（流量与趋势遥测 8小时）—— 全自动。"
   },
   "editAccountForm": {
     "title": "编辑账户",
@@ -640,5 +646,75 @@
   "mockMode": {
     "banner": "模拟模式 — 测试数据",
     "title": "当前为模拟数据，未连接真实后端"
+  },
+  "fetchLevel": {
+    "l0": {
+      "label": "静态元数据",
+      "desc": "仓库名、full_name、语言、描述、话题、主页、is_fork · 24小时"
+    },
+    "l1": {
+      "label": "及时指标",
+      "desc": "星标、Fork、议题、PR、Release 下载数 · 90分钟"
+    },
+    "l2": {
+      "label": "遥测趋势",
+      "desc": "流量克隆/浏览、来源、路径、贡献趋势 · 8小时"
+    },
+    "github": {
+      "l0": {
+        "label": "静态元数据",
+        "desc": "仓库名、full_name、语言、描述、话题、主页、is_fork · 24小时"
+      },
+      "l1": {
+        "label": "及时指标",
+        "desc": "星标、Fork、议题、PR、Release 下载数 · 90分钟"
+      },
+      "l2": {
+        "label": "遥测趋势",
+        "desc": "流量克隆/浏览、来源、路径、贡献趋势 · 8小时"
+      }
+    },
+    "gitlab": {
+      "l0": {
+        "label": "静态元数据",
+        "desc": "项目名、路径、语言、描述、话题、可见性、is_fork · 24小时"
+      },
+      "l1": {
+        "label": "及时指标",
+        "desc": "星标、Fork、议题、Release 下载数 · 90分钟"
+      },
+      "l2": {
+        "label": "活动趋势",
+        "desc": "项目活跃趋势 · 8小时"
+      }
+    },
+    "twitter": {
+      "l0": {
+        "label": "资料静态",
+        "desc": "用户名、用户 ID、资料信息 · 24小时"
+      },
+      "l1": {
+        "label": "互动及时",
+        "desc": "粉丝、推文、点赞、转发、回复 · 90分钟"
+      },
+      "l2": {
+        "label": "增长趋势",
+        "desc": "粉丝与推文历史趋势 · 8小时"
+      }
+    },
+    "reddit": {
+      "l0": {
+        "label": "资料静态",
+        "desc": "用户名、账户信息 · 24小时"
+      },
+      "l1": {
+        "label": "声望及时",
+        "desc": "发帖/评论声望、帖子、评论、分数 · 90分钟"
+      },
+      "l2": {
+        "label": "活跃趋势",
+        "desc": "发帖与评论历史趋势 · 8小时"
+      }
+    }
   }
 }

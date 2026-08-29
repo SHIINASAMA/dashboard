@@ -1,6 +1,6 @@
 import { useQuery, useQueries } from "@tanstack/react-query";
 import { api, type OverviewStats, type TimelineData, type Account } from "@/lib/api";
-import { createPulseQuery } from "@/lib/api/queryOptions";
+// createPulseQuery removed — direct api call is used
 
 export function useOverviewData() {
   const { data: stats, isLoading } = useQuery<OverviewStats>({

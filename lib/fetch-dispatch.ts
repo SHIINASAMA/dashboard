@@ -42,7 +42,7 @@ function normalizeResult(result: FetcherResult): {
   return { status: "success", errorMessage: null, capabilityGaps: [] };
 }
 
-export async function dispatchFetch(account: AccountRow, trigger: FetchTrigger = "manual") {
+export async function dispatchFetch(account: AccountRow, trigger: FetchTrigger = "manual", _level?: string) {
   if (!isSupportedPlatform(account.platform)) {
     getLogger().warn("FetchRun", "Account %s has unsupported platform %s; fetch skipped", account.id, account.platform);
     return { skipped: true };

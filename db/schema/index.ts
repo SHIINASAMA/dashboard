@@ -15,3 +15,5 @@ export {
 } from "./gitlab";
 export { reddit_stats, reddit_posts, reddit_comments } from "./reddit";
 export { settings } from "./settings";
+
+export { fetchPolicy, accountFetchState } from "./fetch-policy";

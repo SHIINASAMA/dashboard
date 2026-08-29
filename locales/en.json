@@ -489,7 +489,8 @@
     "darkTheme": "Dark theme",
     "theme": "Theme",
     "timezone": "Timezone",
-    "timezoneHint": "Dates on this page will use the selected timezone."
+    "timezoneHint": "Dates on this page will use the selected timezone.",
+    "autoSchedule": "Auto · L0 24h / L1 90m / L2 8h"
   },
   "fetchHistory": {
     "title": "Recent fetch runs",
@@ -542,7 +543,12 @@
     "helpXToken": "From your X.com browser cookies, copy the auth_token value. Keep this private — it grants access to your account.",
     "redditAuthType": "Access Mode",
     "redditOAuth": "OAuth",
-    "redditPublic": "Browser Cookies"
+    "redditPublic": "Browser Cookies",
+    "fetchSchedule": "Fetch Schedule",
+    "helpFetchSchedule": "Three-level auto schedule — L0 static, L1 timely, L2 telemetry.",
+    "helpFetchScheduleNote": "Only L1 is overridable. L0 (repo metadata full scan) and L2 (traffic/releases) stay at platform defaults. Leave L1 at 90 to respect rate limits.",
+    "minutes": "min",
+    "helpFetchScheduleAuto": "L0 (static repo metadata, 24h), L1 (stars/issues/PRs/downloads, 90m), L2 (traffic & trend telemetry, 8h) — all automatic."
   },
   "editAccountForm": {
     "title": "Edit Account",
@@ -640,5 +646,75 @@
   "mockMode": {
     "banner": "MOCK MODE — fixture data",
     "title": "Serving fixture data — no backend connected"
+  },
+  "fetchLevel": {
+    "l0": {
+      "label": "Static Metadata",
+      "desc": "Repo name, full_name, language, description, topics, homepage, is_fork · 24h"
+    },
+    "l1": {
+      "label": "Timely Metrics",
+      "desc": "Stars, forks, issues, PRs, release downloads · 90m"
+    },
+    "l2": {
+      "label": "Telemetry Trends",
+      "desc": "Traffic clones/views, referrers, paths, contribution trends · 8h"
+    },
+    "github": {
+      "l0": {
+        "label": "Static Metadata",
+        "desc": "Repo name, full_name, language, description, topics, homepage, is_fork · 24h"
+      },
+      "l1": {
+        "label": "Timely Metrics",
+        "desc": "Stars, forks, issues, PRs, release downloads · 90m"
+      },
+      "l2": {
+        "label": "Telemetry Trends",
+        "desc": "Traffic clones/views, referrers, paths, contribution trends · 8h"
+      }
+    },
+    "gitlab": {
+      "l0": {
+        "label": "Static Metadata",
+        "desc": "Project name, path, language, description, topics, visibility, is_fork · 24h"
+      },
+      "l1": {
+        "label": "Timely Metrics",
+        "desc": "Stars, forks, issues, release downloads · 90m"
+      },
+      "l2": {
+        "label": "Telemetry Trends",
+        "desc": "Project activity trends · 8h"
+      }
+    },
+    "twitter": {
+      "l0": {
+        "label": "Profile Static",
+        "desc": "Handle, user ID, profile metadata · 24h"
+      },
+      "l1": {
+        "label": "Engagement Timely",
+        "desc": "Followers, tweets, likes, retweets, replies · 90m"
+      },
+      "l2": {
+        "label": "Growth Trends",
+        "desc": "Follower & tweet history trends · 8h"
+      }
+    },
+    "reddit": {
+      "l0": {
+        "label": "Profile Static",
+        "desc": "Username, account metadata · 24h"
+      },
+      "l1": {
+        "label": "Karma Timely",
+        "desc": "Post/comment karma, posts, comments, scores · 90m"
+      },
+      "l2": {
+        "label": "Activity Trends",
+        "desc": "Post & comment history trends · 8h"
+      }
+    }
   }
 }

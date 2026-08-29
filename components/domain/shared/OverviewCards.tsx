@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { ArrowUpRight } from "lucide-react";
+// ArrowUpRight is used in HighlightCard
 import { BaseCard, baseCardPadding } from "@/components/ui/BaseCard";
-import { cn } from "@/lib/client/utils";
+// cn removed — not needed
 
 // 继承式：所有卡片继承 BaseCard 的 variant 与 PADDING，业务不再手写 p-3/p-4
 // 抽象维度：展现形式(compact/stat/default/table) × 内容(数值/高亮/表格)

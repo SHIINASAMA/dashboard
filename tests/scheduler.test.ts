@@ -12,7 +12,7 @@ const dispatchFetch = vi.fn();
 vi.mock("../lib/services/accounts", () => ({
   getActiveAccounts,
   getAccountById,
-  updateAccount: vi.fn(),
+  updateAccount: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("../lib/fetcher", () => ({
@@ -34,6 +34,11 @@ vi.mock("../lib/fetchers/reddit", () => ({
 
 vi.mock("../lib/fetch-dispatch", () => ({
   dispatchFetch,
+}));
+
+vi.mock("../lib/repositories/account-fetch-state", () => ({
+  getAccountFetchState: vi.fn().mockResolvedValue([]),
+  upsertAccountFetchState: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("../lib/logger", () => ({
@@ -88,7 +93,7 @@ describe("scheduler", () => {
       auth_token: "token",
       fetch_interval: 30,
       is_active: 1,
-      last_fetched_at: new Date(Date.now() - 31 * 60_000).toISOString(),
+      last_fetched_at: new Date(Date.now() - 91 * 60_000).toISOString(), // L1 90m auto -> 91m is due
       error_message: null,
       instance_url: null,
       auth_type: null,
@@ -104,7 +109,7 @@ describe("scheduler", () => {
     await runCycleOnceForTests();
 
     expect(getAccountById).toHaveBeenCalledWith(8);
-    expect(dispatchFetch).toHaveBeenCalledWith(dueAccount, "scheduler");
+    expect(dispatchFetch).toHaveBeenCalledWith(dueAccount, "scheduler", "l1");
   });
 
   it("skips active accounts on unsupported platforms", async () => {

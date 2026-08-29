@@ -3,12 +3,12 @@ import { Link } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
-  Activity, ArrowUpRight, GitFork, Layers, MessageSquare,
+  Activity, GitFork, Layers, MessageSquare,
   Star, TrendingUp,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import type { PulseContentItem } from "@/shared/types";
-import { Card, CardContent } from "@/components/ui/card";
+// Card imports removed — BaseCard is now used
 import { StatCompactCard, HighlightCard } from "@/components/domain/shared/OverviewCards";
 import { BaseCard } from "@/components/ui/BaseCard";
 import { TimeRangeSelector } from "@/components/TimeRangeSelector";

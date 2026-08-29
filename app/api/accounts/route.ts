@@ -35,7 +35,7 @@ async function POST(req: Request) {
   const account = await createAccount({
     screenName,
     authToken: authToken || "reddit_public",
-    fetchInterval: fetchInterval || 60,
+    fetchInterval: fetchInterval || 90,
     platform: platform || "twitter",
     instanceUrl: instanceUrl || null,
     authType: authType || null,

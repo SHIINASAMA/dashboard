@@ -1,4 +1,5 @@
 import { Stars, Forks } from "../../domain/repo";
+// Maps full GitHub API repo; L0 uses static subset, L1 timely uses stars/forks
 
 export function toRepo(raw: Record<string, unknown>, accountId: number) {
   return {

@@ -1,3 +1,5 @@
+// L0 24h — static repo metadata only (name/full_name/lang/desc/topics/homepage/is_fork/visibility)
+// stars/forks/issues/PRs/downloads are L1 timely (90m), NOT here
 import type { RepoRepository, FetcherPort, Clock } from "../../domain/ports";
 import type { Account } from "../../domain/account";
 
@@ -10,18 +12,19 @@ export class SyncRepoMeta {
 
   async execute(account: Account): Promise<void> {
     const events = await this.fetcher.fetchRepoMeta(account);
-    const repos = events.map(e => e.repo);
-    await this.repos.upsertRepos(repos);
-    const snapshotDate = this.clock.now().toISOString().slice(0, 10);
-    const snapshots = repos.map(r => ({
-      accountId: r.accountId,
-      repoId: r.repoId,
-      stars: r.stars.value,
-      forks: r.forks.value,
-      snapshotDate,
+    // L0 only cares about static identity fields; stars/forks are handled by L1
+    const staticRepos = events.map((e) => ({
+      accountId: e.repo.accountId,
+      repoId: e.repo.repoId,
+      name: e.repo.name,
+      fullName: e.repo.fullName,
+      language: e.repo.language,
+      description: e.repo.description,
+      homepage: e.repo.homepage,
+      topics: e.repo.topics,
+      isFork: e.repo.isFork,
     }));
-    if (snapshots.length > 0) {
-      await this.repos.upsertSnapshots(snapshots);
-    }
+    // Upsert static columns only — do not overwrite stars/forks/issues
+    await this.repos.upsertRepos(staticRepos as unknown as import("../../domain/repo").Repo[]);
   }
 }

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { FETCH_POLICY } from "@/lib/application/scheduler/fetchPolicy";
 import { api, type Account } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -42,7 +43,8 @@ export default function AccountsPage() {
     const map = new Map<number, boolean>();
     for (const a of accounts) {
       const last = a.last_fetched_at ? new Date(a.last_fetched_at).getTime() : 0;
-      map.set(a.id, last > 0 && (now - last) > (a.fetch_interval || 30) * 60 * 1000);
+      const l1Minutes = parseInt((FETCH_POLICY[a.platform]?.l1 ?? "90m").replace(/[^0-9]/g, "") || "90", 10);
+      map.set(a.id, last > 0 && (now - last) > l1Minutes * 60 * 1000);
     }
     return map;
   }, [accounts, now]);
@@ -141,7 +143,7 @@ export default function AccountsPage() {
                           )}
                         </div>
                         <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-[var(--muted-foreground)]">
-                          <span>{t("settings.interval", { minutes: account.fetch_interval })}</span>
+                          <span>{t("settings.autoSchedule")}</span>
                           {lastFetched && <span>{t("settings.lastFetched", { date: formatDateTime(lastFetched) })}</span>}
                         </div>
                         {account.error_message && (
@@ -221,11 +223,15 @@ function AccountFormPanel({
 
   const [screenName, setScreenName] = useState(account?.screen_name ?? "");
   const [authToken, setAuthToken] = useState("");
-  const [fetchInterval, setFetchInterval] = useState(account?.fetch_interval ?? 30);
   const [platform, setPlatform] = useState<Platform>(account?.platform as Platform ?? defaultPlatform);
   const [instanceUrl, setInstanceUrl] = useState(account?.instance_url ?? "");
   const [authType, setAuthType] = useState<string | null>(account?.auth_type ?? null);
   const [error, setError] = useState("");
+  const tLevel = (lvl: "l0" | "l1" | "l2", field: "label" | "desc") => {
+    const key = `fetchLevel.${platform}.${lvl}.${field}`;
+    const v = t(key) as string;
+    return v !== key ? v : (t(`fetchLevel.${lvl}.${field}`) as string);
+  };
 
   const isReddit = platform === "reddit";
   const isRedditPublic = isReddit && authType === "reddit_public";
@@ -267,7 +273,7 @@ function AccountFormPanel({
   };
 
   const addMutation = useMutation({
-    mutationFn: () => api.createAccount({ screenName, authToken, fetchInterval, platform, instanceUrl: instanceUrl || undefined, authType: authType || undefined }),
+    mutationFn: () => api.createAccount({ screenName, authToken, platform, instanceUrl: instanceUrl || undefined, authType: authType || undefined }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["accounts"] }); onClose(); },
     onError: (e: Error) => setError(e.message),
   });
@@ -277,7 +283,7 @@ function AccountFormPanel({
       const d: Record<string, string | number | boolean | null> = {};
       if (screenName !== account!.screen_name) d.screenName = screenName;
       if (authToken !== "") d.authToken = authToken;
-      if (fetchInterval !== account!.fetch_interval) d.fetchInterval = fetchInterval;
+      // fetchIntervals are now system-managed (L0 24h / L1 90m / L2 8h); no user override
       if (isReddit && authType !== (account!.auth_type || null)) d.authType = authType || null;
       if (platform === "gitlab" && instanceUrl !== (account!.instance_url || "")) d.instanceUrl = instanceUrl || null;
       return api.updateAccount(account!.id, d);
@@ -390,12 +396,38 @@ function AccountFormPanel({
           </fieldset>
         )}
 
-        {/* fetch interval */}
-        <fieldset>
-          <legend className="text-sm font-medium mb-1.5">{t("addAccountForm.fetchInterval")}</legend>
-          <input type="number" value={fetchInterval} onChange={(e) => setFetchInterval(Number(e.target.value))} min={5} max={1440}
-            className="min-h-11 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring)]" />
-          <p className="text-[12px] text-[var(--muted-foreground)] mt-1">{t("addAccountForm.helpFetchInterval")}</p>
+        {/* fetch schedule — L0/L1/L2 */}
+        <fieldset className="space-y-3">
+          <legend className="text-sm font-medium">{t("addAccountForm.fetchSchedule")}</legend>
+          <p className="text-[12px] text-[var(--muted-foreground)] -mt-1">{t("addAccountForm.helpFetchSchedule")}</p>
+          <div className="grid gap-2">
+            {/* L0 — read-only 24h */}
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-[var(--border)] bg-[var(--muted)]/40 px-3 py-2.5">
+              <div className="min-w-0">
+                <p className="text-sm font-medium">{tLevel("l0","label")} <span className="ml-1.5 inline-flex items-center rounded bg-[var(--muted)] px-1.5 py-0.5 text-[11px] font-medium text-[var(--muted-foreground)]">L0</span></p>
+                <p className="text-[12px] text-[var(--muted-foreground)]">{tLevel("l0","desc")}</p>
+              </div>
+              <span className="shrink-0 text-sm font-mono tabular-nums">{FETCH_POLICY[platform]?.l0 ?? "24h"}</span>
+            </div>
+            {/* L1 — timely: stars/issues/PR/downloads */}
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-[var(--border)] bg-[var(--muted)]/40 px-3 py-2.5">
+              <div className="min-w-0">
+                <p className="text-sm font-medium">{tLevel("l1","label")} <span className="ml-1.5 inline-flex items-center rounded bg-[var(--primary)]/10 px-1.5 py-0.5 text-[11px] font-medium text-[var(--primary)]">L1</span></p>
+                <p className="text-[12px] text-[var(--muted-foreground)]">{tLevel("l1","desc")}</p>
+              </div>
+              <span className="shrink-0 text-sm font-mono tabular-nums">{FETCH_POLICY[platform]?.l1 ?? "90m"}</span>
+            </div>
+            {/* L2 — telemetry trends */}
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-[var(--border)] bg-[var(--muted)]/40 px-3 py-2.5">
+              <div className="min-w-0">
+                <p className="text-sm font-medium">{tLevel("l2","label")} <span className="ml-1.5 inline-flex items-center rounded bg-[var(--muted)] px-1.5 py-0.5 text-[11px] font-medium text-[var(--muted-foreground)]">L2</span></p>
+                <p className="text-[12px] text-[var(--muted-foreground)]">{tLevel("l2","desc")}</p>
+              </div>
+              <span className="shrink-0 text-sm font-mono tabular-nums">{FETCH_POLICY[platform]?.l2 ?? "8h"}</span>
+            </div>
+
+          </div>
+          <p className="text-[12px] text-[var(--muted-foreground)]">{t("addAccountForm.helpFetchScheduleAuto")}</p>
         </fieldset>
       </div>
 

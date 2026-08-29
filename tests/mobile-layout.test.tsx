@@ -66,10 +66,11 @@ describe("mobile layout contracts", () => {
     expect(styles).toMatch(/\.detail-header-actions\s*\{[^}]*align-self:\s*flex-start/s);
   });
 
-  it("balances the three repository metrics in a two-column layout", () => {
+  it("balances the four repository metrics in a two-column layout", () => {
     const repoDetail = readProjectFile("app/(dashboard)/github/[accountId]/repos/[repoId]/page.tsx");
 
-    expect(repoDetail).toContain('className="col-span-2 md:col-span-1"');
+    // 4 metrics (stars/forks/issues/PRs) fit 2x2 on mobile, 4 on desktop — no col-span hack needed
+    expect(repoDetail).toContain('grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4');
   });
 
   it("constrains repository chart tooltips with wrapping long labels", () => {

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { SyncRepoMeta } from "../lib/application/usecases/SyncRepoMeta";
+import { SyncActivity } from "../lib/application/usecases/SyncActivity";
 import type { RepoRepository } from "../lib/domain/ports";
 import { Stars, Forks } from "../lib/domain/repo";
 
@@ -14,7 +15,11 @@ class InMemoryRepoRepo implements RepoRepository {
   async findSnapshotsBefore(){ return new Map(); }
   async findSnapshotsInWindow(){ return new Map(); }
   async upsertRepos(repos:any[]){
-    for (const r of repos) this.store.set(`${r.accountId}:${r.repoId}`, r);
+    for (const r of repos) {
+      const key = `${r.accountId}:${r.repoId}`;
+      const existing = this.store.get(key) || {};
+      this.store.set(key, { ...existing, ...r });
+    }
   }
   async upsertSnapshots(){}
 }
@@ -35,9 +40,10 @@ describe("SyncRepoMeta", () => {
     await uc.execute({id:1, screenName:"alice", platform:"github", ownerId:1, instanceUrl:null, isActive:1} as any);
     const after = (await repoRepo.findAllByAccountIds([1]))[0];
     expect(after.isFork).toBe(0);
-    expect(after.stars.value).toBe(100);
+    // L0 static does not overwrite stars (now L1 timely)
+    expect(after.stars.value).toBe(80);
   });
-  it("writes snapshots", async () => {
+  it("does not write snapshots (L0 static only, stars are L1)", async () => {
     const repoRepo = new InMemoryRepoRepo([]);
     let snapWritten: any[] = [];
     repoRepo.upsertSnapshots = async (s:any[]) => { snapWritten = s; };
@@ -45,7 +51,20 @@ describe("SyncRepoMeta", () => {
     const fetcher = new FakeFetcher([newRepo]);
     const uc = new SyncRepoMeta(repoRepo as any, fetcher as any);
     await uc.execute({id:1, screenName:"alice", platform:"github", ownerId:1, instanceUrl:null, isActive:1} as any);
+    expect(snapWritten.length).toBe(0);
+  });
+});
+
+describe("SyncActivity L1 timely", () => {
+  it("writes stars snapshots", async () => {
+    const repoRepo = new InMemoryRepoRepo([]);
+    let snapWritten: any[] = [];
+    repoRepo.upsertSnapshots = async (s:any[]) => { snapWritten = s; };
+    const newRepo = {accountId:1, repoId:2, isFork:0, stars: new Stars(50), forks: new Forks(5), name:"r2", fullName:"a/r2", language:null, description:null, homepage:null, topics:"[]"};
+    const fetcher = new FakeFetcher([newRepo]);
+    const uc = new SyncActivity(repoRepo as any, fetcher as any);
+    await uc.execute({id:1, screenName:"alice", platform:"github", ownerId:1, instanceUrl:null, isActive:1} as any);
     expect(snapWritten.length).toBe(1);
-    expect(snapWritten[0].repoId).toBe(2);
+    expect(snapWritten[0].stars).toBe(50);
   });
 });
