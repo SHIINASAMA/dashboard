@@ -1,6 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { type OverviewStats, type TimelineData, type Tweet, type Account } from "@/lib/api";
 import { StatCard } from "@/components/StatCard";
+import { SectionShell } from "@/components/domain/shared/SectionShell";
+import { StatGrid } from "@/components/domain/shared/StatGrid";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { XIcon } from "@/components/BrandIcons";
 import { MessageSquare, Heart, Repeat2, Eye, TrendingUp } from "lucide-react";
@@ -23,22 +25,21 @@ export function XSection({ stats, timeline, topLiked, xAccounts }: Props) {
   if (xAccounts.length === 0) return null;
 
   return (
-    <section className="space-y-3">
-      <h3 className="text-sm font-semibold flex items-center gap-1.5 text-[var(--muted-foreground)]"><XIcon /> {t("overview.xHeading")}</h3>
+    <SectionShell icon={<XIcon />} title={t("overview.xHeading")}>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <StatGrid cols="2-5">
         <StatCard title={t("overview.stats.tweetCount")} value={stats?.tweet_count ?? 0} icon={<MessageSquare size={16} />} description={stats ? t("overview.stats.today", { count: stats.todayTweets }) : undefined} />
         <StatCard title={t("overview.stats.tweetLikes")} value={(stats?.tweet_likes ?? 0).toLocaleString()} icon={<Heart size={16} />} />
         <StatCard title={t("overview.stats.tweetRetweets")} value={(stats?.tweet_retweets ?? 0).toLocaleString()} icon={<Repeat2 size={16} />} />
         <StatCard title={t("overview.stats.tweetViews")} value={(stats?.tweet_views ?? 0).toLocaleString()} icon={<Eye size={16} />} />
         <StatCard title={t("overview.stats.followers")} value={stats?.followersCount ?? 0} icon={<TrendingUp size={16} />} description={stats ? t("overview.stats.following", { count: stats.followingCount }) : undefined} />
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      </StatGrid>
+      <StatGrid>
         <StatCard title={t("overview.stats.replyCount")} value={stats?.reply_count ?? 0} icon={<MessageSquare size={16} />} />
         <StatCard title={t("overview.stats.replyLikes")} value={(stats?.reply_likes ?? 0).toLocaleString()} icon={<Heart size={16} />} />
         <StatCard title={t("overview.stats.replyRetweets")} value={(stats?.reply_retweets ?? 0).toLocaleString()} icon={<Repeat2 size={16} />} />
         <StatCard title={t("overview.stats.replyViews")} value={(stats?.reply_views ?? 0).toLocaleString()} icon={<Eye size={16} />} />
-      </div>
+      </StatGrid>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <Card>
@@ -118,6 +119,6 @@ export function XSection({ stats, timeline, topLiked, xAccounts }: Props) {
           ))}
         </div>
       )}
-    </section>
+    </SectionShell>
   );
 }

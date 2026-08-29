@@ -4,8 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { BarChart3, TrendingUp } from "lucide-react";
 import { api } from "@/lib/api";
+import { SectionShell } from "@/components/domain/shared/SectionShell";
 import type { TopContentItem } from "@/shared/types";
 import { Card, CardContent } from "@/components/ui/card";
+import { BaseCard } from "@/components/ui/BaseCard";
+import { TableCard } from "@/components/domain/shared/OverviewCards";
 import { TimeRangeSelector } from "@/components/TimeRangeSelector";
 import { ChartCardSkeleton } from "@/components/Skeleton";
 import { GithubIcon, GitlabIcon, RedditIcon, XIcon } from "@/components/BrandIcons";
@@ -35,31 +38,20 @@ export function TopContentSection() {
   const items = data?.items ?? [];
 
   return (
-    <section className="space-y-3">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h3 className="flex items-center gap-1.5 text-sm font-semibold text-[var(--muted-foreground)]">
-          <BarChart3 size={16} /> {t("overview.topContent.heading")}
-        </h3>
-        <TimeRangeSelector value={days} onChange={setDays} options={TIME_OPTIONS} />
-      </div>
+    <SectionShell icon={<BarChart3 size={16} />} title={t("overview.topContent.heading")} action={<TimeRangeSelector value={days} onChange={setDays} options={TIME_OPTIONS} />}>
 
       {isLoading ? (
         <ChartCardSkeleton />
       ) : isError || !data ? (
-        <Card>
-          <CardContent className="p-4 sm:p-6 text-sm text-[var(--muted-foreground)]">
-            {t("overview.topContent.unavailable")}
-          </CardContent>
-        </Card>
+        <BaseCard variant="default">
+          <p className="text-sm text-[var(--muted-foreground)]">{t("overview.topContent.unavailable")}</p>
+        </BaseCard>
       ) : items.length === 0 ? (
-        <Card>
-          <CardContent className="p-4 sm:p-6 text-sm text-[var(--muted-foreground)]">
-            {t("overview.topContent.noData")}
-          </CardContent>
-        </Card>
+        <BaseCard variant="default">
+          <p className="text-sm text-[var(--muted-foreground)]">{t("overview.topContent.noData")}</p>
+        </BaseCard>
       ) : (
-        <Card>
-          <CardContent className="p-0 overflow-x-auto">
+        <TableCard>
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-[var(--border)] text-[11px] uppercase tracking-wide text-[var(--muted-foreground)]">
@@ -75,10 +67,9 @@ export function TopContentSection() {
                 ))}
               </tbody>
             </table>
-          </CardContent>
-        </Card>
+        </TableCard>
       )}
-    </section>
+    </SectionShell>
   );
 }
 

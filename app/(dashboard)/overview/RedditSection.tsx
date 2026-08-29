@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { StatCard } from "@/components/StatCard";
+import { SectionShell } from "@/components/domain/shared/SectionShell";
+import { StatGrid } from "@/components/domain/shared/StatGrid";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RedditIcon } from "@/components/BrandIcons";
 import { MessageSquare, ThumbsUp } from "lucide-react";
@@ -30,14 +32,13 @@ export function RedditSection({ postKarma, commentKarma, totalPosts, totalCommen
   const PIE_RADIUS = isMobile ? 50 : 70;
 
   return (
-    <section className="space-y-3">
-      <h3 className="text-sm font-semibold flex items-center gap-1.5 text-[var(--muted-foreground)]"><RedditIcon /> {t("overview.redditHeading")}</h3>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <SectionShell icon={<RedditIcon />} title={t("overview.redditHeading")}>
+      <StatGrid>
         <StatCard title={t("overview.stats.postKarma")} value={postKarma} icon={<ThumbsUp size={16} />} />
         <StatCard title={t("overview.stats.commentKarma")} value={commentKarma} icon={<MessageSquare size={16} />} />
         <StatCard title={t("overview.stats.redditPosts")} value={totalPosts} icon={<MessageSquare size={16} />} />
         <StatCard title={t("overview.stats.redditComments")} value={totalComments} icon={<MessageSquare size={16} />} />
-      </div>
+      </StatGrid>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <Card>
@@ -108,6 +109,6 @@ export function RedditSection({ postKarma, commentKarma, totalPosts, totalCommen
           </CardContent>
         </Card>
       )}
-    </section>
+    </SectionShell>
   );
 }

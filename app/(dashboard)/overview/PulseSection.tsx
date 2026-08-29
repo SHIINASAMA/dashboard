@@ -9,6 +9,8 @@ import {
 import { api } from "@/lib/api";
 import type { PulseContentItem } from "@/shared/types";
 import { Card, CardContent } from "@/components/ui/card";
+import { StatCompactCard, HighlightCard } from "@/components/domain/shared/OverviewCards";
+import { BaseCard } from "@/components/ui/BaseCard";
 import { TimeRangeSelector } from "@/components/TimeRangeSelector";
 import { ChartCardSkeleton, StatCardSkeleton } from "@/components/Skeleton";
 import { GithubIcon, GitlabIcon, RedditIcon, XIcon } from "@/components/BrandIcons";
@@ -18,8 +20,6 @@ const TIME_OPTIONS = [
   { value: 30, labelKey: "timeRange.30d" },
   { value: 90, labelKey: "timeRange.90d" },
 ];
-
-const COMPACT_CARD_PADDING = "p-3 sm:pt-3";
 
 function signed(value: number) {
   return `${value > 0 ? "+" : ""}${value.toLocaleString()}`;
@@ -80,31 +80,31 @@ export function PulseSection() {
           <ChartCardSkeleton />
         </div>
       ) : isError || !data ? (
-        <Card><CardContent className="p-4 sm:p-6 text-sm text-[var(--muted-foreground)]">{t("overview.pulse.unavailable")}</CardContent></Card>
+        <BaseCard variant="default"><p className="text-sm text-[var(--muted-foreground)]">{t("overview.pulse.unavailable")}</p></BaseCard>
       ) : data.platforms.length === 0 ? (
-        <Card><CardContent className="p-4 sm:p-6 text-sm text-[var(--muted-foreground)]">{t("overview.pulse.noData")}</CardContent></Card>
+        <BaseCard variant="default"><p className="text-sm text-[var(--muted-foreground)]">{t("overview.pulse.noData")}</p></BaseCard>
       ) : (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <StatCardCompact
+            <StatCompactCard
               icon={<Layers size={16} />}
               title={t("overview.pulse.activePlatforms")}
               value={data.platforms.length.toLocaleString()}
               description={t("overview.pulse.rangeDays", { count: data.range.days })}
             />
-            <StatCardCompact
+            <StatCompactCard
               icon={<Activity size={16} />}
               title={t("overview.pulse.activity")}
               value={signed(data.totals.activity.change)}
               description={deltaDescription(data.totals.activity.previous, data.totals.activity.current)}
             />
-            <StatCardCompact
+            <StatCompactCard
               icon={<Star size={16} />}
               title={t("overview.pulse.stars")}
               value={signed(data.totals.traction.stars.change)}
               description={deltaDescription(data.totals.traction.stars.previous, data.totals.traction.stars.current)}
             />
-            <StatCardCompact
+            <StatCompactCard
               icon={<GitFork size={16} />}
               title={t("overview.pulse.forks")}
               value={signed(data.totals.traction.forks.change)}
@@ -114,8 +114,7 @@ export function PulseSection() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
             {data.platforms.map((platform) => (
-              <Card key={platform.platform} className="transition-colors hover:bg-[var(--muted)]/50">
-                <CardContent className={COMPACT_CARD_PADDING}>
+              <BaseCard key={platform.platform} variant="compact" contentClassName="flex flex-col justify-center">
                   <div className="flex items-center justify-between gap-2">
                     <span className="flex min-w-0 items-center gap-1.5 text-sm font-medium">
                       <PlatformIcon platform={platform.platform} />
@@ -138,8 +137,7 @@ export function PulseSection() {
                     {" · "}
                     {t("overview.pulse.activityShort", { count: platform.activity.current })}
                   </p>
-                </CardContent>
-              </Card>
+                </BaseCard>
             ))}
           </div>
 
@@ -201,52 +199,5 @@ export function PulseSection() {
         </>
       )}
     </section>
-  );
-}
-
-function StatCardCompact({
-  icon, title, value, description,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  value: string;
-  description: string;
-}) {
-  return (
-    <Card className="transition-colors hover:bg-[var(--muted)]/50">
-      <CardContent className={COMPACT_CARD_PADDING}>
-        <div className="flex items-start gap-2.5">
-          <span className="shrink-0 rounded-lg bg-[var(--muted)] p-2.5 text-[var(--primary)]">{icon}</span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[11px] font-medium uppercase tracking-wider leading-4 text-[var(--muted-foreground)]">{title}</p>
-            <p className="mt-1 truncate text-xl font-bold leading-7 tabular-nums">{value}</p>
-            <p className="truncate text-[11px] leading-4 tabular-nums text-[var(--muted-foreground)]/80">{description}</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function HighlightCard({
-  title, icon, children,
-}: {
-  title: string;
-  icon: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <Card className="flex h-full flex-col">
-      <CardContent className={`${COMPACT_CARD_PADDING} flex min-h-0 flex-1 flex-col`}>
-        <div className="mb-2 flex items-center justify-between gap-2">
-          <p className="flex min-w-0 items-center gap-1.5 text-xs font-semibold leading-4 text-[var(--muted-foreground)]">
-            <span className="shrink-0">{icon}</span>
-            <span className="truncate">{title}</span>
-          </p>
-          <ArrowUpRight size={14} className="shrink-0 text-[var(--muted-foreground)]" />
-        </div>
-        <div className="-mx-2 space-y-0.5">{children}</div>
-      </CardContent>
-    </Card>
   );
 }

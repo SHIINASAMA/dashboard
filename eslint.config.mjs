@@ -21,7 +21,7 @@ export default tseslint.config(
     rules: {
       // `{ field: _, ...rest }` is the codebase-wide pattern for stripping
       // sensitive fields; the rest-sibling is intentionally ignored.
-      "@typescript-eslint/no-unused-vars": ["error", { ignoreRestSiblings: true }],
+      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_", ignoreRestSiblings: true }],
       // Loose-typing files annotate their opt-out; keep that annotation honest.
       "@typescript-eslint/ban-ts-comment": ["error", {
         "ts-nocheck": "allow-with-description",
@@ -46,6 +46,13 @@ export default tseslint.config(
     files: ["scripts/dump-x-data.ts", "scripts/test-fetch-algorithm.ts"],
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
+  {
+    files: ["tests/**/*.ts", "tests/**/*.tsx"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
     },
   },
 );

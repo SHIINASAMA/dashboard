@@ -25,7 +25,7 @@ import { FetchRunHistory } from "@/components/FetchRunHistory";
 function MetricCard({ label, value }: { label: string; value: string }) {
   return (
     <Card>
-      <CardContent className="p-4 sm:p-4 text-center">
+      <CardContent className="p-4 pt-4 sm:p-4 sm:pt-4 text-center">
         <p className="text-2xl font-bold leading-tight font-mono tabular-nums">{value}</p>
         <p className="mt-1 text-xs text-[var(--muted-foreground)]">{label}</p>
       </CardContent>

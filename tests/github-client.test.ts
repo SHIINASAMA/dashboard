@@ -1,0 +1,40 @@
+import { describe, it, expect } from "vitest";
+import { GithubClient } from "../lib/infra/fetchers/GithubClient";
+
+function mockFetchWithLink() {
+  let call = 0;
+  return async (_url: string, _init?: unknown) => {
+    call++;
+    if (call === 1) {
+      return {
+        ok: true,
+        headers: { get: (k: string) => k.toLowerCase()==="link" ? `<https://api.github.com/users/alice/repos?page=2>; rel="next"` : null },
+        json: async () => Array.from({length:100}, (_,i)=>({id:i+1, name:`r${i+1}`, stargazers_count:10})),
+      } as any;
+    } else {
+      return {
+        ok: true,
+        headers: { get: () => null },
+        json: async () => Array.from({length:50}, (_,i)=>({id:100+i+1, name:`r${100+i+1}`, stargazers_count:5})),
+      } as any;
+    }
+  };
+}
+
+describe("GithubClient", () => {
+  it("fetchAllRepos paginates via Link header", async () => {
+    const client = new GithubClient(mockFetchWithLink() as any);
+    const repos = await client.fetchAllRepos("alice", "tok");
+    expect(repos.length).toBe(150);
+  });
+  it("fetchAllRepos single page without Link", async () => {
+    const singleFetch = async () => ({
+      ok: true,
+      headers: { get: () => null },
+      json: async () => [{id:1, name:"r1"}],
+    } as any);
+    const client = new GithubClient(singleFetch as any);
+    const repos = await client.fetchAllRepos("bob", "tok");
+    expect(repos.length).toBe(1);
+  });
+});

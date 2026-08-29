@@ -537,17 +537,17 @@ export default function RepoDetail() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
-        <Card><CardContent className="p-4 sm:p-4 text-center"><Star size={16} className="inline mb-1 text-[var(--muted-foreground)]" /><p className="text-2xl font-bold font-mono tabular-nums">{repo.stars.toLocaleString()}</p><p className="text-xs text-[var(--muted-foreground)]">{t("repoDetail.stars")}</p></CardContent></Card>
-        <Card><CardContent className="p-4 sm:p-4 text-center"><GitFork size={16} className="inline mb-1 text-[var(--muted-foreground)]" /><p className="text-2xl font-bold font-mono tabular-nums">{repo.forks.toLocaleString()}</p><p className="text-xs text-[var(--muted-foreground)]">{t("repoDetail.forks")}</p></CardContent></Card>
+        <Card><CardContent className="p-4 pt-4 sm:p-4 sm:pt-4 text-center"><Star size={16} className="inline mb-1 text-[var(--muted-foreground)]" /><p className="text-2xl font-bold font-mono tabular-nums">{repo.stars.toLocaleString()}</p><p className="text-xs text-[var(--muted-foreground)]">{t("repoDetail.stars")}</p></CardContent></Card>
+        <Card><CardContent className="p-4 pt-4 sm:p-4 sm:pt-4 text-center"><GitFork size={16} className="inline mb-1 text-[var(--muted-foreground)]" /><p className="text-2xl font-bold font-mono tabular-nums">{repo.forks.toLocaleString()}</p><p className="text-xs text-[var(--muted-foreground)]">{t("repoDetail.forks")}</p></CardContent></Card>
         <Card>
-          <CardContent className="p-4 sm:p-4 text-center">
+          <CardContent className="p-4 pt-4 sm:p-4 sm:pt-4 text-center">
             <CircleDot size={16} className="inline mb-1 text-[var(--muted-foreground)]" />
             <p className="text-2xl font-bold font-mono tabular-nums" title={splitUnavailable ? t("repoDetail.splitUnavailable") : undefined}>{openIssues == null ? "—" : openIssues.toLocaleString()}</p>
             <p className="text-xs text-[var(--muted-foreground)]">{t("repoDetail.openIssues")}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 sm:p-4 text-center">
+          <CardContent className="p-4 pt-4 sm:p-4 sm:pt-4 text-center">
             <GitPullRequest size={16} className="inline mb-1 text-[var(--muted-foreground)]" />
             <p className="text-2xl font-bold font-mono tabular-nums" title={splitUnavailable ? t("repoDetail.splitUnavailable") : undefined}>{openPullRequests == null ? "—" : openPullRequests.toLocaleString()}</p>
             <p className="text-xs text-[var(--muted-foreground)]">{t("repoDetail.openPullRequests")}</p>

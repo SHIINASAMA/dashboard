@@ -3,6 +3,12 @@ import type { LoaderFunctionArgs } from "react-router";
 import { getAccounts } from "@/lib/services/accounts";
 import { getPulse } from "@/lib/services/pulse";
 import { requireSession, getOwnerId } from "@/lib/auth-helpers";
+import { createHash } from "node:crypto";
+
+function etagFor(pulse: unknown): string {
+  const h = createHash("sha256").update(JSON.stringify(pulse)).digest("hex").slice(0, 16);
+  return `"${h}"`;
+}
 
 async function GET(req: Request) {
   const auth = await requireSession(req);
@@ -13,7 +19,17 @@ async function GET(req: Request) {
   const ownerId = getOwnerId(auth.user);
   const accounts = await getAccounts(ownerId);
   const pulse = await getPulse(accounts, days);
-  return json(pulse);
+  const etag = etagFor(pulse);
+  const ifNoneMatch = req.headers.get("If-None-Match");
+  if (ifNoneMatch && ifNoneMatch === etag) {
+    return new Response(null, { status: 304, headers: { ETag: etag } });
+  }
+  return json(pulse, {
+    headers: {
+      ETag: etag,
+      "Cache-Control": "public, max-age=60, stale-while-revalidate=180",
+    },
+  });
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {

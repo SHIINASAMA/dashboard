@@ -99,7 +99,7 @@ export default function AccountsPage() {
       {/* inline form — uses key to force remount when editing target changes */}
       {showForm && (
         <Card>
-          <CardContent className="p-5">
+          <CardContent className="p-5 pt-5 sm:pt-5">
             <AccountFormPanel
               key={editing ? editing.id : "add"}
               account={editing}
@@ -126,7 +126,7 @@ export default function AccountsPage() {
                   className={`group ${!account.is_active ? "opacity-60 " : ""}cursor-pointer hover:border-[var(--primary)]/50 transition-colors`}
                   onClick={() => navigate(`${currentTab.basePath}/${account.id}`)}
                 >
-                  <CardContent className="p-4 sm:p-5">
+                  <CardContent className="p-4 pt-4 sm:p-5 sm:pt-5">
                     <div className="mobile-account-card justify-between gap-4">
                       <div className="min-w-0 flex-1">
                         <div className="mb-1 flex min-w-0 flex-wrap items-center gap-2">
@@ -183,7 +183,7 @@ export default function AccountsPage() {
           </div>
         ) : (
           <Card>
-            <CardContent className="p-8 text-center">
+            <CardContent className="p-8 pt-8 text-center">
               <p className="text-sm text-[var(--muted-foreground)] mb-4">{t("settings.noAccountsDesc")}</p>
               <button
                 onClick={() => setAdding(true)}

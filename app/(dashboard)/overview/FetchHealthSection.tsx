@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
+import { CompactCard } from "@/components/domain/shared/OverviewCards";
 import { StatCard } from "@/components/StatCard";
 import { StatCardSkeleton } from "@/components/Skeleton";
 import { getPlatformLabelKey } from "@/lib/platforms";
@@ -36,7 +37,7 @@ export function FetchHealthSection() {
   if (isError || !data) {
     return (
       <Card>
-        <CardContent className="p-4 sm:p-6 text-sm text-[var(--muted-foreground)]">
+        <CardContent className="p-4 pt-4 sm:p-6 sm:pt-6 text-sm text-[var(--muted-foreground)]">
           {t("overview.health.unavailable")}
         </CardContent>
       </Card>
@@ -93,8 +94,7 @@ export function FetchHealthSection() {
       )}
 
       {data.issues.length > 0 && (
-        <Card>
-          <CardContent className="p-3">
+        <CompactCard>
             <div className="space-y-0.5 -mx-2">
               {data.issues.slice(0, 5).map((issue) => (
                 <div key={issue.accountId} className="rounded-md p-2 transition-colors hover:bg-[var(--muted)] active:bg-[var(--border)]/50">
@@ -124,8 +124,7 @@ export function FetchHealthSection() {
                 {t("overview.health.moreIssues", { count: data.issues.length - 5 })}
               </p>
             )}
-          </CardContent>
-        </Card>
+        </CompactCard>
       )}
     </section>
   );

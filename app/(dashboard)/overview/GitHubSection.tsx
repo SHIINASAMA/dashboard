@@ -2,9 +2,12 @@ import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { type Account } from "@/lib/api";
 import { StatCard } from "@/components/StatCard";
+import { RepoChip } from "@/components/ui/RepoChip";
+import { SectionShell } from "@/components/domain/shared/SectionShell";
+import { StatGrid } from "@/components/domain/shared/StatGrid";
+import { PinnedGrid } from "@/components/domain/shared/PinnedGrid";
 import { GithubIcon } from "@/components/BrandIcons";
 import { Star, GitFork, TrendingUp } from "lucide-react";
-import { RepoChip } from "./RepoChip";
 
 interface RepoLike {
   id: number;
@@ -34,30 +37,25 @@ export function GitHubSection({ ghAllRepos, ghPinned, ghTotalStars, ghTotalForks
   if (ghAccounts.length === 0) return null;
 
   return (
-    <section className="space-y-3">
-      <h3 className="text-sm font-semibold flex items-center gap-1.5 text-[var(--muted-foreground)]"><GithubIcon /> {t("overview.githubHeading")}</h3>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <SectionShell icon={<GithubIcon />} title={t("overview.githubHeading")}>
+      <StatGrid>
         <StatCard title={t("overview.stats.repos")} value={ghAllRepos.length} icon={<GithubIcon />} />
         <StatCard title={t("overview.stats.totalStars")} value={ghTotalStars} icon={<Star size={16} />} />
         <StatCard title={t("overview.stats.totalForks")} value={ghTotalForks} icon={<GitFork size={16} />} />
         <StatCard title={t("overview.stats.followers")} value={ghFollowers} icon={<TrendingUp size={16} />} />
-      </div>
+      </StatGrid>
 
       {ghPinned.length > 0 && (
-        <div className="space-y-1.5">
-          <p className="text-[11px] font-medium text-[var(--muted-foreground)]">{t("overview.pinnedRepos")}</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-            {ghPinned.map((repo) => {
-              const acc = ghAccounts.find((a) => a.id === repo.account_id);
-              return (
-                <RepoChip key={repo.id} name={repo.name} language={repo.language} stars={repo.stars} forks={repo.forks}
-                  onClick={() => navigate(`/github/${acc?.id ?? repo.account_id}/repos/${repo.repo_id}`)} />
-              );
-            })}
-          </div>
-        </div>
+        <PinnedGrid title={t("overview.pinnedRepos")}>
+          {ghPinned.map((repo) => {
+            const acc = ghAccounts.find((a) => a.id === repo.account_id);
+            return (
+              <RepoChip key={repo.id} name={repo.name} language={repo.language} stars={repo.stars} forks={repo.forks}
+                onClick={() => navigate(`/github/${acc?.id ?? repo.account_id}/repos/${repo.repo_id}`)} />
+            );
+          })}
+        </PinnedGrid>
       )}
-    </section>
+    </SectionShell>
   );
 }
