@@ -546,9 +546,9 @@
     "redditPublic": "浏览器 Cookie",
     "fetchSchedule": "抓取计划",
     "helpFetchSchedule": "三档自动调度 —— L0 静态、L1 及时、L2 遥测。",
-    "helpFetchScheduleNote": "仅 L1 可覆盖。L0（仓库元数据全量校正 is_fork）与 L2（流量/Release）保持平台默认值。L1 保持 90 分钟可避免触发限频。",
+    "helpFetchScheduleNote": "仅 L1 可覆盖。L0（仓库元数据全量校正 is_fork）与 L2（流量遥测）保持平台默认值。L1 保持 90 分钟可避免触发限频。",
     "minutes": "分钟",
-    "helpFetchScheduleAuto": "L0（静态元数据 24小时）、L1（星标/议题/PR/下载数 90分钟）、L2（流量与趋势遥测 8小时）—— 全自动。"
+    "helpFetchScheduleAuto": "L0（静态元数据 24小时）、L1（星标/议题/PR/Release 下载数 90分钟）、L2（流量遥测 8小时）—— 全自动。"
   },
   "editAccountForm": {
     "title": "编辑账户",

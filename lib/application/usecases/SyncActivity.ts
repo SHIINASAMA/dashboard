@@ -1,4 +1,4 @@
-// L1 90m — timely metrics: stars/forks/issues/PRs/downloads + followers/contributions
+// L1 90m — timely metrics: stars/forks/issues/PRs/release downloads + followers/contributions
 import type { RepoRepository, FetcherPort, Clock } from "../../domain/ports";
 import type { Account } from "../../domain/account";
 import { getLogger } from "../../logger";
@@ -7,6 +7,17 @@ interface GithubActivityClient {
   fetchUserStats(username: string, token?: string): Promise<Record<string, unknown>>;
   fetchContributions(username: string, token?: string, year?: number): Promise<Array<{ date: string; count: number; level: number }>>;
   fetchIssueSplits(repos: Array<{ id: number; full_name: string }>, token?: string): Promise<Map<number, { issues: number; pullRequests: number }>>;
+  fetchRepoReleases(fullName: string, token?: string): Promise<Array<Record<string, unknown>>>;
+}
+
+export interface ReleaseWrite {
+  upsertRelease(r: {
+    account_id: number; repo_id: number; release_id: number; tag_name: string | null; name: string | null; body: string | null;
+    prerelease: number; published_at: string | null; html_url: string | null; total_downloads: number;
+  }): Promise<void>;
+  replaceAssets(releaseDbId: number, assets: Array<Record<string, unknown>>): Promise<void>;
+  insertAssetSnapshot(s: { account_id: number; repo_id: number; release_id: number; asset_name: string; download_count: number; snapshot_date: string }): Promise<void>;
+  findReleaseDbId(accountId: number, repoId: number, releaseId: number): Promise<number | null>;
 }
 
 export class SyncActivity {
@@ -15,6 +26,7 @@ export class SyncActivity {
     private fetcher: FetcherPort,
     private clock: Clock = { now: () => new Date() },
     private githubClient?: GithubActivityClient,
+    private releaseWrite?: ReleaseWrite,
   ) {}
 
   async execute(account: Account): Promise<void> {
@@ -34,6 +46,44 @@ export class SyncActivity {
       await this.repos.upsertSnapshots(snapshots);
     }
     getLogger().info("GitHub", "L1 @%s: upsert %d repos + %d snapshots", account.screenName, repos.length, snapshots.length);
+
+    // Release downloads are timely metrics (L1 90m): refresh cumulative counts
+    // and record one snapshot per fetch so download growth can be derived.
+    try {
+      const client = this.githubClient;
+      const write = this.releaseWrite;
+      if (client && write && account.platform === "github") {
+        const token = (account as unknown as { authToken?: string }).authToken ?? undefined;
+        const snapshotDate = new Date().toISOString();
+        for (const repo of repos) {
+          const fullName = repo.fullName;
+          if (!fullName) continue;
+          let releases: Array<Record<string, unknown>> = [];
+          try {
+            releases = await client.fetchRepoReleases(fullName, token);
+          } catch { /* release fetch is best-effort; repos already updated */ }
+          for (const release of releases) {
+            const totalDownloads = ((release.assets as Array<Record<string, unknown>>) || []).reduce((s: number, a: Record<string, unknown>) => s + ((a.download_count as number) || 0), 0);
+            await write.upsertRelease({
+              account_id: account.id, repo_id: repo.repoId, release_id: release.id as number,
+              tag_name: (release.tag_name as string) || null, name: (release.name as string) || null, body: (release.body as string) || null,
+              prerelease: release.prerelease ? 1 : 0, published_at: (release.published_at as string) || null, html_url: (release.html_url as string) || null, total_downloads: totalDownloads,
+            });
+            const releaseDbId = await write.findReleaseDbId(account.id, repo.repoId, release.id as number);
+            if (releaseDbId) {
+              await write.replaceAssets(releaseDbId, (release.assets as Array<Record<string, unknown>>) || []);
+              for (const asset of (release.assets as Array<Record<string, unknown>>) || []) {
+                const downloadCount = (asset.download_count as number) || 0;
+                await write.insertAssetSnapshot({ account_id: account.id, repo_id: repo.repoId, release_id: releaseDbId, asset_name: asset.name as string, download_count: downloadCount, snapshot_date: snapshotDate });
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      getLogger().warn("GitHub", "L1 @%s: release downloads skipped (%s)", account.screenName, e instanceof Error ? e.message : String(e));
+    }
+
     // Pure new: also refresh followers and contributions (L1 timely) to keep pulse audience compatible
     try {
       const client = this.githubClient;

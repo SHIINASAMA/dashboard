@@ -69,6 +69,16 @@ export class MockGithubClient {
   }
 
   async fetchRepoReleases(_fullName: string, _token?: string): Promise<Array<Record<string, unknown>>> {
-    return [];
+    const count = scenario === "initial" ? 100 : scenario === "starIncrease" ? 140 : 190;
+    return [{
+      id: 10,
+      tag_name: "v1.0.0",
+      name: "v1.0.0",
+      body: null,
+      prerelease: false,
+      published_at: new Date().toISOString(),
+      html_url: `https://github.com/mock/releases/v1.0.0`,
+      assets: [{ name: "app-v1.0.0.zip", download_count: count, size: 1024, content_type: "application/zip", browser_download_url: `https://github.com/mock/releases/download/v1.0.0/app-v1.0.0.zip` }],
+    }];
   }
 }

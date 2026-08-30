@@ -55,7 +55,7 @@ async function runCycle() {
       const states = await getAccountFetchState(account.id).catch(() => null);
       const stateMap = new Map((states ?? []).map(s => [s.level, s.lastFetchedAt ? new Date(s.lastFetchedAt).getTime() : 0]));
       let dueLevel: FetchLevel | null = null;
-      for (const level of LEVELS) { // L0: static 24h, L1: stars/issues/PR/downloads 90m, L2: telemetry trends 8h
+      for (const level of LEVELS) { // L0: static 24h, L1: stars/issues/PR/release downloads 90m, L2: traffic telemetry 8h
         const lastFetched = stateMap.get(level) ?? (account.last_fetched_at ? new Date(account.last_fetched_at).getTime() : 0);
         const intervalMs = getFetchInterval(account.platform, level, null);
         if (now - lastFetched >= intervalMs) {

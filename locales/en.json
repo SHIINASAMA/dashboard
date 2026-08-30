@@ -546,9 +546,9 @@
     "redditPublic": "Browser Cookies",
     "fetchSchedule": "Fetch Schedule",
     "helpFetchSchedule": "Three-level auto schedule — L0 static, L1 timely, L2 telemetry.",
-    "helpFetchScheduleNote": "Only L1 is overridable. L0 (repo metadata full scan) and L2 (traffic/releases) stay at platform defaults. Leave L1 at 90 to respect rate limits.",
+    "helpFetchScheduleNote": "Only L1 is overridable. L0 (repo metadata full scan) and L2 (traffic telemetry) stay at platform defaults. Leave L1 at 90 to respect rate limits.",
     "minutes": "min",
-    "helpFetchScheduleAuto": "L0 (static repo metadata, 24h), L1 (stars/issues/PRs/downloads, 90m), L2 (traffic & trend telemetry, 8h) — all automatic."
+    "helpFetchScheduleAuto": "L0 (static repo metadata, 24h), L1 (stars/issues/PRs/release downloads, 90m), L2 (traffic telemetry, 8h) — all automatic."
   },
   "editAccountForm": {
     "title": "Edit Account",

@@ -240,7 +240,8 @@ async function executeWithNewArch(account: AccountRow, level: string): Promise<F
     return { status: "success" as const, errorMessage: null, capabilityGaps: [] };
   }
   if (level === "l1") {
-    const uc = new SyncActivity(repoRepo, fetcher, undefined, client);
+    const { PgReleaseWrite } = await import("./infra/drizzle/PgReleaseWrite");
+    const uc = new SyncActivity(repoRepo, fetcher, undefined, client, new PgReleaseWrite());
     await uc.execute(domainAccount);
     return { status: "success" as const, errorMessage: null, capabilityGaps: [] };
   }

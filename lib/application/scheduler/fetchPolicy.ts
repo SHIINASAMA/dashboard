@@ -12,6 +12,8 @@ export const FETCH_POLICY: Record<string, Record<FetchLevel, string>> = {
  * Guardrails: the manual TriggerPanel, the scheduler, and fetch-dispatch all
  * read this so the UI cannot offer a level the backend cannot run.
  *   github: full L0/L1/L2 pipeline
+ *     L1: stars/forks/issues/PRs/release downloads
+ *     L2: traffic clones/views, referrers, paths (slow telemetry)
  *   gitlab/reddit/twitter: the new-architecture sync covers the whole account,
  *     so only L1 runs (metadata + activity) today.
  */

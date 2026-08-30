@@ -162,7 +162,8 @@ export async function fetchGithubAccount(account: AccountRow) {
 
     const capabilityGaps: Array<{ capability: string; message?: string }> = [];
 
-    // 3. Fetch traffic & releases for each repo (requires classic PAT with repo scope)
+    // 3. Fetch traffic (L2-style telemetry) & releases (L1 timely) for each repo.
+    //    Both require a classic PAT with repo scope.
     if (token) {
       let repoCount = 0;
       for (const repo of repos) {
@@ -172,7 +173,7 @@ export async function fetchGithubAccount(account: AccountRow) {
         const releaseErr = await fetchRepoReleases(account.id, repo.id, repo.full_name, token);
         if (releaseErr && !releaseError) releaseError = releaseErr;
         if (repoCount % 5 === 0 || repoCount === repos.length) {
-          getLogger().info("GitHub", "@%s: traffic/releases %d/%d done", username, repoCount, repos.length);
+          getLogger().info("GitHub", "@%s: traffic + releases %d/%d done", username, repoCount, repos.length);
         }
         await sleep(200);
       }
@@ -180,7 +181,7 @@ export async function fetchGithubAccount(account: AccountRow) {
         getLogger().warn("GitHub", "@%s: traffic fetch issue — %s", username, trafficError);
         capabilityGaps.push({ capability: "github_traffic", message: trafficError });
       } else {
-        getLogger().info("GitHub", "@%s: traffic & releases fetched", username);
+        getLogger().info("GitHub", "@%s: traffic + releases fetched", username);
       }
     } else {
       getLogger().info("GitHub", "@%s: no token — skipping traffic & releases", username);
