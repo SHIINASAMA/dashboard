@@ -7,6 +7,25 @@ export const FETCH_POLICY: Record<string, Record<FetchLevel, string>> = {
   reddit: { l0: "24h", l1: "90m", l2: "8h" },
 };
 
+/**
+ * Single source of truth for which fetch levels a platform actually supports.
+ * Guardrails: the manual TriggerPanel, the scheduler, and fetch-dispatch all
+ * read this so the UI cannot offer a level the backend cannot run.
+ *   github: full L0/L1/L2 pipeline
+ *   gitlab/reddit/twitter: the new-architecture sync covers the whole account,
+ *     so only L1 runs (metadata + activity) today.
+ */
+export const FETCH_LEVELS_BY_PLATFORM: Record<string, string[]> = {
+  github: ["l0", "l1", "l2"],
+  gitlab: ["l1"],
+  reddit: ["l1"],
+  twitter: ["l1"],
+};
+
+export function getPlatformFetchLevels(platform: string): string[] {
+  return FETCH_LEVELS_BY_PLATFORM[platform] ?? ["l1"];
+}
+
 export const FETCH_LEVEL_META: Record<FetchLevel, { labelKey: string; descriptionKey: string; defaultMs: number }> = {
   l0: { labelKey: "fetchLevel.l0.label", descriptionKey: "fetchLevel.l0.desc", defaultMs: 24 * 60 * 60 * 1000 },
   l1: { labelKey: "fetchLevel.l1.label", descriptionKey: "fetchLevel.l1.desc", defaultMs: 90 * 60 * 1000 },

@@ -27,7 +27,9 @@ async function GET(req: Request) {
   return json(pulse, {
     headers: {
       ETag: etag,
-      "Cache-Control": "public, max-age=60, stale-while-revalidate=180",
+      // Per-user data: never let a shared cache serve one user's pulse to
+      // another. The ETag still allows the SAME browser to revalidate.
+      "Cache-Control": "private, no-store",
     },
   });
 }

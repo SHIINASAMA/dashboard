@@ -9,10 +9,12 @@ interface ConfirmDialogProps {
   title: string;
   description: string;
   confirmLabel?: string;
+  target?: number;
+  action?: string;
   onConfirm: (token: string) => Promise<void>;
 }
 
-export function ConfirmDialog({ open, onOpenChange, title, description, confirmLabel, onConfirm }: ConfirmDialogProps) {
+export function ConfirmDialog({ open, onOpenChange, title, description, confirmLabel, target, action = "delete", onConfirm }: ConfirmDialogProps) {
   const { t } = useTranslation();
   const label = confirmLabel ?? t("common.delete");
   const [token, setToken] = useState("");
@@ -25,9 +27,9 @@ export function ConfirmDialog({ open, onOpenChange, title, description, confirmL
         setInput("");
         setLoading(false);
       })();
-      api.getConfirmToken().then(({ token }) => setToken(token)).catch(() => setToken("ERROR"));
+      api.getConfirmToken(target ?? 0, action).then(({ token }) => setToken(token)).catch(() => setToken("ERROR"));
     }
-  }, [open]);
+  }, [open, target, action]);
 
   useEffect(() => {
     const handleKeyDown = (e: globalThis.KeyboardEvent) => {

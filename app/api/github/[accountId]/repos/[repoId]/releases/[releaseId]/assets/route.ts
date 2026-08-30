@@ -7,11 +7,11 @@ async function GET(req: Request, params: Record<string, string>) {
   const auth = await requireSession(req);
   if (!auth) return json({ error: "Unauthorized" }, { status: 401 });
 
-  const { accountId, releaseId } = params;
+  const { accountId, repoId, releaseId } = params;
   const { authorized } = await authorizeAccountOwner(auth.user, Number(accountId));
   if (!authorized) return json({ error: "Forbidden" }, { status: 403 });
 
-  const data = await getGithubReleaseAssets(Number(releaseId));
+  const data = await getGithubReleaseAssets(Number(accountId), Number(repoId), Number(releaseId));
   return json(data);
 }
 

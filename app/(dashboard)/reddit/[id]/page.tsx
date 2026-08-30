@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
@@ -8,13 +8,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { StatCard } from "@/components/StatCard";
+import { TriggerPanel } from "@/components/TriggerPanel";
 import { TimeRangeSelector } from "@/components/TimeRangeSelector";
 import { calcYAxisWidth } from "@/lib/client/utils";
-import { ArrowLeft, ArrowUpRight, Play, RefreshCw, Trash2, AlertCircle, ThumbsUp, MessageSquare, TrendingUp, FileText } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Trash2, AlertCircle, ThumbsUp, MessageSquare, TrendingUp, FileText } from "lucide-react";
 import { useIsMobile } from "@/lib/client/useIsMobile";
 import { RedditIcon } from "@/components/BrandIcons";
 import { StatCardSkeleton, ChartCardSkeleton, Skeleton } from "@/components/Skeleton";
 import { FetchRunHistory } from "@/components/FetchRunHistory";
+import { AccountActiveButton } from "@/components/AccountActiveButton";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -24,7 +26,6 @@ export default function RedditDetail() {
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const accountId = Number(id);
   const [days, setDays] = useState(30);
 
@@ -72,16 +73,12 @@ export default function RedditDetail() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: () => api.deleteAccount(accountId),
+    mutationFn: ({ token }: { token: string }) => api.deleteAccount(accountId, token),
     onSuccess: () => navigate("/reddit"),
   });
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  const _triggerMutation = useMutation({
-    mutationFn: () => api.triggerFetch(accountId),
-    onSuccess: () => queryClient.invalidateQueries(),
-  });
 
   const isMobile = useIsMobile();
   const CHART_H = isMobile ? 180 : 250;
@@ -140,14 +137,8 @@ export default function RedditDetail() {
         </div>
         </div>
         <div className="detail-header-actions">
-          <button onClick={() => _triggerMutation.mutate()} disabled={_triggerMutation.isPending}
-            className="flex items-center gap-1.5 px-3 py-2.5 min-h-11 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-xs disabled:opacity-40">
-            <Play size={12} /> {_triggerMutation.isPending ? t("redditDetail.fetching") : t("redditDetail.fetchNow")}
-          </button>
-          <button onClick={() => { api.updateAccount(accountId, { isActive: !account.is_active }).then(() => queryClient.invalidateQueries({ queryKey: ["account", accountId] })); }}
-            className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors" title={account.is_active ? t("redditDetail.disable") : t("redditDetail.enable")} aria-label={account.is_active ? t("redditDetail.disable") : t("redditDetail.enable")}>
-            <RefreshCw size={14} />
-          </button>
+          <TriggerPanel accountId={accountId} platform="reddit" />
+<AccountActiveButton accountId={accountId} isActive={!!account.is_active} />
           <button onClick={() => setShowDeleteDialog(true)}
             className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg bg-[var(--muted)] hover:bg-[var(--danger)]/10 transition-colors text-[var(--danger)]" title={t("redditDetail.delete")} aria-label={t("redditDetail.delete")}>
             <Trash2 size={14} />
@@ -349,7 +340,9 @@ export default function RedditDetail() {
         onOpenChange={setShowDeleteDialog}
         title={t("redditDetail.delete")}
         description={t("redditDetail.deleteConfirm", { name: account.screen_name })}
-        onConfirm={async () => deleteMutation.mutate()}
+        target={accountId}
+        action="delete"
+        onConfirm={async (token) => { deleteMutation.mutate({ token }); }}
       />
     </div>
   );

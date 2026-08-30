@@ -37,6 +37,7 @@ describe("GET /api/pulse ETag", () => {
     const res = await loader({ request: req, params: {}, context: {} } as any);
     expect(res.status).toBe(200);
     expect(res.headers.get("ETag")).toBeTruthy();
-    expect(res.headers.get("Cache-Control")).toContain("max-age=60");
+    // Pulse is per-user (filtered by owner), so it must not be cached publicly.
+    expect(res.headers.get("Cache-Control")).toContain("private, no-store");
   });
 });

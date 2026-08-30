@@ -1,6 +1,6 @@
 import { json } from "@/lib/api-server";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
-import { getAccounts, createAccount } from "@/lib/services/accounts";
+import { getAccounts, createAccount, assertSafeInstanceUrl } from "@/lib/services/accounts";
 import { getOverviewStats } from "@/lib/repositories/twitter";
 import { isSupportedPlatform } from "@/lib/platforms";
 import { requireSession, getOwnerId } from "@/lib/auth-helpers";
@@ -11,7 +11,7 @@ async function GET(req: Request) {
 
   const ownerId = getOwnerId(auth.user);
   const accounts = await getAccounts(ownerId);
-  const overview = await getOverviewStats();
+  const overview = await getOverviewStats(accounts.map((a) => a.id));
   const safe = accounts.map(({ auth_token: _, ...rest }) => rest);
   return json({ accounts: safe, overview });
 }
@@ -30,6 +30,12 @@ async function POST(req: Request) {
   }
   if (!isSupportedPlatform(platform || "twitter")) {
     return json({ error: `Unsupported platform: ${platform}` }, { status: 400 });
+  }
+  try {
+    assertSafeInstanceUrl(instanceUrl);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return json({ error: msg }, { status: 400 });
   }
 
   const account = await createAccount({

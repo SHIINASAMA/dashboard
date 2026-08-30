@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { calcYAxisWidth } from "@/lib/client/utils";
 import {
-  ArrowLeft, Play, RefreshCw, Trash2, AlertCircle,
+  ArrowLeft, Trash2, AlertCircle,
   MessageSquare, Heart, Repeat2, Eye, ExternalLink,
 } from "lucide-react";
 import {
@@ -17,10 +17,12 @@ import {
   AreaChart, Area,
 } from "recharts";
 import { useIsMobile } from "@/lib/client/useIsMobile";
+import { TriggerPanel } from "@/components/TriggerPanel";
 import { StatCardSkeleton, ChartCardSkeleton, Skeleton } from "@/components/Skeleton";
 import { TimeRangeSelector } from "@/components/TimeRangeSelector";
 import { XFollowerGrowthChart } from "@/components/XFollowerGrowthChart";
 import { FetchRunHistory } from "@/components/FetchRunHistory";
+import { AccountActiveButton } from "@/components/AccountActiveButton";
 
 function MetricCard({ label, value }: { label: string; value: string }) {
   return (
@@ -73,7 +75,7 @@ export default function XDetail() {
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+
   const accountId = Number(id);
   const [tab, setTab] = useState<"tweets" | "replies">("tweets");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -104,14 +106,10 @@ export default function XDetail() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: () => api.deleteAccount(accountId),
+    mutationFn: ({ token }: { token: string }) => api.deleteAccount(accountId, token),
     onSuccess: () => navigate("/x"),
   });
 
-  const triggerMutation = useMutation({
-    mutationFn: () => api.triggerFetch(accountId),
-    onSuccess: () => queryClient.invalidateQueries(),
-  });
 
   const isMobile = useIsMobile();
   const CHART_H = isMobile ? 180 : 250;
@@ -164,25 +162,8 @@ export default function XDetail() {
         </div>
         </div>
         <div className="detail-header-actions">
-          <button
-            onClick={() => triggerMutation.mutate()}
-            disabled={triggerMutation.isPending}
-            className="flex items-center gap-1.5 px-3 py-2.5 min-h-11 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-xs disabled:opacity-40"
-          >
-            <Play size={12} /> {triggerMutation.isPending ? t("xDetail.fetching") : t("xDetail.fetchNow")}
-          </button>
-          <button
-            onClick={() => {
-              api.updateAccount(accountId, { isActive: !account.is_active }).then(() =>
-                queryClient.invalidateQueries({ queryKey: ["account", accountId] })
-              );
-            }}
-            className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors"
-            title={account.is_active ? t("xDetail.disable") : t("xDetail.enable")}
-            aria-label={account.is_active ? t("xDetail.disable") : t("xDetail.enable")}
-          >
-            <RefreshCw size={14} />
-          </button>
+          <TriggerPanel accountId={accountId} platform="twitter" />
+          <AccountActiveButton accountId={accountId} isActive={!!account.is_active} />
           <button
             onClick={() => setShowDeleteDialog(true)}
             className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg bg-[var(--muted)] hover:bg-[var(--danger)]/10 transition-colors text-[var(--danger)]"
@@ -323,7 +304,9 @@ export default function XDetail() {
         onOpenChange={setShowDeleteDialog}
         title={t("xDetail.delete")}
         description={t("xDetail.deleteConfirm", { name: account.screen_name })}
-        onConfirm={async () => deleteMutation.mutate()}
+        target={accountId}
+        action="delete"
+        onConfirm={async (token) => { deleteMutation.mutate({ token }); }}
       />
     </div>
   );

@@ -14,7 +14,10 @@ async function GET() {
     // would be swallowed and turned into a 500 JSON error.
     return redirect(`https://www.bing.com${img.url}`);
   } catch (e: unknown) {
-    return json({ error: e instanceof Error ? e.message : String(e) }, { status: 500 });
+    // Do not leak upstream fetch details (URLs / provider internals) to the
+    // client; record them server-side and return a generic error.
+    console.error("[bing-wallpaper] fetch failed:", e instanceof Error ? e.message : String(e));
+    return json({ error: "Failed to fetch wallpaper" }, { status: 500 });
   }
 }
 

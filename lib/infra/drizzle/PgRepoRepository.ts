@@ -6,6 +6,14 @@ import { getDb } from "../../db/connection";
 import { github_repos, github_repo_snapshots, gitlab_projects, gitlab_project_snapshots } from "@/db/schema";
 import { inArray, sql } from "drizzle-orm";
 
+// Parameterized int[] literal. Identical to the pulse/top-content helpers and
+// preferred over string-concatenating ids into sql.raw(...), which is an
+// injection risk if the ids ever carry user-controlled values.
+function intArray(ids: number[]) {
+  if (ids.length === 0) return sql`ARRAY[]::int[]`;
+  return sql`ARRAY[${sql.join(ids.map((id) => sql`${id}`), sql`, `)}]::int[]`;
+}
+
 function toDomainRepo(row: Record<string, unknown>, accountId: number): Repo {
   return {
     accountId,
@@ -53,8 +61,8 @@ export class PgRepoRepository implements RepoRepository {
     // Latest snapshot strictly before sinceDay per (account_id, repo_id)
     const result = new Map<string, RepoSnapshot>();
     const [gh, gl] = await Promise.all([
-      db.execute(sql`SELECT DISTINCT ON (account_id, repo_id) account_id, repo_id, stars, forks, snapshot_date FROM ${github_repo_snapshots} WHERE account_id = ANY(${sql.raw(`ARRAY[${ids.join(",")}]::int[]`)}) AND snapshot_date < ${sinceDay} ORDER BY account_id, repo_id, snapshot_date DESC`),
-      db.execute(sql`SELECT DISTINCT ON (account_id, project_id) account_id, project_id as repo_id, stars, forks, snapshot_date FROM ${gitlab_project_snapshots} WHERE account_id = ANY(${sql.raw(`ARRAY[${ids.join(",")}]::int[]`)}) AND snapshot_date < ${sinceDay} ORDER BY account_id, project_id, snapshot_date DESC`),
+      db.execute(sql`SELECT DISTINCT ON (account_id, repo_id) account_id, repo_id, stars, forks, snapshot_date FROM ${github_repo_snapshots} WHERE account_id = ANY(${intArray(ids)}) AND snapshot_date < ${sinceDay} ORDER BY account_id, repo_id, snapshot_date DESC`),
+      db.execute(sql`SELECT DISTINCT ON (account_id, project_id) account_id, project_id as repo_id, stars, forks, snapshot_date FROM ${gitlab_project_snapshots} WHERE account_id = ANY(${intArray(ids)}) AND snapshot_date < ${sinceDay} ORDER BY account_id, project_id, snapshot_date DESC`),
     ]);
     for (const row of (gh as unknown as { rows: Array<{ account_id: number; repo_id: number; stars: number; forks: number; snapshot_date: string }> }).rows ?? []) {
       const key = `${row.account_id}:${row.repo_id}`;
@@ -73,8 +81,8 @@ export class PgRepoRepository implements RepoRepository {
     if (!db) return new Map();
     const result = new Map<string, RepoSnapshot>();
     const [gh, gl] = await Promise.all([
-      db.execute(sql`SELECT DISTINCT ON (account_id, repo_id) account_id, repo_id, stars, forks, snapshot_date FROM ${github_repo_snapshots} WHERE account_id = ANY(${sql.raw(`ARRAY[${ids.join(",")}]::int[]`)}) AND snapshot_date >= ${sinceDay} AND snapshot_date <= ${untilDay} ORDER BY account_id, repo_id, snapshot_date DESC`),
-      db.execute(sql`SELECT DISTINCT ON (account_id, project_id) account_id, project_id as repo_id, stars, forks, snapshot_date FROM ${gitlab_project_snapshots} WHERE account_id = ANY(${sql.raw(`ARRAY[${ids.join(",")}]::int[]`)}) AND snapshot_date >= ${sinceDay} AND snapshot_date <= ${untilDay} ORDER BY account_id, project_id, snapshot_date DESC`),
+      db.execute(sql`SELECT DISTINCT ON (account_id, repo_id) account_id, repo_id, stars, forks, snapshot_date FROM ${github_repo_snapshots} WHERE account_id = ANY(${intArray(ids)}) AND snapshot_date >= ${sinceDay} AND snapshot_date <= ${untilDay} ORDER BY account_id, repo_id, snapshot_date DESC`),
+      db.execute(sql`SELECT DISTINCT ON (account_id, project_id) account_id, project_id as repo_id, stars, forks, snapshot_date FROM ${gitlab_project_snapshots} WHERE account_id = ANY(${intArray(ids)}) AND snapshot_date >= ${sinceDay} AND snapshot_date <= ${untilDay} ORDER BY account_id, project_id, snapshot_date DESC`),
     ]);
     for (const row of (gh as unknown as { rows: Array<{ account_id: number; repo_id: number; stars: number; forks: number; snapshot_date: string }> }).rows ?? []) {
       const key = `${row.account_id}:${row.repo_id}`;
@@ -154,7 +162,7 @@ export class PgRepoRepository implements RepoRepository {
     const openIssuesMap = new Map<string, number>();
     try {
       const rows = await db.execute(sql`SELECT DISTINCT ON (account_id, repo_id) account_id, repo_id, open_issues
-        FROM ${github_repo_snapshots} WHERE account_id = ANY(${sql.raw(`ARRAY[${accountIds.join(",")}]::int[]`)})
+        FROM ${github_repo_snapshots} WHERE account_id = ANY(${intArray(accountIds)})
         ORDER BY account_id, repo_id, snapshot_date DESC`);
       for (const row of (rows as unknown as { rows: Array<{ account_id: number; repo_id: number; open_issues: number | null }> }).rows ?? []) {
         openIssuesMap.set(`${row.account_id}:${row.repo_id}`, row.open_issues ?? 0);

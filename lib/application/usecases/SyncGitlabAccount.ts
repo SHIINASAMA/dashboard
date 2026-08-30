@@ -4,10 +4,19 @@ import type { Account } from "../../domain/account";
 import { GitlabClient } from "../../infra/fetchers/GitlabClient";
 import type { GitlabWrite, GitlabProject, GitlabSnapshot } from "./GitlabWrite";
 import { getLogger } from "../../logger";
+import { validateUpstreamUrl } from "../../ssrf-guard";
 
 function apiBase(account: Account): string {
   const base = (account.instanceUrl || "https://gitlab.com").replace(/\/+$/, "");
   return `${base}/api/v4`;
+}
+
+function assertSafeInstanceUrl(account: Account): void {
+  const url = (account.instanceUrl || "https://gitlab.com").replace(/\/+$/, "");
+  const check = validateUpstreamUrl(url);
+  if (!check.ok) {
+    throw new Error(`Unsafe GitLab instance URL: ${check.error ?? "rejected"}`);
+  }
 }
 
 export interface FetcherResultLike {
@@ -24,6 +33,8 @@ export class SyncGitlabAccount {
     client?: GitlabClient,
     write?: GitlabWrite,
   ) {
+    // Validate before any server-side request can be made to the instance.
+    assertSafeInstanceUrl(account);
     this.client = client ?? new GitlabClient(apiBase(account));
     this.write = write ?? undefined as unknown as GitlabWrite; // set lazily below
   }

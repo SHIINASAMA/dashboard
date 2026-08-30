@@ -1,14 +1,13 @@
-import { json, getRequestCookie } from "@/lib/api-server";
+import { json } from "@/lib/api-server";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
-import { validateSession } from "@/lib/auth-helpers";
+import { requireSession } from "@/lib/auth-helpers";
 import { getSetting, setSetting } from "@/lib/repositories/settings";
 import { aiConfig } from "@/lib/config";
 
 async function requireAdmin(req: Request) {
-  const token = getRequestCookie(req, "dash_session");
-  const session = token ? await validateSession(token) : null;
-  if (!session || session.role !== "admin") return null;
-  return session;
+  const auth = await requireSession(req);
+  if (!auth || auth.user.role !== "admin") return null;
+  return auth.user;
 }
 
 async function GET(req: Request) {

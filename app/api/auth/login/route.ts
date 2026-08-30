@@ -43,10 +43,14 @@ async function POST(req: Request) {
   }
 
   try {
-    // Use first IP from x-forwarded-for (set by reverse proxy) to prevent
-    // clients from spoofing arbitrary IPs to bypass rate limiting.
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-      || req.headers.get("x-real-ip")
+    // Prefer the proxy-provided X-Real-IP; otherwise take the LAST entry in
+    // X-Forwarded-For (the furthest-from-the-client value a trusted proxy adds),
+    // rather than the first, which a client could set arbitrarily to bypass the
+    // limiter when hitting the server directly.
+    const realIp = req.headers.get("x-real-ip")?.trim();
+    const forwarded = req.headers.get("x-forwarded-for");
+    const ip = realIp
+      || (forwarded ? forwarded.split(",").map((s) => s.trim()).filter(Boolean).pop() : undefined)
       || "unknown";
     if (!checkRateLimit(ip)) {
       return json({ error: "Too many login attempts. Please try again later." }, { status: 429 });

@@ -74,7 +74,7 @@ export const api = {
     fetchJSON<Account>("/accounts", { method: "POST", body: JSON.stringify(data) }),
   updateAccount: (id: number, data: { screenName?: string; authToken?: string; fetchInterval?: number; isActive?: boolean; instanceUrl?: string; authType?: string }) =>
     fetchJSON<Account>(`/accounts/${id}`, { method: "PUT", body: JSON.stringify(data) }),
-  triggerFetch: (id: number) => fetchJSON<{ message: string }>(`/fetch/${id}`, { method: "POST" }),
+  triggerFetch: (id: number, level?: string) => fetchJSON<{ message: string }>(`/fetch/${id}`, { method: "POST", body: level ? JSON.stringify({ level }) : undefined }),
   getFetchHealth: () => fetchJSON<FetchHealthResponse>("/fetch-health"),
 
   // Twitter
@@ -171,7 +171,8 @@ export const api = {
     fetchJSON<{ ok: boolean }>(`/users/${id}`, { method: "DELETE", body: JSON.stringify({ confirmToken }) }),
 
   // Confirmation tokens
-  getConfirmToken: () => fetchJSON<{ token: string }>("/confirm/token", { method: "POST" }),
+  getConfirmToken: (target: number, action = "delete") =>
+    fetchJSON<{ token: string }>("/confirm/token", { method: "POST", body: JSON.stringify({ target, action }) }),
   deleteAccount: (id: number, confirmToken?: string) =>
     fetchJSON<{ success: boolean }>(`/accounts/${id}`, { method: "DELETE", body: JSON.stringify({ confirmToken: confirmToken ?? "" }) }),
 };

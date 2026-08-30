@@ -1,6 +1,6 @@
 import { json } from "@/lib/api-server";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
-import { getAccountById, updateAccount, deleteAccount } from "@/lib/services/accounts";
+import { getAccountById, updateAccount, deleteAccount, assertSafeInstanceUrl } from "@/lib/services/accounts";
 import { validateConfirmToken } from "@/lib/confirm-helpers";
 import { getLatestUserStats } from "@/lib/repositories/twitter";
 import { getRecentFetchRuns } from "@/lib/services/fetch-health";
@@ -38,7 +38,15 @@ async function PUT(req: Request, params: Record<string, string>) {
   if (authToken !== undefined && authToken !== "") updates.auth_token = authToken;
   if (fetchInterval !== undefined) updates.fetch_interval = fetchInterval;
   if (isActive !== undefined) updates.is_active = isActive ? 1 : 0;
-  if (instanceUrl !== undefined) updates.instance_url = instanceUrl;
+  if (instanceUrl !== undefined) {
+    try {
+      assertSafeInstanceUrl(instanceUrl);
+      updates.instance_url = instanceUrl;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return json({ error: msg }, { status: 400 });
+    }
+  }
   if (authType !== undefined) updates.auth_type = authType;
 
   await updateAccount(Number(id), updates);
@@ -49,10 +57,21 @@ async function PUT(req: Request, params: Record<string, string>) {
 }
 
 async function DELETE(req: Request, params: Record<string, string>) {
+  const auth = await requireSession(req);
+  if (!auth) return json({ error: "Unauthorized" }, { status: 401 });
+
   const { id } = params;
+  const { authorized, account } = await authorizeAccountOwner(auth.user, Number(id));
+  if (!account) return json({ error: "Not found" }, { status: 404 });
+  if (!authorized) return json({ error: "Forbidden" }, { status: 403 });
+
   const body = await req.json().catch(() => ({}));
   const { confirmToken } = body as { confirmToken?: string };
-  if (!confirmToken || !validateConfirmToken(confirmToken)) {
+  if (!confirmToken || !validateConfirmToken(confirmToken, {
+    userId: auth.user.id,
+    target: Number(id),
+    action: "delete",
+  })) {
     return json({ error: "Invalid or expired confirmation token" }, { status: 400 });
   }
   await deleteAccount(Number(id));

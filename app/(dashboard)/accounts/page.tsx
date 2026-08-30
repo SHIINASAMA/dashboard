@@ -9,8 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { GithubIcon, GitlabIcon, RedditIcon, XIcon } from "@/components/BrandIcons";
 import { formatDateTime } from "@/lib/client/datetime";
 import { useNow } from "@/lib/client/use-now";
-import { Pencil, Plus, PlayCircle, PauseCircle, Trash2, AlertCircle, ArrowUpRight, RotateCw } from "lucide-react";
+import { Pencil, Plus, PlayCircle, PauseCircle, Trash2, AlertCircle, ArrowUpRight } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { TriggerPanel } from "@/components/TriggerPanel";
 
 const TABS = [
   { key: "twitter", headingKey: "nav.x", basePath: "/x", Icon: XIcon, formatUsername: (a: Account) => `@${a.screen_name}` },
@@ -50,17 +51,12 @@ export default function AccountsPage() {
   }, [accounts, now]);
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.deleteAccount(id),
+    mutationFn: ({ id, token }: { id: number; token: string }) => api.deleteAccount(id, token),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["accounts"] }),
   });
 
   const toggleActiveMutation = useMutation({
     mutationFn: ({ id, isActive }: { id: number; isActive: boolean }) => api.updateAccount(id, { isActive }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["accounts"] }),
-  });
-
-  const retryFetchMutation = useMutation({
-    mutationFn: (id: number) => api.triggerFetch(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["accounts"] }),
   });
 
@@ -158,12 +154,7 @@ export default function AccountsPage() {
                           className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors"
                           title={t("settings.edit")}
                         ><Pencil size={16} /></button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); retryFetchMutation.mutate(account.id); }}
-                          disabled={retryFetchMutation.isPending}
-                          className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors"
-                          title={t("settings.fetchNow")}
-                        ><RotateCw size={16} /></button>
+                        <TriggerPanel accountId={account.id} platform={account.platform} />
                         <button
                           onClick={(e) => { e.stopPropagation(); toggleActiveMutation.mutate({ id: account.id, isActive: !account.is_active }); }}
                           disabled={toggleActiveMutation.isPending}
@@ -202,7 +193,9 @@ export default function AccountsPage() {
         onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
         title={t("settings.delete")}
         description={t("settings.deleteConfirm", { name: deleteTarget?.screen_name ?? "" })}
-        onConfirm={async () => { deleteMutation.mutate(deleteTarget!.id); }}
+        target={deleteTarget?.id ?? undefined}
+        action="delete"
+        onConfirm={async (token) => { deleteMutation.mutate({ id: deleteTarget!.id, token }); }}
       />
     </div>
   );

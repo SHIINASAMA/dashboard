@@ -1,13 +1,13 @@
-import { json, getRequestCookie } from "@/lib/api-server";
+import { json } from "@/lib/api-server";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
-import { validateSession } from "@/lib/auth-helpers";
+import { requireSession } from "@/lib/auth-helpers";
 import { getUsers, createUser } from "@/lib/services/users";
+import { validatePasswordStrength } from "@/lib/auth";
 
 async function requireAdmin(req: Request) {
-  const token = getRequestCookie(req, "dash_session");
-  const session = token ? await validateSession(token) : null;
-  if (!session || session.role !== "admin") return null;
-  return session;
+  const auth = await requireSession(req);
+  if (!auth || auth.user.role !== "admin") return null;
+  return auth.user;
 }
 
 async function GET(req: Request) {
@@ -19,7 +19,9 @@ async function POST(req: Request) {
   if (!(await requireAdmin(req))) return json({ error: "Forbidden" }, { status: 403 });
   const { username, password, role } = await req.json();
   if (!username || !password) return json({ error: "username and password required" }, { status: 400 });
-  if (password.length < 4) return json({ error: "Password must be at least 4 characters" }, { status: 400 });
+  if (!validatePasswordStrength(password).valid) {
+    return json({ error: "Password does not meet requirements" }, { status: 400 });
+  }
   try {
     const user = await createUser(username, password, role || "user");
     if (!user) return json({ error: "Failed to create user" }, { status: 500 });
@@ -28,7 +30,10 @@ async function POST(req: Request) {
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     if (msg.includes("UNIQUE")) return json({ error: "Username already exists" }, { status: 409 });
-    return json({ error: msg }, { status: 500 });
+    // Don't leak database/driver details (SQL, host, connection strings) to the
+    // client; log the full error server-side.
+    console.error("[users] create failed:", e);
+    return json({ error: "Failed to create user" }, { status: 500 });
   }
 }
 

@@ -104,12 +104,39 @@ const SECURITY_HEADERS = {
   ].join("; "),
 };
 
+// Resolve the CORS allow-origin. When ALLOWED_ORIGINS is unset we do NOT emit
+// an Access-Control-Allow-Origin header at all (same-origin requests are
+// always allowed), instead of defaulting to a wildcard that would let any
+// origin read API responses alongside a credential cookie.
+function resolveAllowedOrigin(req) {
+  const configured = (process.env.ALLOWED_ORIGINS || "").trim();
+  if (!configured) return null;
+  const origin = req.headers.origin;
+  if (!origin) return null;
+  const allowed = configured.split(",").map((s) => s.trim()).filter(Boolean);
+  return allowed.includes(origin) ? origin : null;
+}
+
 function listener(req, res) {
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
     res.setHeader(name, value);
   }
   if (req.url?.startsWith("/api/")) {
-    res.setHeader("Access-Control-Allow-Origin", process.env.ALLOWED_ORIGINS || "*");
+    res.setHeader("Vary", "Origin");
+    const allowOrigin = resolveAllowedOrigin(req);
+    if (allowOrigin) {
+      res.setHeader("Access-Control-Allow-Origin", allowOrigin);
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+      res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    }
+  }
+  // Handle CORS preflight for API routes directly; React Router's adapter does
+  // not respond to OPTIONS.
+  if ((req.method ?? "GET") === "OPTIONS" && req.url?.startsWith("/api/")) {
+    res.writeHead(204);
+    res.end();
+    return;
   }
   const method = req.method ?? "GET";
   if (method === "GET" || method === "HEAD") {
@@ -128,6 +155,25 @@ function listener(req, res) {
 }
 
 const server = createServer(listener);
+
+// Fail fast in production if the JWT/encryption secret is unset or malformed.
+// A predictable all-zero fallback would otherwise let an attacker forge
+// session tokens. Local development and mock mode are exempt.
+function assertSecureStartup() {
+  const isProd = process.env.NODE_ENV === "production";
+  const isMock = Boolean(process.env.MOCK_DATA);
+  if (!isProd || isMock) return;
+  const secret = process.env.DASHBOARD_SECRET || "";
+  if (!/^[0-9a-fA-F]{64}$/.test(secret)) {
+    console.error(
+      "[startup] DASHBOARD_SECRET must be a 64-char hex value in production. " +
+      "Refusing to start with an insecure default.",
+    );
+    process.exit(1);
+  }
+}
+
+assertSecureStartup();
 
 server.listen(port, () => {
   console.log(`dashboard listening on http://localhost:${port}`);

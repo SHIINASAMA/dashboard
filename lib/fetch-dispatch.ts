@@ -13,6 +13,7 @@ import type { MockGithubClient } from "./infra/fetchers/MockGithubClient";
 import type { FetcherPort } from "./domain/ports";
 import type { CapabilityGap, FetchRunStatus, FetchTrigger } from "./fetch-health";
 import { isSupportedPlatform } from "./platforms";
+import { getPlatformFetchLevels } from "./application/scheduler/fetchPolicy";
 
 type CompletedRunStatus = Exclude<FetchRunStatus, "running">;
 
@@ -73,16 +74,9 @@ export async function dispatchFetch(account: AccountRow, trigger: FetchTrigger =
       );
     }
 
-    if (runId !== undefined) {
-      try {
-        await updateAccount(account.id, { last_fetched_at: new Date().toISOString() });
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        await finishFetchRun({ id: runId, status: "failed", errorMessage: message });
-        getLogger().error("FetchRun", "Unable to record attempt for account %s: %s", account.id, message);
-        return false;
-      }
-    }
+    // Do NOT advance last_fetched_at on dispatch start. That must wait until
+    // the run actually succeeds (or is partial) so a failed run does not make
+    // the account look freshly fetched.
 
     return executeAndRecord(account, runId, trigger, level);
   } finally {
@@ -105,16 +99,56 @@ async function executeAndRecord(
     const platform = account.platform;
     const isNewArchPlatform = platform === "github" || platform === "gitlab" || platform === "reddit" || platform === "twitter";
     if (isNewArchPlatform && !isMockMode()) {
-      const lvl = level ?? "l1";
-      result = await executeWithNewArch(account, lvl) as FetcherResult;
-      if (result === null) {
-        throw new Error(`Unsupported fetch level ${lvl} for platform ${platform}`);
+      // Single source of truth for which levels this platform supports.
+      const platformLevels = getPlatformFetchLevels(platform);
+      // Manual trigger panel may pass a single level or "all". Undefined (legacy
+      // "立即触发") defaults to all levels for completeness.
+      const wanted = (!level || level === "all") ? platformLevels : [level];
+      // Run each wanted level, tolerating per-level partial failure.
+      let merged: FetcherResult | null = null;
+      let failedLevels = 0;
+      for (const lvl of wanted) {
+        try {
+          const r = await executeWithNewArch(account, lvl) as FetcherResult;
+          if (r === null) throw new Error(`Unsupported fetch level ${lvl} for platform ${platform}`);
+          if (merged === null) {
+            merged = r;
+          } else if (typeof merged === "object" && typeof r === "object") {
+            const m = merged as { status?: string; capabilityGaps?: unknown[] };
+            const rr = r as { capabilityGaps?: unknown[] };
+            if (rr.capabilityGaps?.length) m.capabilityGaps = [...(m.capabilityGaps ?? []), ...rr.capabilityGaps];
+          }
+        } catch (e) {
+          failedLevels++;
+          getLogger().warn("FetchRun", "Level %s failed for %s: %s", lvl, account.id, e instanceof Error ? e.message : String(e));
+        }
       }
+      if (merged === null) throw new Error(`All fetch levels failed for account ${account.id}`);
+      // Do not hide a partial failure: if any level failed (but not all), mark
+      // the run as "partial" so the user and scheduler can see the gap.
+      if (failedLevels > 0 && typeof merged === "object" && merged !== null) {
+        (merged as { status?: string }).status = "partial";
+      }
+      result = merged;
     } else {
       // reddit/twitter + mock: legacy fetcher until their new adapters are built
       result = await selectFetcher(account)(account) as FetcherResult;
     }
     const outcome = normalizeResult(result);
+    // Only advance last_fetched_at on success/partial so a failed run does not
+    // make the account look freshly fetched (which would break retry/health).
+    if (outcome.status === "success" || outcome.status === "partial") {
+      try {
+        await updateAccount(account.id, { last_fetched_at: new Date().toISOString() });
+      } catch (e) {
+        getLogger().error(
+          "FetchRun",
+          "Unable to record last_fetched_at for account %s: %s",
+          account.id,
+          e instanceof Error ? e.message : String(e),
+        );
+      }
+    }
     await finishFetchRun({
       id: runId,
       status: outcome.status,

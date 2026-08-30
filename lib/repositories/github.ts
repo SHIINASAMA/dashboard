@@ -246,8 +246,21 @@ export async function insertGithubReleaseAsset(a: { release_db_id: number; name:
   });
 }
 
-export async function getGithubReleaseAssets(releaseDbId: number) {
+export async function getGithubReleaseAssets(accountId: number, repoId: number, releaseDbId: number) {
   if (isMockMode()) return mock.githubReleaseAssets;
+  // Ownership guard: the release's DB row must belong to this account + repo.
+  // github_release_assets only carries release_id, so we verify via the
+  // github_releases table before returning any asset. This prevents a user
+  // from enumerating another account's release assets via a foreign releaseId.
+  const [owner] = await getDb().select({ id: github_releases.id })
+    .from(github_releases)
+    .where(and(
+      eq(github_releases.id, releaseDbId),
+      eq(github_releases.account_id, accountId),
+      eq(github_releases.repo_id, repoId),
+    ))
+    .limit(1);
+  if (!owner) return [];
   return getDb().select().from(github_release_assets)
     .where(eq(github_release_assets.release_id, releaseDbId));
 }

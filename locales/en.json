@@ -648,6 +648,10 @@
     "title": "Serving fixture data — no backend connected"
   },
   "fetchLevel": {
+    "all": {
+      "label": "All levels",
+      "desc": "Fetch every configured level for this platform"
+    },
     "l0": {
       "label": "Static Metadata",
       "desc": "Repo name, full_name, language, description, topics, homepage, is_fork · 24h"
@@ -715,6 +719,11 @@
         "label": "Activity Trends",
         "desc": "Post & comment history trends · 8h"
       }
-    }
+    },
+    "select": "Select trigger level"
+  },
+  "accountActive": {
+    "pause": "Pause fetching",
+    "resume": "Resume fetching"
   }
 }

@@ -10,14 +10,16 @@ import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Portal } from "@/components/ui/Portal";
 import { StatCard } from "@/components/StatCard";
+import { TriggerPanel } from "@/components/TriggerPanel";
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import {
-  ArrowLeft, ArrowUpRight, Play, RefreshCw, Trash2, AlertCircle, Star, GitFork, Code, Users, BookOpen, Settings2
+  ArrowLeft, ArrowUpRight, Trash2, AlertCircle, Star, GitFork, Code, Users, BookOpen, Settings2
 } from "lucide-react";
 import { useIsMobile } from "@/lib/client/useIsMobile";
 import { GithubIcon } from "@/components/BrandIcons";
 import { StatCardSkeleton, ChartCardSkeleton, Skeleton } from "@/components/Skeleton";
 import { FetchRunHistory } from "@/components/FetchRunHistory";
+import { AccountActiveButton } from "@/components/AccountActiveButton";
 
 function GithubHeatmap({ data }: { data: GithubContribution[] }) {
   const { t } = useTranslation();
@@ -136,14 +138,10 @@ export default function GitHubDetail() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: () => api.deleteAccount(accountId),
+    mutationFn: ({ token }: { token: string }) => api.deleteAccount(accountId, token),
     onSuccess: () => navigate("/github"),
   });
 
-  const triggerMutation = useMutation({
-    mutationFn: () => api.triggerFetch(accountId),
-    onSuccess: () => queryClient.invalidateQueries(),
-  });
 
   const isMobile = useIsMobile();
   const PIE_H = isMobile ? 200 : 300;
@@ -196,14 +194,8 @@ export default function GitHubDetail() {
         </div>
         </div>
         <div className="detail-header-actions">
-          <button onClick={() => triggerMutation.mutate()} disabled={triggerMutation.isPending}
-            className="flex items-center gap-1.5 px-3 py-2.5 min-h-11 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors text-xs disabled:opacity-40">
-            <Play size={12} /> {triggerMutation.isPending ? t("githubDetail.fetching") : t("githubDetail.fetchNow")}
-          </button>
-          <button onClick={() => { api.updateAccount(accountId, { isActive: !account.is_active }).then(() => queryClient.invalidateQueries({ queryKey: ["account", accountId] })); }}
-            className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] transition-colors" title={account.is_active ? t("githubDetail.disable") : t("githubDetail.enable")} aria-label={account.is_active ? t("githubDetail.disable") : t("githubDetail.enable")}>
-            <RefreshCw size={14} />
-          </button>
+          <TriggerPanel accountId={accountId} platform="github" />
+<AccountActiveButton accountId={accountId} isActive={!!account.is_active} />
           <button onClick={() => setShowDeleteDialog(true)}
             className="p-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg bg-[var(--muted)] hover:bg-[var(--danger)]/10 transition-colors text-[var(--danger)]" title={t("githubDetail.delete")} aria-label={t("githubDetail.delete")}>
             <Trash2 size={14} />
@@ -397,7 +389,9 @@ export default function GitHubDetail() {
         onOpenChange={setShowDeleteDialog}
         title={t("githubDetail.delete")}
         description={t("githubDetail.deleteConfirm", { name: account.screen_name })}
-        onConfirm={async () => deleteMutation.mutate()}
+        target={accountId}
+        action="delete"
+        onConfirm={async (token) => { deleteMutation.mutate({ token }); }}
       />
     </div>
   );

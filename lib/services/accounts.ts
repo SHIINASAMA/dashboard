@@ -3,6 +3,7 @@ import * as accountsRepo from "../repositories/accounts";
 import { getLogger } from "../logger";
 import type { AccountRow } from "../repositories/accounts";
 import { isSupportedPlatform } from "../platforms";
+import { validateUpstreamUrl } from "../ssrf-guard";
 
 function encToken(plain: string): string {
   try { return encrypt(plain); } catch (e) {
@@ -15,6 +16,20 @@ function decToken(cipher: string): string {
   try { return decrypt(cipher); } catch (e) {
     getLogger().warn("Service", "decToken: decryption failed (ENCRYPTION_KEY may have changed): %s", e instanceof Error ? e.message : String(e));
     return cipher;
+  }
+}
+
+/**
+ * Validate a user-supplied instance URL before it is stored (or used for a
+ * server-side request). Only GitLab accounts currently use instance_url, but
+ * we guard any non-null value defensively here so a future platform cannot
+ * bypass SSRF checks.
+ */
+export function assertSafeInstanceUrl(instanceUrl: string | null | undefined): void {
+  if (!instanceUrl) return;
+  const result = validateUpstreamUrl(instanceUrl);
+  if (!result.ok) {
+    throw new Error(`Invalid instance URL: ${result.error ?? "rejected"}`);
   }
 }
 

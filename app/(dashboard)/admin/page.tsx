@@ -146,6 +146,8 @@ export default function Admin() {
         title={t("admin.deleteUser")}
         description={t("admin.deleteUserDesc")}
         confirmLabel={t("common.delete")}
+        target={deleteUserId ?? undefined}
+        action="delete"
         onConfirm={async (token) => {
           if (deleteUserId === null) return;
           await api.deleteUser(deleteUserId, token);

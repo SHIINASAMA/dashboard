@@ -27,7 +27,13 @@ async function POST(req: Request, params: Record<string, string>) {
     acct.is_active = 1;
   }
 
-  void dispatchFetch(acct, "manual").catch((e: unknown) =>
+  let level: string | undefined;
+  try {
+    const body = await req.json().catch(() => ({})) as { level?: string };
+    level = body.level;
+  } catch { /* no body */ }
+
+  void dispatchFetch(acct, "manual", level).catch((e: unknown) =>
     console.error("Background fetch error:", e instanceof Error ? e.message : String(e))
   );
   return json({ ok: true, message: `Fetch started for @${acct.screen_name}` });
