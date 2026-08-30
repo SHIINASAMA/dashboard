@@ -102,16 +102,16 @@ async function executeAndRecord(
     // For github with level, try new UseCase first (shadow), keep old as fallback/supplement
     // Pure new architecture: level-aware, no fallback to old fetcher
     let result: FetcherResult | null = null;
-    if (level && account.platform === "github" && !isMockMode()) {
-      result = await executeWithNewArch(account, level) as FetcherResult;
+    const platform = account.platform;
+    const isNewArchPlatform = platform === "github" || platform === "gitlab";
+    if (isNewArchPlatform && !isMockMode()) {
+      const lvl = level ?? "l1";
+      result = await executeWithNewArch(account, lvl) as FetcherResult;
       if (result === null) {
-        throw new Error(`Unsupported fetch level ${level} for pure new arch`);
+        throw new Error(`Unsupported fetch level ${lvl} for platform ${platform}`);
       }
-    } else if (account.platform === "github" && !isMockMode()) {
-      // No level supplied (manual trigger) -> default to L1 timely
-      result = await executeWithNewArch(account, "l1") as FetcherResult;
     } else {
-      // Non-github or mock: keep existing fetcher (new GitLab/Reddit fetchers not yet implemented)
+      // reddit/twitter + mock: legacy fetcher until their new adapters are built
       result = await selectFetcher(account)(account) as FetcherResult;
     }
     const outcome = normalizeResult(result);
@@ -158,6 +158,13 @@ function toDomainAccount(row: AccountRow): Account {
 
 async function executeWithNewArch(account: AccountRow, level: string): Promise<FetcherResult> {
   const domainAccount = toDomainAccount(account);
+  if (domainAccount.platform === "gitlab") {
+    // GitLab new architecture: GitlabClient -> SyncGitlabAccount -> repository
+    const { SyncGitlabAccount } = await import("./application/usecases/SyncGitlabAccount");
+    const uc = new SyncGitlabAccount(domainAccount);
+    const r = await uc.execute(domainAccount);
+    return { status: r.status, errorMessage: null, capabilityGaps: r.capabilityGaps } as FetcherResult;
+  }
   const { PgRepoRepository } = await import("./infra/drizzle/PgRepoRepository");
   const { GithubClient } = await import("./infra/fetchers/GithubClient");
   const { SyncRepoMeta } = await import("./application/usecases/SyncRepoMeta");
