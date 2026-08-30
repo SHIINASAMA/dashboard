@@ -12,5 +12,8 @@ export interface Account {
   /** Per-level overrides (minutes), null = use platform policy */
   fetchIntervals?: Partial<Record<FetchLevel, number | null>>;
   isActive: number;
+  userId?: string | null;
   authToken?: string | null;
+  /** reddit: "reddit_public" = cookie-based public fetcher, else OAuth */
+  authType?: string | null;
 }

@@ -103,7 +103,7 @@ async function executeAndRecord(
     // Pure new architecture: level-aware, no fallback to old fetcher
     let result: FetcherResult | null = null;
     const platform = account.platform;
-    const isNewArchPlatform = platform === "github" || platform === "gitlab";
+    const isNewArchPlatform = platform === "github" || platform === "gitlab" || platform === "reddit" || platform === "twitter";
     if (isNewArchPlatform && !isMockMode()) {
       const lvl = level ?? "l1";
       result = await executeWithNewArch(account, lvl) as FetcherResult;
@@ -152,7 +152,9 @@ function toDomainAccount(row: AccountRow): Account {
     ownerId: (row as unknown as { owner_id?: number; user_id?: number }).owner_id ?? (row as unknown as { owner_id?: number; user_id?: number }).user_id ?? 0,
     instanceUrl: row.instance_url ?? null,
     isActive: row.is_active ?? 1,
+    userId: (row as unknown as { user_id?: string }).user_id ?? null,
     authToken: (row as unknown as { auth_token?: string }).auth_token ?? null,
+    authType: (row as unknown as { auth_type?: string }).auth_type ?? null,
   };
 }
 
@@ -164,6 +166,18 @@ async function executeWithNewArch(account: AccountRow, level: string): Promise<F
     const uc = new SyncGitlabAccount(domainAccount);
     const r = await uc.execute(domainAccount);
     return { status: r.status, errorMessage: null, capabilityGaps: r.capabilityGaps } as FetcherResult;
+  }
+  if (domainAccount.platform === "reddit") {
+    const { SyncRedditAccount } = await import("./application/usecases/SyncRedditAccount");
+    const uc = new SyncRedditAccount(domainAccount);
+    await uc.execute(domainAccount);
+    return { status: "success", errorMessage: null, capabilityGaps: [] } as FetcherResult;
+  }
+  if (domainAccount.platform === "twitter") {
+    const { SyncXAccount } = await import("./application/usecases/SyncXAccount");
+    const uc = new SyncXAccount(domainAccount);
+    const r = await uc.execute();
+    return { status: r.status as "success" | "partial" | "failed", errorMessage: r.errors > 0 ? `${r.errors} tweet detail(s) could not be refreshed` : null, capabilityGaps: [] } as FetcherResult;
   }
   const { PgRepoRepository } = await import("./infra/drizzle/PgRepoRepository");
   const { GithubClient } = await import("./infra/fetchers/GithubClient");
