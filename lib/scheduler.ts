@@ -63,7 +63,14 @@ async function runCycle() {
           break;
         }
       }
-      if (!dueLevel) continue;
+      if (!dueLevel) {
+        // Diagnosability: why this account was skipped this cycle
+        try {
+          getLogger().info("Scheduler", "Account %s (%s) skipped this cycle — no level due (l0/l1/l2 check)", account.id, account.platform);
+        } catch { void 0; }
+        continue;
+      }
+      getLogger().info("Scheduler", "Account %s (%s) -> due level %s", account.id, account.platform, dueLevel);
 
       const platform = account.platform;
       const platformLast = lastPlatformFetch.get(platform) || 0;

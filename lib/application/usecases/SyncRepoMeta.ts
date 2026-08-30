@@ -2,6 +2,7 @@
 // stars/forks/issues/PRs/downloads are L1 timely (90m), NOT here
 import type { RepoRepository, FetcherPort, Clock } from "../../domain/ports";
 import type { Account } from "../../domain/account";
+import { getLogger } from "../../logger";
 
 export class SyncRepoMeta {
   constructor(
@@ -26,5 +27,6 @@ export class SyncRepoMeta {
     }));
     // Upsert static columns only — do not overwrite stars/forks/issues
     await this.repos.upsertRepos(staticRepos as unknown as import("../../domain/repo").Repo[]);
+    getLogger().info("GitHub", "L0 @%s: upsert %d static repos (is_fork self-heal)", account.screenName, staticRepos.length);
   }
 }

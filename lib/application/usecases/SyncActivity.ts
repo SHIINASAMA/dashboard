@@ -1,6 +1,7 @@
 // L1 90m — timely metrics: stars/forks/issues/PRs/downloads + followers/contributions
 import type { RepoRepository, FetcherPort, Clock } from "../../domain/ports";
 import type { Account } from "../../domain/account";
+import { getLogger } from "../../logger";
 
 interface GithubActivityClient {
   fetchUserStats(username: string, token?: string): Promise<Record<string, unknown>>;
@@ -31,6 +32,7 @@ export class SyncActivity {
     if (snapshots.length > 0) {
       await this.repos.upsertSnapshots(snapshots);
     }
+    getLogger().info("GitHub", "L1 @%s: upsert %d repos + %d snapshots", account.screenName, repos.length, snapshots.length);
     // Pure new: also refresh followers and contributions (L1 timely) to keep pulse audience compatible
     try {
       const client = this.githubClient;
