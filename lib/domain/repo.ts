@@ -34,4 +34,6 @@ export interface Repo {
   description: string | null;
   homepage: string | null;
   topics: string;
+  /** open_issues aggregate from GitHub API (L1 timely); L0 static objects omit it */
+  openIssues?: number | null;
 }

@@ -90,29 +90,38 @@ export class PgRepoRepository implements RepoRepository {
   async upsertRepos(repos: Repo[]): Promise<void> {
     if (repos.length === 0) return;
     const { upsertGithubRepo } = await import("../../repositories/github");
-    const { getDb } = await import("../../db/connection");
-    const { github_repos } = await import("@/db/schema");
-    const { eq, and } = await import("drizzle-orm");
-    for (const repo of repos) {
-      // L0 static objects may not carry stars/forks — keep existing values for compatibility
-      let starsVal: number | undefined = (repo as unknown as { stars?: { value: number } }).stars?.value;
-      let forksVal: number | undefined = (repo as unknown as { forks?: { value: number } }).forks?.value;
-      if (starsVal === undefined || forksVal === undefined) {
-        try {
-          const db = getDb();
-          const [existing] = await db.select({ stars: github_repos.stars, forks: github_repos.forks }).from(github_repos).where(and(eq(github_repos.account_id, repo.accountId), eq(github_repos.repo_id, repo.repoId))).limit(1);
-          if (existing) {
-            if (starsVal === undefined) starsVal = existing.stars ?? 0;
-            if (forksVal === undefined) forksVal = existing.forks ?? 0;
-          } else {
-            starsVal = starsVal ?? 0;
-            forksVal = forksVal ?? 0;
-          }
-        } catch {
-          starsVal = starsVal ?? 0;
-          forksVal = forksVal ?? 0;
-        }
+    const db = getDb();
+
+    // Fetch existing rows once so L0/partial objects don't clobber stars/forks or
+    // wipe open_issues/open_pull_requests (which the pure-new path doesn't yet compute).
+    const accountIds = [...new Set(repos.map(r => r.accountId))];
+    const existing = new Map<string, { stars: number | null; forks: number | null; open_issues: number | null; open_issues_only: number | null; open_pull_requests: number | null }>();
+    try {
+      const rows = await db.select({
+        account_id: github_repos.account_id,
+        repo_id: github_repos.repo_id,
+        stars: github_repos.stars,
+        forks: github_repos.forks,
+        open_issues: github_repos.open_issues,
+        open_issues_only: github_repos.open_issues_only,
+        open_pull_requests: github_repos.open_pull_requests,
+      }).from(github_repos).where(inArray(github_repos.account_id, accountIds));
+      for (const r of rows) {
+        existing.set(`${r.account_id}:${r.repo_id}`, {
+          stars: r.stars, forks: r.forks, open_issues: r.open_issues,
+          open_issues_only: r.open_issues_only, open_pull_requests: r.open_pull_requests,
+        });
       }
+    } catch { /* table may not exist yet */ }
+
+    for (const repo of repos) {
+      const ex = existing.get(`${repo.accountId}:${repo.repoId}`);
+      const starsVal = (repo as unknown as { stars?: { value: number } }).stars?.value ?? ex?.stars ?? 0;
+      const forksVal = (repo as unknown as { forks?: { value: number } }).forks?.value ?? ex?.forks ?? 0;
+      const openIssues = (repo as unknown as { openIssues?: number | null }).openIssues ?? ex?.open_issues ?? 0;
+      // Pure-new path doesn't compute issue split yet -> retain existing rather than null it out
+      const openIssuesOnly = ex?.open_issues_only ?? null;
+      const openPullRequests = ex?.open_pull_requests ?? null;
       await upsertGithubRepo({
         account_id: repo.accountId,
         repo_id: repo.repoId,
@@ -122,7 +131,9 @@ export class PgRepoRepository implements RepoRepository {
         language: repo.language,
         stars: starsVal,
         forks: forksVal,
-        open_issues: 0,
+        open_issues: openIssues,
+        open_issues_only: openIssuesOnly,
+        open_pull_requests: openPullRequests,
         topics: repo.topics,
         homepage: repo.homepage,
         is_fork: repo.isFork,
@@ -136,13 +147,26 @@ export class PgRepoRepository implements RepoRepository {
   async upsertSnapshots(snapshots: RepoSnapshot[]): Promise<void> {
     if (snapshots.length === 0) return;
     const { upsertGithubRepoSnapshot } = await import("../../repositories/github");
+    const db = getDb();
+    const accountIds = [...new Set(snapshots.map(s => s.accountId))];
+    // Retain existing open_issues for the (account, repo) so a stars-only snapshot
+    // doesn't wipe the issue count in history.
+    const openIssuesMap = new Map<string, number>();
+    try {
+      const rows = await db.execute(sql`SELECT DISTINCT ON (account_id, repo_id) account_id, repo_id, open_issues
+        FROM ${github_repo_snapshots} WHERE account_id = ANY(${sql.raw(`ARRAY[${accountIds.join(",")}]::int[]`)})
+        ORDER BY account_id, repo_id, snapshot_date DESC`);
+      for (const row of (rows as unknown as { rows: Array<{ account_id: number; repo_id: number; open_issues: number | null }> }).rows ?? []) {
+        openIssuesMap.set(`${row.account_id}:${row.repo_id}`, row.open_issues ?? 0);
+      }
+    } catch { /* table may not exist */ }
     for (const s of snapshots) {
       await upsertGithubRepoSnapshot({
         account_id: s.accountId,
         repo_id: s.repoId,
         stars: s.stars,
         forks: s.forks,
-        open_issues: 0,
+        open_issues: openIssuesMap.get(`${s.accountId}:${s.repoId}`) ?? 0,
         snapshot_date: s.snapshotDate,
       });
     }

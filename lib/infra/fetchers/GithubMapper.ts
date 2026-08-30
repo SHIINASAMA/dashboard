@@ -14,5 +14,6 @@ export function toRepo(raw: Record<string, unknown>, accountId: number) {
     description: (raw.description as string | null) ?? null,
     homepage: (raw.homepage as string | null) ?? null,
     topics: JSON.stringify((raw.topics as unknown[]) ?? []),
+    openIssues: (raw.open_issues_count as number) ?? null,
   };
 }
