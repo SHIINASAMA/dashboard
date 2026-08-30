@@ -6,6 +6,7 @@ import { getLogger } from "../../logger";
 interface GithubActivityClient {
   fetchUserStats(username: string, token?: string): Promise<Record<string, unknown>>;
   fetchContributions(username: string, token?: string, year?: number): Promise<Array<{ date: string; count: number; level: number }>>;
+  fetchIssueSplits(repos: Array<{ id: number; full_name: string }>, token?: string): Promise<Map<number, { issues: number; pullRequests: number }>>;
 }
 
 export class SyncActivity {
@@ -56,7 +57,26 @@ export class SyncActivity {
         }
       }
     } catch { /* stats is best-effort, repos already updated */ }
-    // TODO: picks up open_issues/open_pull_requests via issue-split and releases downloads
-    // will be split from fetchers/github.ts:fetchGithubIssueSplits / fetchRepoReleases into this UseCase
+
+    // Issue/PR split — precisely separate open_issues vs open_pull_requests (needs PAT).
+    try {
+      const client = this.githubClient;
+      if (client && account.platform === "github") {
+        const token = (account as unknown as { authToken?: string }).authToken ?? undefined;
+        const splitInput = repos.filter(r => r.fullName).map(r => ({ id: r.repoId, full_name: r.fullName }));
+        const splits = await client.fetchIssueSplits(splitInput, token);
+        if (splits.size > 0) {
+          const { getDb } = await import("../../db/connection");
+          const { github_repos } = await import("@/db/schema");
+          const { and, eq } = await import("drizzle-orm");
+          const db = getDb();
+          for (const [repoId, counts] of splits) {
+            await db.update(github_repos).set({ open_issues_only: counts.issues, open_pull_requests: counts.pullRequests })
+              .where(and(eq(github_repos.account_id, account.id), eq(github_repos.repo_id, repoId)));
+          }
+          getLogger().info("GitHub", "L1 @%s: issue/PR split updated for %d repos", account.screenName, splits.size);
+        }
+      }
+    } catch { /* issue split best-effort; requires PAT, non-fatal */ }
   }
 }

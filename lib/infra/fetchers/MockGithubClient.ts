@@ -54,4 +54,21 @@ export class MockGithubClient {
   async fetchContributions(_username: string, _token?: string, _year?: number): Promise<Array<{ date: string; count: number; level: number }>> {
     return [{ date: new Date().toISOString().slice(0,10), count: 5, level: 2 }];
   }
+
+  async fetchIssueSplits(_repos: Array<{ id: number; full_name: string }>, _token?: string): Promise<Map<number, { issues: number; pullRequests: number }>> {
+    return new Map();
+  }
+
+  async fetchRepoTraffic(_fullName: string, _token?: string): Promise<{
+    clones: Array<{ date: string; count: number; uniques: number }>;
+    views: Array<{ date: string; count: number; uniques: number }>;
+    referrers: Array<{ referrer: string; count: number; uniques: number }>;
+    paths: Array<{ path: string; title: string | null; count: number; uniques: number }>;
+  }> {
+    return { clones: [], views: [], referrers: [], paths: [] };
+  }
+
+  async fetchRepoReleases(_fullName: string, _token?: string): Promise<Array<Record<string, unknown>>> {
+    return [];
+  }
 }

@@ -75,5 +75,53 @@ export class GithubClient {
   async fetchPaths(_repoFullName: string): Promise<Array<{ path: string; count: number; uniques: number }>> {
     return [];
   }
+
+  async fetchIssueSplits(repos: Array<{ id: number; full_name: string }>, token?: string): Promise<Map<number, { issues: number; pullRequests: number }>> {
+    const { fetchGithubIssueSplits } = await import("../../fetchers/github-issue-split");
+    return fetchGithubIssueSplits(repos, token ?? "");
+  }
+
+  async fetchRepoTraffic(fullName: string, token?: string): Promise<{
+    clones: Array<{ date: string; count: number; uniques: number }>;
+    views: Array<{ date: string; count: number; uniques: number }>;
+    referrers: Array<{ referrer: string; count: number; uniques: number }>;
+    paths: Array<{ path: string; title: string | null; count: number; uniques: number }>;
+  }> {
+    const [owner, repo] = fullName.split("/");
+    const headers: Record<string, string> = { Accept: "application/vnd.github.v3+json", "User-Agent": "dashboard" };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const get = async (p: string) => {
+      try {
+        const res = await this.fetchFn(`https://api.github.com${p}`, { headers } as unknown as RequestInit);
+        if (!res.ok) {
+          if (res.status === 403 || res.status === 401) return null;
+          return null;
+        }
+        return await res.json();
+      } catch { return null; }
+    };
+    const today = new Date().toISOString().slice(0, 10);
+    const clones = (await get(`/repos/${owner}/${repo}/traffic/clones`)) as { clones?: Array<Record<string, unknown>> } | null;
+    const views = (await get(`/repos/${owner}/${repo}/traffic/views`)) as { views?: Array<Record<string, unknown>> } | null;
+    const referrers = (await get(`/repos/${owner}/${repo}/traffic/popular/referrers`)) as Array<Record<string, unknown>> | null;
+    const paths = (await get(`/repos/${owner}/${repo}/traffic/popular/paths`)) as Array<Record<string, unknown>> | null;
+    return {
+      clones: (clones?.clones ?? []).map((d) => ({ date: (d.timestamp as string || d.date as string)?.slice(0, 10) ?? today, count: (d.count as number) || 0, uniques: (d.uniques as number) || 0 })),
+      views: (views?.views ?? []).map((d) => ({ date: (d.timestamp as string || d.date as string)?.slice(0, 10) ?? today, count: (d.count as number) || 0, uniques: (d.uniques as number) || 0 })),
+      referrers: (referrers ?? []).map((r) => ({ referrer: (r.referrer as string) || "unknown", count: (r.count as number) || 0, uniques: (r.uniques as number) || 0 })),
+      paths: (paths ?? []).map((p) => ({ path: (p.path as string) || "/", title: (p.title as string) || null, count: (p.count as number) || 0, uniques: (p.uniques as number) || 0 })),
+    };
+  }
+
+  async fetchRepoReleases(fullName: string, token?: string): Promise<Array<Record<string, unknown>>> {
+    const headers: Record<string, string> = { Accept: "application/vnd.github.v3+json", "User-Agent": "dashboard" };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    try {
+      const res = await this.fetchFn(`https://api.github.com/repos/${fullName}/releases?per_page=30`, { headers } as unknown as RequestInit);
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data) ? (data as Array<Record<string, unknown>>) : [];
+    } catch { return []; }
+  }
 }
 
