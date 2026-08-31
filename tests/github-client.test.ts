@@ -37,4 +37,14 @@ describe("GithubClient", () => {
     const repos = await client.fetchAllRepos("bob", "tok");
     expect(repos.length).toBe(1);
   });
+
+  it("fetchRepoReleases throws on HTTP errors instead of returning []", async () => {
+    const httpError = async () => ({
+      ok: false,
+      status: 403,
+      text: async () => "rate limit exceeded",
+    } as any);
+    const client = new GithubClient(httpError as any);
+    await expect(client.fetchRepoReleases("alice/r", "tok")).rejects.toThrow("GitHub releases 403");
+  });
 });

@@ -47,42 +47,7 @@ export class SyncActivity {
     }
     getLogger().info("GitHub", "L1 @%s: upsert %d repos + %d snapshots", account.screenName, repos.length, snapshots.length);
 
-    // Release downloads are timely metrics (L1 90m): refresh cumulative counts
-    // and record one snapshot per fetch so download growth can be derived.
-    try {
-      const client = this.githubClient;
-      const write = this.releaseWrite;
-      if (client && write && account.platform === "github") {
-        const token = (account as unknown as { authToken?: string }).authToken ?? undefined;
-        const snapshotDate = new Date().toISOString();
-        for (const repo of repos) {
-          const fullName = repo.fullName;
-          if (!fullName) continue;
-          let releases: Array<Record<string, unknown>> = [];
-          try {
-            releases = await client.fetchRepoReleases(fullName, token);
-          } catch { /* release fetch is best-effort; repos already updated */ }
-          for (const release of releases) {
-            const totalDownloads = ((release.assets as Array<Record<string, unknown>>) || []).reduce((s: number, a: Record<string, unknown>) => s + ((a.download_count as number) || 0), 0);
-            await write.upsertRelease({
-              account_id: account.id, repo_id: repo.repoId, release_id: release.id as number,
-              tag_name: (release.tag_name as string) || null, name: (release.name as string) || null, body: (release.body as string) || null,
-              prerelease: release.prerelease ? 1 : 0, published_at: (release.published_at as string) || null, html_url: (release.html_url as string) || null, total_downloads: totalDownloads,
-            });
-            const releaseDbId = await write.findReleaseDbId(account.id, repo.repoId, release.id as number);
-            if (releaseDbId) {
-              await write.replaceAssets(releaseDbId, (release.assets as Array<Record<string, unknown>>) || []);
-              for (const asset of (release.assets as Array<Record<string, unknown>>) || []) {
-                const downloadCount = (asset.download_count as number) || 0;
-                await write.insertAssetSnapshot({ account_id: account.id, repo_id: repo.repoId, release_id: releaseDbId, asset_name: asset.name as string, download_count: downloadCount, snapshot_date: snapshotDate });
-              }
-            }
-          }
-        }
-      }
-    } catch (e) {
-      getLogger().warn("GitHub", "L1 @%s: release downloads skipped (%s)", account.screenName, e instanceof Error ? e.message : String(e));
-    }
+    await this.syncReleaseDownloads(account, repos);
 
     // Pure new: also refresh followers and contributions (L1 timely) to keep pulse audience compatible
     try {
@@ -128,5 +93,71 @@ export class SyncActivity {
         }
       }
     } catch { /* issue split best-effort; requires PAT, non-fatal */ }
+  }
+
+  private async syncReleaseDownloads(account: Account, repos: Array<{ fullName: string; repoId: number }>): Promise<void> {
+    const client = this.githubClient;
+    const write = this.releaseWrite;
+    if (!client || !write || account.platform !== "github") return;
+
+    const token = (account as unknown as { authToken?: string }).authToken ?? undefined;
+    const snapshotDate = new Date().toISOString();
+    let updatedReleases = 0;
+    let failedRepos = 0;
+    let aborted = false;
+
+    for (const repo of repos) {
+      if (aborted) break;
+      const fullName = repo.fullName;
+      if (!fullName) continue;
+      let releases: Array<Record<string, unknown>> = [];
+      try {
+        releases = await client.fetchRepoReleases(fullName, token);
+      } catch (e) {
+        failedRepos++;
+        const message = e instanceof Error ? e.message : String(e);
+        getLogger().warn(
+          "GitHub",
+          "L1 @%s: release fetch failed for %s (%s)",
+          account.screenName,
+          fullName,
+          message,
+        );
+        if (message.includes("401") || message.includes("403")) {
+          aborted = true;
+          getLogger().warn(
+            "GitHub",
+            "L1 @%s: stopping release sync for this run (token/scope issue)",
+            account.screenName,
+          );
+        }
+        continue;
+      }
+      for (const release of releases) {
+        const totalDownloads = ((release.assets as Array<Record<string, unknown>>) || []).reduce((s: number, a: Record<string, unknown>) => s + ((a.download_count as number) || 0), 0);
+        await write.upsertRelease({
+          account_id: account.id, repo_id: repo.repoId, release_id: release.id as number,
+          tag_name: (release.tag_name as string) || null, name: (release.name as string) || null, body: (release.body as string) || null,
+          prerelease: release.prerelease ? 1 : 0, published_at: (release.published_at as string) || null, html_url: (release.html_url as string) || null, total_downloads: totalDownloads,
+        });
+        const releaseDbId = await write.findReleaseDbId(account.id, repo.repoId, release.id as number);
+        if (releaseDbId) {
+          await write.replaceAssets(releaseDbId, (release.assets as Array<Record<string, unknown>>) || []);
+          for (const asset of (release.assets as Array<Record<string, unknown>>) || []) {
+            const downloadCount = (asset.download_count as number) || 0;
+            await write.insertAssetSnapshot({ account_id: account.id, repo_id: repo.repoId, release_id: releaseDbId, asset_name: asset.name as string, download_count: downloadCount, snapshot_date: snapshotDate });
+          }
+        }
+        updatedReleases++;
+      }
+    }
+
+    getLogger().info(
+      "GitHub",
+      "L1 @%s: release downloads refreshed (%d releases, %d repo failures)",
+      account.screenName,
+      updatedReleases,
+      failedRepos,
+    );
   }
 }

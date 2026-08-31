@@ -1,4 +1,4 @@
-import { fetchWithConfig } from "../../http";
+import { fetchWithConfig, withNetworkRetry } from "../../http";
 
 type FetchFn = typeof fetchWithConfig;
 
@@ -116,12 +116,29 @@ export class GithubClient {
   async fetchRepoReleases(fullName: string, token?: string): Promise<Array<Record<string, unknown>>> {
     const headers: Record<string, string> = { Accept: "application/vnd.github.v3+json", "User-Agent": "dashboard" };
     if (token) headers.Authorization = `Bearer ${token}`;
-    try {
-      const res = await this.fetchFn(`https://api.github.com/repos/${fullName}/releases?per_page=30`, { headers } as unknown as RequestInit);
-      if (!res.ok) return [];
-      const data = await res.json();
-      return Array.isArray(data) ? (data as Array<Record<string, unknown>>) : [];
-    } catch { return []; }
+    const res = await withNetworkRetry(
+      async () => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 30_000);
+        try {
+          return await this.fetchFn(
+            `https://api.github.com/repos/${fullName}/releases?per_page=30`,
+            { headers, signal: controller.signal } as unknown as RequestInit,
+          );
+        } finally {
+          clearTimeout(timer);
+        }
+      },
+      { label: "GitHub" },
+    );
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      throw new Error(`GitHub releases ${res.status}: ${detail.slice(0, 200)}`);
+    }
+    const data = await res.json();
+    if (!Array.isArray(data)) {
+      throw new Error("GitHub releases returned an invalid response");
+    }
+    return data as Array<Record<string, unknown>>;
   }
 }
-
